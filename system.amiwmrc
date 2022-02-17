@@ -1,10 +1,66 @@
-FastQuit Off
-SizeBorder Right
+# show a requester before quit amiwm
+FastQuit No
+
+# resize gadget location
+SizeBorder bottom
+
+# allow app windows ignore screen boundaries
+ForceMove always
+
 IconPalette MagicWB
+IconDir "/usr/local/lib/amiwm/icons"
+
+# choose an icon as default icon 
 DefaultIcon "def_tool.info"
-CustomIconsOnly Off
-ShortLabelIcons Off
-TitlebarClock Off
-TitleClockFormat "%c"
+
+# only use amiga icons (ignore apps internal icons)
+CustomIconsOnly yes 
+
+# shorten long label on iconified apps
+ShortLabelIcons yes 
+
+# enable titlebar clock
+TitlebarClock yes 
+
+# TitleClockFormat "%a %b %e %Y %l:%M %p" 
+TitleClockFormat "%l:%M %p" 
+
+# autoraise windows (yes/no)
+Autoraise yes 
+
+# change focus mode (clicktotype, followmouse)
+Focus clicktotype
+
+# change screen name
 Screen "Workbench Screen"
-Module "Keyboard" "Meta<M>:all:rotatescreens"
+
+# set background image (require imagemagick installed)
+Module "Background" "/home/klaus/Sources/amiwm/Patterns/stonepat.jpg"
+
+# configure Launcher module (add icons on desktop)
+Module "Launcher" "(Computer) (harddisk.info) (dolphin)"
+Module "Launcher" "(workbench) (harddisk.info) (workbench)"
+
+# april fool "jokefs" (only interesting for devs as example)
+# Module "Filesystem" "/home/klaus"
+
+# configure additional keyboard shortcuts
+Module "Keyboard" "\
+  <F1>:all:rotatescreens\
+  <F2>:window|frame:iconify\
+  <F3>:window|frame:front\
+  <F4>:window|frame:back"
+
+# force amiga icons on specific programs
+style { class "xterm" icon "Shell.info" }
+style { class "netsurf" icon "Browser.info" }
+
+# create new menu entries
+ToolItem Separator
+ToolItem "Applications"
+  {
+  ToolItem "Setup" "/usr/local/lib/amiwm/setup"
+  ToolItem "Terminal" "xterm"
+  ToolItem "Browser"  "netsurf"
+  }
+

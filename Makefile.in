@@ -102,24 +102,24 @@ install : $(PROGS) $(MODULES) Xsession Xsession2 Xinitrc amiwm-init
 	  fi; \
 	done
 	$(INSTALL) -m 644 $(srcdir)/system.amiwmrc $(AMIWM_HOME)/system.amiwmrc
-	$(INSTALL) -m 644 $(srcdir)/def_disk.info $(AMIWM_HOME)/icons/def_disk.info
-	$(INSTALL) -m 644 $(srcdir)/def_drawer.info $(AMIWM_HOME)/icons/def_drawer.info
-	$(INSTALL) -m 644 $(srcdir)/def_project.info $(AMIWM_HOME)/icons/def_project.info
-	$(INSTALL) -m 644 $(srcdir)/def_tool.info $(AMIWM_HOME)/icons/def_tool.info
-	$(INSTALL) -m 644 $(srcdir)/browser.info $(AMIWM_HOME)/icons/browser.info
-	$(INSTALL) -m 644 $(srcdir)/compress.info $(AMIWM_HOME)/icons/compress.info
-	$(INSTALL) -m 644 $(srcdir)/filer.info $(AMIWM_HOME)/icons/filer.info
-	$(INSTALL) -m 644 $(srcdir)/ftp.info $(AMIWM_HOME)/icons/ftp.info
-	$(INSTALL) -m 644 $(srcdir)/harddisk.info $(AMIWM_HOME)/icons/harddisk.info
-	$(INSTALL) -m 644 $(srcdir)/irc.info $(AMIWM_HOME)/icons/irc.info
-	$(INSTALL) -m 644 $(srcdir)/mail.info $(AMIWM_HOME)/icons/mail.info
-	$(INSTALL) -m 644 $(srcdir)/network.info $(AMIWM_HOME)/icons/network.info
-	$(INSTALL) -m 644 $(srcdir)/newsreader.info $(AMIWM_HOME)/icons/newsreader.info
-	$(INSTALL) -m 644 $(srcdir)/paint.info $(AMIWM_HOME)/icons/paint.info
-	$(INSTALL) -m 644 $(srcdir)/shell.info $(AMIWM_HOME)/icons/shell.info
-	$(INSTALL) -m 644 $(srcdir)/soundeditor.info $(AMIWM_HOME)/icons/soundeditor.info
-	$(INSTALL) -m 644 $(srcdir)/texteditor.info $(AMIWM_HOME)/icons/texteditor.info
-	$(INSTALL) -m 644 $(srcdir)/viewer.info $(AMIWM_HOME)/icons/viewer.info
+	$(INSTALL) -m 644 $(srcdir)/icons/def_disk.info $(AMIWM_HOME)/icons/def_disk.info
+	$(INSTALL) -m 644 $(srcdir)/icons/def_drawer.info $(AMIWM_HOME)/icons/def_drawer.info
+	$(INSTALL) -m 644 $(srcdir)/icons/def_project.info $(AMIWM_HOME)/icons/def_project.info
+	$(INSTALL) -m 644 $(srcdir)/icons/def_tool.info $(AMIWM_HOME)/icons/def_tool.info
+	$(INSTALL) -m 644 $(srcdir)/icons/browser.info $(AMIWM_HOME)/icons/browser.info
+	$(INSTALL) -m 644 $(srcdir)/icons/compress.info $(AMIWM_HOME)/icons/compress.info
+	$(INSTALL) -m 644 $(srcdir)/icons/filer.info $(AMIWM_HOME)/icons/filer.info
+	$(INSTALL) -m 644 $(srcdir)/icons/ftp.info $(AMIWM_HOME)/icons/ftp.info
+	$(INSTALL) -m 644 $(srcdir)/icons/harddisk.info $(AMIWM_HOME)/icons/harddisk.info
+	$(INSTALL) -m 644 $(srcdir)/icons/irc.info $(AMIWM_HOME)/icons/irc.info
+	$(INSTALL) -m 644 $(srcdir)/icons/mail.info $(AMIWM_HOME)/icons/mail.info
+	$(INSTALL) -m 644 $(srcdir)/icons/network.info $(AMIWM_HOME)/icons/network.info
+	$(INSTALL) -m 644 $(srcdir)/icons/newsreader.info $(AMIWM_HOME)/icons/newsreader.info
+	$(INSTALL) -m 644 $(srcdir)/icons/paint.info $(AMIWM_HOME)/icons/paint.info
+	$(INSTALL) -m 644 $(srcdir)/icons/shell.info $(AMIWM_HOME)/icons/shell.info
+	$(INSTALL) -m 644 $(srcdir)/icons/soundeditor.info $(AMIWM_HOME)/icons/soundeditor.info
+	$(INSTALL) -m 644 $(srcdir)/icons/texteditor.info $(AMIWM_HOME)/icons/texteditor.info
+	$(INSTALL) -m 644 $(srcdir)/icons/viewer.info $(AMIWM_HOME)/icons/viewer.info
 	$(INSTALL) -m 644 $(srcdir)/system.map $(AMIWM_HOME)/system.map
 	$(INSTALL) -m 644 $(srcdir)/magicwb.map $(AMIWM_HOME)/magicwb.map
 	$(INSTALL) -m 644 $(srcdir)/schwartz.map $(AMIWM_HOME)/schwartz.map
