@@ -1,5 +1,5 @@
 # amiwm
-Amiga Workbench inspired window manager for Xorg.
+Amiga Workbench inspired window manager for Xorg..
 
 ## Getting started
 Before compiling, make sure that you have following packages installed:
