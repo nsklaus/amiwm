@@ -1,5 +1,42 @@
+# ignore object files
 *.o
+
+# ignore log files
 *.log
+
+# ignore dotfiles and dot dirs
 .*
+
+# ignore *.kdev4 stuff
 *.kdev4
+
+# don't ignore gitignore
 !.gitignore
+
+# find . -executable -type f >>.gitignore
+./.git/hooks/post-update.sample
+./.git/hooks/pre-commit.sample
+./.git/hooks/pre-applypatch.sample
+./.git/hooks/pre-merge-commit.sample
+./.git/hooks/commit-msg.sample
+./.git/hooks/prepare-commit-msg.sample
+./.git/hooks/fsmonitor-watchman.sample
+./.git/hooks/pre-receive.sample
+./.git/hooks/update.sample
+./.git/hooks/pre-rebase.sample
+./.git/hooks/applypatch-msg.sample
+./.git/hooks/pre-push.sample
+./.git/hooks/push-to-checkout.sample
+./amiwm-init
+./Background
+./install-sh
+./ppmtoinfo
+./executecmd
+./amiwm
+./workbench
+./requestchoice
+./setup
+./configure
+./Launcher
+./Keyboard
+./config.status

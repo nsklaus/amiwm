@@ -69,16 +69,20 @@ struct DrawInfo dri;
 Window root, mainwin, strwin;
 GC gc;
 
-// width and height of input field borders
+/** width and height of input field borders */
 int strgadw, strgadh;
 
-// font height
+/** font height */
 int fh;
 
-// window width and height
+/** window pos x and y */
+int mainx=100, mainy=20;
+
+/** window width and height */
 int mainw, mainh;
 
-// button width
+
+/** button width */
 int butw;
 
 static XIM xim = (XIM) NULL;
@@ -406,7 +410,7 @@ int main(int argc, char *argv[])
 
   mainh=3*fh+TOP_SPACE+BOT_SPACE+2*INT_SPACE+2*BUT_VSPACE;
 
-  mainwin=XCreateSimpleWindow(dpy, root, 20, 20, mainw, mainh, 1,
+  mainwin=XCreateSimpleWindow(dpy, root, mainx, mainy, mainw, 300, 1,
 			      dri.dri_Pens[SHADOWPEN],
 			      dri.dri_Pens[BACKGROUNDPEN]);
   strwin=XCreateSimpleWindow(dpy, mainwin, mainw-BUT_SIDE-strgadw,
