@@ -1,0 +1,45 @@
+Installing instructions for amiwm:
+
+UNIX
+----
+
+1. Run configure
+
+Type './configure' in the source directory.  Extensive probing of
+your system configuration will take place for quite a while.
+
+2. Inspect the Makefile
+
+configure will create a Makefile for you.  This contains a few
+variables you might want to edit.  'prefix' is where amiwm will
+be installed, usually /usr/local.  The binary will be installed
+in 'bindir' (default $prefix/bin) and the support files in 'AMIWM_HOME'
+(default $libdir/amiwm, which in turn defaults to $prefix/lib/amiwm).
+AMIWM_HOME must be set to a directory where amiwm will be able to
+find it's support files before you compile, even if you do not
+intend to run 'make install'.
+
+3. Compile
+
+Type 'make' and wait...
+
+4. Install
+
+Type 'make install', and the program with its support files will
+be installed in their permanent locations.
+
+5. Install CDE extras (CDE only)
+
+If you're running CDE you may want to do 'make cde-install' as root.
+This will enable a new session type (AmiWM Session) in dtlogin.  This
+has only been tested on Solaris 2.6, so do it at your own risk...  :)
+
+
+If all the steps are successfull, you may then remove the source tree.
+
+
+AmigaOS
+-------
+
+AmigaOS support is currently disfunctional.  Sorry.
+

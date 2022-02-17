@@ -1,0 +1,5 @@
+*.o
+*.log
+.*
+*.kdev4
+!.gitignore

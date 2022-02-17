@@ -1,0 +1,27 @@
+
+* File manager
+* Iconbox
+* Dock?
+* MagicMenu?
+* More custom menus, menu hotkeys
+
+
+* Aktivera föregående fönster vid unmap/close i clicktotype-mode
+
+* programspecifika ikoner etc.
+
+* fönsterposition/storlek i titelraden?
+
+
+kolla:
+
+I found out that it is only the xclipboard icon that disappears when
+I drag screens.
+
+1. Occaisionally, when iconifying, the icon appears on top of
+   another icon.
+
+2. If xv opens a window on a split screen (i.e. a screen which has
+   been dragged down a bit), the window only appears on the front
+   most screen but the origin of the window is at the top left
+   of the monitor.

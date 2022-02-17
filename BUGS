@@ -1,0 +1,6 @@
+A. Iconified windows are lost on ResetWB
+B. OpenWindows popups don't appear or don't get borders
+C. Programs like xwininfo or xwd doesn't use the window you click on,
+   but rather the window first opened in that screen.
+D. "aixterm shows up as a blank square"
+ö. Compiler warnings in kbdlexer.c...

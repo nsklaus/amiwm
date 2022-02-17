@@ -1,0 +1,12 @@
+Important notice:
+
+As of version 0.19pl28, amiwm has moved from xmkmf to autoconf
+as configuration system.  In this process, some of the installation
+procedure was reworked.  As a result, files may be installed in
+a different location than before.  It is therefore recommended,
+if you have a previously installed amiwm with a version lower than
+0.19pl28, that you remove this old version completely before
+installing this new version.
+
+  // Marcus
+
