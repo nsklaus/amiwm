@@ -55,8 +55,8 @@ static char choice_txt[]="yes";
 XContext client_context, screen_context, icon_context;
 
 static int selected=0, depressed=0, stractive=1;
-static Window button[4];
-static const char *buttxt[]={ NULL, ok_txt, cancel_txt };
+static Window button[8];
+static const char *buttxt[]={ NULL, ok_txt, cancel_txt, choice_txt };
 
 char cmdline[MAX_CMD_CHARS+1];
 int buf_len=0;
@@ -70,7 +70,7 @@ Display *dpy;
 
 struct DrawInfo dri;
 
-Window root, mainwin, strwin, fastq, cionly, slicon;
+Window root, mainwin, strwin;
 GC gc;
 
 /** width and height of input field borders */
@@ -92,11 +92,12 @@ int butw;
 static XIM xim = (XIM) NULL;
 static XIC xic = (XIC) NULL;
 
-
+/** get button number/id */
 int getchoice(Window w)
 {
   int i;
-  for(i=1; i<3; i++)
+  int totalbuttons = (int)(sizeof button / sizeof button[0]);
+  for(i=1; i<totalbuttons; i++)
     if(button[i]==w)
       return i;
   return 0;
@@ -119,7 +120,7 @@ void refresh_button(Window w, const char *txt, int idx)
   XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
   XDrawPoint(dpy, w, gc, butw-1, 0);
   XDrawPoint(dpy, w, gc, 0, h-1);
-  printf("refresh_idx=%d\n",idx);
+  //printf("refresh_idx=%d\n",idx);
 }
 
 /** refresh window background */
@@ -212,6 +213,8 @@ void refresh_str(void)
   XDrawLine(dpy, strwin, gc, strgadw-2, 1, strgadw-2, strgadh-2);
 }
 
+
+/** work with text string entered */
 void strkey(XKeyEvent *e)
 {
   void endchoice(void);
@@ -397,7 +400,8 @@ int main(int argc, char *argv[])
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
-  Window b_fastq, b_ok, b_cancel;
+  // clickable buttons
+  Window b_fastq, b_sizer, b_palette, b_customicon, b_shortlabel, b_ok, b_cancel;
   int w2, c;
   char *p;
   //setlocale(LC_CTYPE, "");
@@ -433,32 +437,61 @@ int main(int argc, char *argv[])
   mainh=3*fh+TOP_SPACE+BOT_SPACE+2*INT_SPACE+2*BUT_VSPACE;
 
   mainwin=XCreateSimpleWindow(dpy, root, mainx, mainy, mainw, 300, 1,
-			      dri.dri_Pens[SHADOWPEN],
-			      dri.dri_Pens[BACKGROUNDPEN]);
-  strwin=XCreateSimpleWindow(dpy, mainwin, 150, 105,
-			     strgadw, strgadh, 0,
-			     dri.dri_Pens[SHADOWPEN],
-			     dri.dri_Pens[BACKGROUNDPEN]);
-  b_fastq=XCreateSimpleWindow(dpy, mainwin, 150,20,butw, fh+2*BUT_VSPACE, 0,
-      dri.dri_Pens[SHADOWPEN],
-      dri.dri_Pens[BACKGROUNDPEN]);
+                              dri.dri_Pens[SHADOWPEN],
+                              dri.dri_Pens[BACKGROUNDPEN]);
+
+  strwin=XCreateSimpleWindow(dpy, mainwin, 150, 105, strgadw, strgadh, 0,
+                             dri.dri_Pens[SHADOWPEN],
+                             dri.dri_Pens[BACKGROUNDPEN]);
+
+  b_fastq=XCreateSimpleWindow(dpy, mainwin, 150,15,butw, fh+2*BUT_VSPACE, 0,
+                              dri.dri_Pens[SHADOWPEN],
+                              dri.dri_Pens[BACKGROUNDPEN]);
+
+  b_sizer=XCreateSimpleWindow(dpy, mainwin, 150,45,butw, fh+2*BUT_VSPACE, 0,
+                              dri.dri_Pens[SHADOWPEN],
+                              dri.dri_Pens[BACKGROUNDPEN]);
+
+  b_palette =XCreateSimpleWindow(dpy, mainwin, 150,75,butw, fh+2*BUT_VSPACE, 0,
+                                 dri.dri_Pens[SHADOWPEN],
+                                 dri.dri_Pens[BACKGROUNDPEN]);
+
+  b_customicon=XCreateSimpleWindow(dpy, mainwin, 150,135,butw, fh+2*BUT_VSPACE, 0,
+                                   dri.dri_Pens[SHADOWPEN],
+                                   dri.dri_Pens[BACKGROUNDPEN]);
+
+  b_shortlabel=XCreateSimpleWindow(dpy, mainwin, 150,165,butw, fh+2*BUT_VSPACE, 0,
+                                   dri.dri_Pens[SHADOWPEN],
+                                   dri.dri_Pens[BACKGROUNDPEN]);
+
   b_ok=XCreateSimpleWindow(dpy, mainwin, BUT_SIDE,
-			 mainh-BOT_SPACE-2*BUT_VSPACE-fh,
-			 butw, fh+2*BUT_VSPACE, 0,
-			 dri.dri_Pens[SHADOWPEN],
-			 dri.dri_Pens[BACKGROUNDPEN]);
+                           mainh-BOT_SPACE-2*BUT_VSPACE-fh,
+                           butw, fh+2*BUT_VSPACE, 0,
+                           dri.dri_Pens[SHADOWPEN],
+                           dri.dri_Pens[BACKGROUNDPEN]);
+
   b_cancel=XCreateSimpleWindow(dpy, mainwin, mainw-butw-BUT_SIDE,
-			     mainh-BOT_SPACE-2*BUT_VSPACE-fh,
-			     butw, fh+2*BUT_VSPACE, 0,
-			     dri.dri_Pens[SHADOWPEN],
-			     dri.dri_Pens[BACKGROUNDPEN]);
+                               mainh-BOT_SPACE-2*BUT_VSPACE-fh,
+                               butw, fh+2*BUT_VSPACE, 0,
+                               dri.dri_Pens[SHADOWPEN],
+                               dri.dri_Pens[BACKGROUNDPEN]);
   button[0]=None;
   button[1]=b_ok;
   button[2]=b_cancel;
   button[3]=b_fastq;
+  button[4]=b_sizer;
+  button[5]=b_palette;
+  button[6]=b_shortlabel;
+  button[7]=b_customicon;
+  //totalbuttons = sizeof button / sizeof button[0];
+  printf("totalbuttonlength=%d\n",(int)(sizeof button / sizeof button[0]));
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   XSelectInput(dpy, strwin, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, b_fastq, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_sizer, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_palette, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_shortlabel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_customicon, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   XSelectInput(dpy, b_ok, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   XSelectInput(dpy, b_cancel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
@@ -514,7 +547,19 @@ int main(int argc, char *argv[])
               refresh_str();
             }
             else if(event.xexpose.window == b_fastq) {
-              refresh_button(b_fastq, FastQuit_txt, 3);
+              refresh_button(b_fastq, choice_txt, 3);
+            }
+            else if(event.xexpose.window == b_sizer) {
+              refresh_button(b_sizer, "bottom", 4);
+            }
+            else if(event.xexpose.window == b_palette) {
+              refresh_button(b_palette, "magicwb", 5);
+            }
+            else if(event.xexpose.window == b_shortlabel) {
+              refresh_button(b_shortlabel, "yes", 6);
+            }
+            else if(event.xexpose.window == b_customicon) {
+              refresh_button(b_customicon, "yes", 7);
             }
             else if(event.xexpose.window == b_ok) {
               refresh_button(b_ok, ok_txt, 1);
@@ -535,6 +580,7 @@ int main(int argc, char *argv[])
           if(depressed &&
             event.xcrossing.window==button[c]) {
             depressed=0;
+            printf("leavenotify=%d  selected=%d\n\n",c, selected);
             toggle(selected);
           }
           break;
@@ -543,6 +589,7 @@ int main(int argc, char *argv[])
           if((!depressed) && selected &&
             event.xcrossing.window==button[selected]) {
             depressed=1;
+          printf("enternotify=%d\n\n",selected);
             toggle(selected);
           }
           break;
@@ -555,6 +602,7 @@ int main(int argc, char *argv[])
             if((c=getchoice(event.xbutton.window))) {
               abortchoice();
               depressed=1;
+              printf("buttonpress_getchoice=%d\n\n",c);
               toggle(selected=c);
               //printf("selected=%d\n",c);
             }
@@ -565,11 +613,6 @@ int main(int argc, char *argv[])
           }
           break;
         case ButtonRelease:
-          if(event.xbutton.button==Button3 && selected) {
-            if(depressed) {
-              endchoice();
-            }
-          }
           if(event.xbutton.button==Button1 && selected) {
             if(depressed) {
               endchoice();
