@@ -47,11 +47,15 @@ static const char FastQuit_txt[]="FastQuit:";
 static const char SizeBorder_txt[]="SizeBorder:";
 static const char IconPalette_txt[]="IconPalette:";
 static const char IconDir_txt[]="IconDir:";
+static const char CustomIconsOnly_txt[]="CustomIconsOnly:";
+static const char ShortLabelIcons_txt[]="ShortLabelIcons:";
+static char choice_txt[]="yes";
+
 
 XContext client_context, screen_context, icon_context;
 
 static int selected=0, depressed=0, stractive=1;
-static Window button[3];
+static Window button[4];
 static const char *buttxt[]={ NULL, ok_txt, cancel_txt };
 
 char cmdline[MAX_CMD_CHARS+1];
@@ -66,7 +70,7 @@ Display *dpy;
 
 struct DrawInfo dri;
 
-Window root, mainwin, strwin;
+Window root, mainwin, strwin, fastq, cionly, slicon;
 GC gc;
 
 /** width and height of input field borders */
@@ -115,6 +119,7 @@ void refresh_button(Window w, const char *txt, int idx)
   XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
   XDrawPoint(dpy, w, gc, butw-1, 0);
   XDrawPoint(dpy, w, gc, 0, h-1);
+  printf("refresh_idx=%d\n",idx);
 }
 
 /** refresh window background */
@@ -137,6 +142,13 @@ void refresh_main(void)
 
   w=XmbTextEscapement(dri.dri_FontSet, IconDir_txt, strlen(IconDir_txt));
   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 20, 120, IconDir_txt, strlen(IconDir_txt));
+
+  w=XmbTextEscapement(dri.dri_FontSet, CustomIconsOnly_txt, strlen(CustomIconsOnly_txt));
+  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 20, 150, CustomIconsOnly_txt, strlen(CustomIconsOnly_txt));
+
+  w=XmbTextEscapement(dri.dri_FontSet, ShortLabelIcons_txt, strlen(ShortLabelIcons_txt));
+  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 20, 180, ShortLabelIcons_txt, strlen(ShortLabelIcons_txt));
+
 }
 
 /** refresh text string in input field (typing) */
@@ -316,7 +328,7 @@ void strkey(XKeyEvent *e)
   refresh_str_text();
 }
 
-/** no use at all ? */
+/** what is this for */
 void strbutton(XButtonEvent *e)
 {
 
@@ -341,6 +353,16 @@ void strbutton(XButtonEvent *e)
 }
 
 void toggle(int c)
+{
+  XSetWindowBackground(dpy, button[c],
+                       dri.dri_Pens[(depressed&&c==selected)?
+                       FILLPEN:BACKGROUNDPEN]);
+  XClearWindow(dpy, button[c]);
+  refresh_button(button[c], buttxt[c], c);
+  //printf("toggle = %d\n\n",c);
+}
+
+void toggle_choice(int c)
 {
   XSetWindowBackground(dpy, button[c],
                        dri.dri_Pens[(depressed&&c==selected)?
@@ -375,7 +397,7 @@ int main(int argc, char *argv[])
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
-  Window ok, cancel;
+  Window b_fastq, b_ok, b_cancel;
   int w2, c;
   char *p;
   //setlocale(LC_CTYPE, "");
@@ -413,30 +435,32 @@ int main(int argc, char *argv[])
   mainwin=XCreateSimpleWindow(dpy, root, mainx, mainy, mainw, 300, 1,
 			      dri.dri_Pens[SHADOWPEN],
 			      dri.dri_Pens[BACKGROUNDPEN]);
-  strwin=XCreateSimpleWindow(dpy, mainwin, mainw-BUT_SIDE-strgadw,
-			     TOP_SPACE+fh+INT_SPACE-3,
+  strwin=XCreateSimpleWindow(dpy, mainwin, 150, 105,
 			     strgadw, strgadh, 0,
 			     dri.dri_Pens[SHADOWPEN],
 			     dri.dri_Pens[BACKGROUNDPEN]);
-  ok=XCreateSimpleWindow(dpy, mainwin, BUT_SIDE,
+  b_fastq=XCreateSimpleWindow(dpy, mainwin, 150,20,butw, fh+2*BUT_VSPACE, 0,
+      dri.dri_Pens[SHADOWPEN],
+      dri.dri_Pens[BACKGROUNDPEN]);
+  b_ok=XCreateSimpleWindow(dpy, mainwin, BUT_SIDE,
 			 mainh-BOT_SPACE-2*BUT_VSPACE-fh,
 			 butw, fh+2*BUT_VSPACE, 0,
 			 dri.dri_Pens[SHADOWPEN],
 			 dri.dri_Pens[BACKGROUNDPEN]);
-  cancel=XCreateSimpleWindow(dpy, mainwin, mainw-butw-BUT_SIDE,
+  b_cancel=XCreateSimpleWindow(dpy, mainwin, mainw-butw-BUT_SIDE,
 			     mainh-BOT_SPACE-2*BUT_VSPACE-fh,
 			     butw, fh+2*BUT_VSPACE, 0,
 			     dri.dri_Pens[SHADOWPEN],
 			     dri.dri_Pens[BACKGROUNDPEN]);
   button[0]=None;
-  button[1]=ok;
-  button[2]=cancel;
+  button[1]=b_ok;
+  button[2]=b_cancel;
+  button[3]=b_fastq;
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   XSelectInput(dpy, strwin, ExposureMask|StructureNotifyMask|ButtonPressMask);
-  XSelectInput(dpy, ok, ExposureMask|StructureNotifyMask|ButtonPressMask|ButtonReleaseMask|
-		 EnterWindowMask|LeaveWindowMask);
-  XSelectInput(dpy, cancel, ExposureMask|StructureNotifyMask|ButtonPressMask|ButtonReleaseMask|
-		 EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_fastq, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_ok, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  XSelectInput(dpy, b_cancel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -472,7 +496,6 @@ int main(int argc, char *argv[])
                   &size_hints, NULL, NULL);
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
-  int bleh = 0;
 
   for(;;) {
     XEvent event;
@@ -490,30 +513,33 @@ int main(int argc, char *argv[])
             else if(event.xexpose.window == strwin) {
               refresh_str();
             }
-            else if(event.xexpose.window == ok) {
-              refresh_button(ok, ok_txt, 1);
+            else if(event.xexpose.window == b_fastq) {
+              refresh_button(b_fastq, FastQuit_txt, 3);
             }
-            else if(event.xexpose.window == cancel) {
-              refresh_button(cancel, cancel_txt, 2);
+            else if(event.xexpose.window == b_ok) {
+              refresh_button(b_ok, ok_txt, 1);
+            }
+            else if(event.xexpose.window == b_cancel) {
+              refresh_button(b_cancel, cancel_txt, 2);
             }
           }
         case ConfigureNotify:
           if(event.xconfigure.window == mainwin) {
-            //XMoveWindow(dpy, );
-            XMoveWindow(dpy, ok, 10, event.xconfigure.height - 20);
-            XMoveWindow(dpy, cancel, event.xconfigure.width - 65, event.xconfigure.height - 20);
-
-            //printf("notify event %d, winh=%d \n", bleh+=1, event.xconfigure.height );
+            // make save and cancel button to stay at bottom of window when it gets resized
+            XMoveWindow(dpy, b_ok, 10, event.xconfigure.height - 20);
+            XMoveWindow(dpy, b_cancel, event.xconfigure.width - 65, event.xconfigure.height - 20);
           }
           break;
         case LeaveNotify:
+          //printf("leavenotify=%d\n\n",c);
           if(depressed &&
-            event.xcrossing.window==button[selected]) {
+            event.xcrossing.window==button[c]) {
             depressed=0;
             toggle(selected);
           }
           break;
         case EnterNotify:
+          //printf("enternotify=%d\n\n",c);
           if((!depressed) && selected &&
             event.xcrossing.window==button[selected]) {
             depressed=1;
@@ -530,13 +556,20 @@ int main(int argc, char *argv[])
               abortchoice();
               depressed=1;
               toggle(selected=c);
+              //printf("selected=%d\n",c);
             }
             else if(event.xbutton.window==strwin) {
               strbutton(&event.xbutton);
             }
+
           }
           break;
         case ButtonRelease:
+          if(event.xbutton.button==Button3 && selected) {
+            if(depressed) {
+              endchoice();
+            }
+          }
           if(event.xbutton.button==Button1 && selected) {
             if(depressed) {
               endchoice();
