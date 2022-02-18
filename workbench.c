@@ -21,6 +21,8 @@
 #endif
 
 #include "drawinfo.h"
+#include <dirent.h>
+#include <sys/stat.h>
 
 #ifdef AMIGAOS
 #include <pragmas/xlib_pragmas.h>
@@ -116,8 +118,48 @@ void endchoice()
 {
 }
 
+int is_regular_file(const char *path)
+{
+  struct stat path_stat;
+  stat(path, &path_stat);
+  return S_ISREG(path_stat.st_mode);
+}
+
+void readpath (const char *path) {
+  // read path, check whether file or dir
+//   DIR *d;
+//   struct dirent *dir;
+//   d = opendir(path);
+//   if (d) {
+//     while ((dir = readdir(d)) != NULL) {
+//       if (is_regular_file(dir->d_name))
+//         printf("DIRECTORY = %s\n", dir->d_name);
+//       else
+//         printf("FILE = %s\n", dir->d_name);
+//     }
+//
+//   }
+//   closedir(d);
+}
+
 int main(int argc, char *argv[])
 {
+
+  //readpath("/home/klaus/Downloads/");
+  // read path, check whether file or dir
+  DIR *d;
+  struct dirent *dir;
+  d = opendir("/home/klaus/Downloads");
+  if (d) {
+    while ((dir = readdir(d)) != NULL) {
+      if (is_regular_file(dir->d_name))
+        printf("DIRECTORY = %s\n", dir->d_name);
+      else
+        printf("FILE = %s\n", dir->d_name);
+    }
+    closedir(d);
+  }
+
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
