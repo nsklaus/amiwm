@@ -505,18 +505,13 @@ struct DiskObject *GetDefDiskObject(LONG def_type)
 
   if(def_type<WBDISK || def_type>WBAPPICON)
     return NULL;
-  if(!icondir)
-    if(!(icondir = get_current_icondir()))
-      return NULL;
-    else
+//   if(!icondir)
+//     if(!(icondir = get_current_icondir()))
+//       return NULL;
+//     else
+      icondir = "/usr/local/lib/amiwm/icons";
       l = strlen(icondir);
-
-#ifdef HAVE_ALLOCA
   buf = alloca(l+18);
-#else
-  buf = malloc(l+18);
-  if(buf==NULL) return NULL;
-#endif
   sprintf(buf, "%s/def_%s.info", icondir, defnames[def_type-WBDISK]);
   diskobj=int_load_do(buf);
 #ifndef HAVE_ALLOCA
@@ -528,12 +523,7 @@ struct DiskObject *GetDefDiskObject(LONG def_type)
 struct DiskObject *GetDiskObject(char *name)
 {
   struct DiskObject *diskobj;
-#ifdef HAVE_ALLOCA
   char *buf = alloca(strlen(name)+6);
-#else
-  char *buf = malloc(strlen(name)+6);
-  if(buf==NULL) return NULL;
-#endif
   sprintf(buf, "%s.info", name);
   diskobj=int_load_do(buf);
 #ifndef HAVE_ALLOCA
