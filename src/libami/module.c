@@ -159,7 +159,7 @@ int md_command(XID id, int cmd, void *data, int data_len, char **buffer)
   if(md_write(&mcmd, sizeof(mcmd))!=sizeof(mcmd) ||
      md_write(data, data_len)!=data_len ||
      md_read(&res, sizeof(res))!=sizeof(res))
-    //return -1;
+    return -1;
 
   while(res<-1) {
     md_get_async(~res);

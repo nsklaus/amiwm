@@ -99,8 +99,8 @@ Pixmap image_to_pixmap(Display *dpy, Window win, GC gc, unsigned long bg,
 	  b<<=1;
 	}
 
-	//XPutPixel(ximg, x, y, iconcolor[v&iconcolormask]);
-	XPutPixel(ximg, x, y, 0+x);
+//	XPutPixel(ximg, x, y, iconcolor[v&iconcolormask]);
+ 	XPutPixel(ximg, x, y, 0);
 //   printf("iconcolor=%lu\n",iconcolor[v&iconcolormask]);
 //   fflush(stdout);
       }
