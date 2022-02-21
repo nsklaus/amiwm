@@ -12,7 +12,11 @@ typedef struct _Icon {
   struct module *module;
   Window parent, window, labelwin, innerwin;
   Pixmap iconpm, secondpm, maskpm;
+#ifdef USE_FONTSETS
   char *label;
+#else
+  XTextProperty label;
+#endif
   int x, y, width, height;
   int labelwidth;
   int selected, mapped;

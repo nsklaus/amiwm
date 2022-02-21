@@ -19,19 +19,52 @@ struct launcher {
   char cmdline[1];
 };
 
+#ifdef AMIGAOS
 void spawn(const char *cmd)
 {
-  char *line=alloca(strlen(cmd)+4);
-  sprintf(line, "%s &", cmd);
-  system(line);
-  //free(line);
+  char *line=malloc(strlen(cmd)+12);
+  if(line) {
+    sprintf(line, "RUN <>NIL: %s", cmd);
+    system(line);
+    free(line);
+  }
 }
+#else
+void spawn(const char *cmd)
+{
+#ifdef HAVE_ALLOCA
+  char *line=alloca(strlen(cmd)+4);
+#else
+  char *line=malloc(strlen(cmd)+4);
+  if(line) {
+#endif
+  sprintf(line, "%s &", cmd);
+#ifdef __ultrix
+  {
+    int pid, status;
+    if ((pid = fork ()) == 0) {
+      (void) setsid();
+      execl ("/bin/sh", "sh", "-c", line, 0);
+    } else
+      waitpid (pid, &status, 0);
+  }
+#else
+  system(line);
+#endif
+#ifndef HAVE_ALLOCA
+    free(line);
+  }
+#endif
+}
+#endif
 
 static void broker_cb(XEvent *evt, unsigned long mask)
 {
   XPointer ret;
+
   if(evt->type != ClientMessage || evt->xclient.message_type != appiconmsg)
     return;
+
   if(!XFindContext(dpy, evt->xclient.window, launchercontext, &ret)) {
     struct launcher *l = (struct launcher*)ret;
     spawn(l->cmdline);
@@ -59,11 +92,20 @@ static void create_launcher(char *label, char *icon, char *cmdline)
   strcpy(l->cmdline, cmdline);
 
   if (icon != NULL && *icon != 0) {
-
+#ifdef AMIGAOS
+    char fn[256];
+    strncpy(fn, icondir, sizeof(fn)-1);
+    fn[sizeof(fn)-1]='\0';
+    AddPart(fn,icon,sizeof(fn));
+#else
     int rl=strlen(icon)+strlen(icondir)+2;
+#ifdef HAVE_ALLOCA
     char *fn=alloca(rl);
+#else
+    char fn[1024];
+#endif
     sprintf(fn, "%s/%s", icondir, icon);
-
+#endif
     fn[strlen(fn)-5]=0;
     icon_do = GetDiskObject(fn);
   }

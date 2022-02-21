@@ -98,11 +98,7 @@ Pixmap image_to_pixmap(Display *dpy, Window win, GC gc, unsigned long bg,
 	      v|=b;
 	  b<<=1;
 	}
-
-//	XPutPixel(ximg, x, y, iconcolor[v&iconcolormask]);
- 	XPutPixel(ximg, x, y, 0);
-//   printf("iconcolor=%lu\n",iconcolor[v&iconcolormask]);
-//   fflush(stdout);
+	XPutPixel(ximg, x, y, iconcolor[v&iconcolormask]);
       }
   if((pm=(fail?None:XCreatePixmap(dpy, win, width, height, attr.depth)))) {
     XSetForeground(dpy, gc, bg);

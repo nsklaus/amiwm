@@ -11,11 +11,17 @@ Window md_create_appicon(Window p, int x, int y, char *name,
   char *data;
   Window w;
   int res, l=strlen(name);
+#ifdef HAVE_ALLOCA
   struct NewAppIcon *nai=alloca(sizeof(struct NewAppIcon)+l);
+#else
+  struct NewAppIcon *nai=malloc(sizeof(struct NewAppIcon)+l);
+  if(nai==NULL) return None;
+#endif
   nai->x=x; nai->y=y;
   nai->pm1=pm1; nai->pm2=pm2; nai->pmm=pmm;
   strcpy(nai->name, name);
-  res=md_command(p, MCMD_CREATEAPPICON, nai, sizeof(struct NewAppIcon)+l, &data);
+  res=md_command(p, MCMD_CREATEAPPICON, nai, sizeof(struct NewAppIcon)+l,
+		 &data);
   if(res<sizeof(w)) {
     if(data) free(data);
 #ifndef HAVE_ALLOCA
@@ -41,19 +47,15 @@ Pixmap md_image_to_pixmap(Window w, unsigned long bgcolor, struct Image *i,
   static unsigned long *iconcolor = NULL;
   if(gc == None && w != None)
     gc = XCreateGC(dpy, w, 0, NULL);
-  /*
   if(iconcolor == NULL) {
     char *p;
     int res = md_command(w, MCMD_GETICONPALETTE, NULL, 0, &p);
-//     if(res<0)
-//       return None;
+    if(res<0)
+      return None;
     iconcolor = (unsigned long *)(void *)p;
     iconcolormask = (res/sizeof(unsigned long))-1;
   }
-  */
-/*  pm = image_to_pixmap(md_display(), w, gc, bgcolor, iconcolor, iconcolormask,
-                       i, width, height, cs);   */
-  pm = image_to_pixmap(md_display(), w, gc, bgcolor, 0, 0,
+  pm = image_to_pixmap(md_display(), w, gc, bgcolor, iconcolor, iconcolormask,
 		       i, width, height, cs);
   return pm;
 }
@@ -62,9 +64,8 @@ char *get_current_icondir()
 {
   char *p;
   if(md_command(None, MCMD_GETICONDIR, NULL, 0, &p)>=0 && p)
-   return "/usr/local/lib/amiwm/icons/";
+    return p;
   if(p) free(p);
   return NULL;
-  //return "/usr/local/lib/amiwm/icons";
 }
 
