@@ -95,6 +95,9 @@ int main(int argc, char *argv[])
                              dri.dri_Pens[SHADOWPEN],
                              dri.dri_Pens[BACKGROUNDPEN]);
 
+
+  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+  XSelectInput(dpy, win, ExposureMask|StructureNotifyMask|ButtonPressMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -147,15 +150,12 @@ int main(int argc, char *argv[])
 
   int width = icon_do->do_Gadget.Width;
   int height = icon_do->do_Gadget.Height;
+  struct Image * img = icon_do->do_Gadget.GadgetRender;
+  unsigned long bgcolor = dri.dri_Pens[BACKGROUNDPEN];
   icon_icon2 =
-  image_to_pixmap(dpy,win,gc,dri.dri_Pens[BACKGROUNDPEN], 0, 0,
-                  (struct Image *)icon_do->do_Gadget.GadgetRender,
-                  icon_do->do_Gadget.Width, icon_do->do_Gadget.Height,
-                  &l->colorstore1);
+  image_to_pixmap(dpy,win,gc,bgcolor, 0, 0, img, width, height, &l->colorstore1);
 
   XSetWindowBackgroundPixmap(dpy,win,icon_icon2);
-  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
-  XSelectInput(dpy, win, ExposureMask|StructureNotifyMask|ButtonPressMask);
   //XSetWindowBackgroundPixmap(dpy, mainwin, icon_icon1);
   //win = md_create_appicon(mainwin, 0, 0, "grmbl", icon_icon1, icon_icon1, None);
   //XSaveContext(dpy, mainwin, wbcontext, (XPointer)l);
@@ -172,41 +172,27 @@ int main(int argc, char *argv[])
     if(!XFilterEvent(&event, mainwin)) {
       switch(event.type) {
         case Expose:
-          if (event.xany.window == mainwin)
-            printf("\nbleh\n");
           if(!event.xexpose.count) {
             if(event.xexpose.window == mainwin) {
-              //printf("\nexpose mainwin\n");
+              printf("\n mainwin: expose event\n");
               //refresh_main();
             }
-            else if(event.xexpose.window == mainwin)
-              //printf("\nexpose win\n");
-              continue;
+            else if(event.xexpose.window == win)
+              printf("\n win: expose event \n");
           }
         case LeaveNotify:
           if (event.xcrossing.window==win)
-            //printf("\n win: leave notify\n");
+            printf("\n win: leave notify event\n");
           break;
         case EnterNotify:
           if (event.xcrossing.window==win)
-            //printf("\n win: enter notify\n");
+            printf("\n win: enter notify event\n");
           break;
         case ButtonPress:
           break;
         case ButtonRelease:
           break;
         case KeyPress:
-          break;
-      }
-    }
-    if(!XFilterEvent(&event, win)) {
-      switch(event.type) {
-        case LeaveNotify:
-          break;
-        case EnterNotify:
-//           if((!depressed) && selected &&
-//             event.xcrossing.window==button[selected]) {}
-          //printf("\nenter notify\n");
           break;
       }
     }
