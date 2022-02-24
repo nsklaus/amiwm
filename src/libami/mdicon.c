@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "libami.h"
@@ -11,17 +12,15 @@ Window md_create_appicon(Window p, int x, int y, char *name,
   char *data;
   Window w;
   int res, l=strlen(name);
-#ifdef HAVE_ALLOCA
   struct NewAppIcon *nai=alloca(sizeof(struct NewAppIcon)+l);
-#else
-  struct NewAppIcon *nai=malloc(sizeof(struct NewAppIcon)+l);
-  if(nai==NULL) return None;
-#endif
   nai->x=x; nai->y=y;
   nai->pm1=pm1; nai->pm2=pm2; nai->pmm=pmm;
   strcpy(nai->name, name);
-  res=md_command(p, MCMD_CREATEAPPICON, nai, sizeof(struct NewAppIcon)+l,
-		 &data);
+
+  // wb_win_icon: step in md_command .. follow segfault
+  res=md_command(p, MCMD_CREATEAPPICON, nai, sizeof(struct NewAppIcon)+l, &data);
+
+  printf("\n mdicon.c_md_create_appicon: res=%d\n", res); //usualy, res=8
   if(res<sizeof(w)) {
     if(data) free(data);
 #ifndef HAVE_ALLOCA

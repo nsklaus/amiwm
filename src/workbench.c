@@ -22,6 +22,7 @@
 
 #include "drawinfo.h"
 #include <dirent.h>
+#include "libami.h"
 #include <sys/stat.h>
 
 #ifdef AMIGAOS
@@ -41,7 +42,10 @@ extern struct Library *XLibBase;
 #define BUT_HSPACE 8
 
 static int selected=0, depressed=0, stractive=1;
-
+struct launcher {
+  struct ColorStore colorstore1, colorstore2;
+  char cmdline[1];
+};
 char cmdline[MAX_CMD_CHARS+1];
 int buf_len=0;
 int cur_pos=0;
@@ -118,47 +122,23 @@ void endchoice()
 {
 }
 
-int is_regular_file(const char *path)
-{
-  struct stat path_stat;
-  stat(path, &path_stat);
-  return S_ISREG(path_stat.st_mode);
-}
-
-void readpath (const char *path) {
-  // read path, check whether file or dir
-//   DIR *d;
-//   struct dirent *dir;
-//   d = opendir(path);
-//   if (d) {
-//     while ((dir = readdir(d)) != NULL) {
-//       if (is_regular_file(dir->d_name))
-//         printf("DIRECTORY = %s\n", dir->d_name);
-//       else
-//         printf("FILE = %s\n", dir->d_name);
-//     }
-//
-//   }
-//   closedir(d);
-}
-
 int main(int argc, char *argv[])
 {
+  DIR *dirp;
+  struct dirent *dp;
 
-  //readpath("/home/klaus/Downloads/");
-  // read path, check whether file or dir
-  DIR *d;
-  struct dirent *dir;
-  d = opendir("/home/klaus/Downloads");
-  if (d) {
-    while ((dir = readdir(d)) != NULL) {
-      if (is_regular_file(dir->d_name))
-        printf("DIRECTORY = %s\n", dir->d_name);
-      else
-        printf("FILE = %s\n", dir->d_name);
-    }
-    closedir(d);
+  dirp = opendir("/home/klaus/Downloads/");
+  while ((dp = readdir(dirp)) != NULL)
+  {
+    if (dp->d_type & DT_DIR)
+    {
+      /* exclude common system entries and (semi)hidden names */
+      if (dp->d_name[0] != '.')
+        printf ("DIRECTORY: %s\n", dp->d_name);
+    } else
+      printf ("FILE: %s\n", dp->d_name);
   }
+  closedir(dirp);
 
   XWindowAttributes attr;
   static XSizeHints size_hints;
@@ -200,6 +180,44 @@ int main(int argc, char *argv[])
                   &size_hints, NULL, NULL);
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
+
+
+  struct DiskObject *icon_do = NULL;
+  Pixmap icon_icon1, icon_icon2;
+  Window win;
+  XContext launchercontext;
+  launchercontext = XUniqueContext();
+  char *icondir="/usr/local/lib/amiwm/icons";
+  char *icon="harddisk.info";
+  char *label="workbench";
+
+  // begin -- display icon in wb window
+  struct launcher *l = malloc(sizeof(struct launcher)+strlen(cmdline));
+  memset(l, 0, sizeof(*l));
+  strcpy(l->cmdline, cmdline);
+
+  if (icon != NULL && *icon != 0) {
+    int rl=strlen(icon)+strlen(icondir)+2;
+    char *fn=alloca(rl);
+    sprintf(fn, "%s/%s", icondir, icon);
+    fn[strlen(fn)-5]=0;
+    printf("fn=%s\n",fn);
+    icon_do = GetDiskObject(fn);
+  }
+  icon_icon2 =
+  md_image_to_pixmap(mainwin, dri.dri_Pens[BACKGROUNDPEN],
+                     (struct Image *)icon_do->do_Gadget.SelectRender,
+                     icon_do->do_Gadget.Width, icon_do->do_Gadget.Height,
+                     &l->colorstore2);
+
+  FreeDiskObject(icon_do);
+  XSync(dpy, False);
+  // wb_win_icon: step in md_create_appicon .. follow segfault
+  win = md_create_appicon(mainwin, 0x80000000, 0x80000000,
+                          label, icon_icon2, icon_icon2, None);
+  XSaveContext(dpy, win, launchercontext, (XPointer)l);
+  // end -- display icon in wb window
+
   for(;;) {
     XEvent event;
     XNextEvent(dpy, &event);

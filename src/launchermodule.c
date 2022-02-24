@@ -78,6 +78,8 @@ static void create_broker()
 
 static void create_launcher(char *label, char *icon, char *cmdline)
 {
+
+  printf("create_launcher: label=%s icon=%s\n",label,icon);
   struct DiskObject *icon_do = NULL;
   Pixmap icon_icon1, icon_icon2;
   Window win;
@@ -92,21 +94,12 @@ static void create_launcher(char *label, char *icon, char *cmdline)
   strcpy(l->cmdline, cmdline);
 
   if (icon != NULL && *icon != 0) {
-#ifdef AMIGAOS
-    char fn[256];
-    strncpy(fn, icondir, sizeof(fn)-1);
-    fn[sizeof(fn)-1]='\0';
-    AddPart(fn,icon,sizeof(fn));
-#else
+    printf("\ncreate_launcher: icondir=%s\n",icondir);
     int rl=strlen(icon)+strlen(icondir)+2;
-#ifdef HAVE_ALLOCA
     char *fn=alloca(rl);
-#else
-    char fn[1024];
-#endif
     sprintf(fn, "%s/%s", icondir, icon);
-#endif
     fn[strlen(fn)-5]=0;
+    printf("fn=%s\n",fn);
     icon_do = GetDiskObject(fn);
   }
 
@@ -201,6 +194,7 @@ static void create_appicons_line(char *arg, int len, int lineno)
   l = skip_ws(arg, len);
   arg += l; len -= l;
   if (len) fprintf(stderr, "%s: junk at end of line %d\n", progname, lineno);
+  //printf("create_appicons_line:  label=%s icon=%s cmdline=%s\n",label, icon, cmdline);
   create_launcher(label, icon, cmdline);
   free(cmdline);
   free(icon);
@@ -231,6 +225,17 @@ static void setup()
 
 int main(int argc, char *argv[])
 {
+//  sample output
+//   argc=5 argv[0]=Launcher
+//   argc=5 argv[1]=5
+//   argc=5 argv[2]=10
+//   argc=5 argv[3]=0x00200006
+//   argc=5 argv[4]=(Computer) (harddisk.info) (dolphin)
+
+  printf("\n");
+  for (int i=0;i<argc;i++){
+    printf("argc=%d argv[%d]=%s\n",argc,i,argv[i]);
+  }
   char *arg=md_init(argc, argv);
   progname=argv[0];
 

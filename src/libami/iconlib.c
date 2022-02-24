@@ -528,17 +528,10 @@ struct DiskObject *GetDefDiskObject(LONG def_type)
 struct DiskObject *GetDiskObject(char *name)
 {
   struct DiskObject *diskobj;
-#ifdef HAVE_ALLOCA
   char *buf = alloca(strlen(name)+6);
-#else
-  char *buf = malloc(strlen(name)+6);
-  if(buf==NULL) return NULL;
-#endif
   sprintf(buf, "%s.info", name);
+  printf("iconlib:528_getdiskobject(buf): buf=%s\n",buf);
   diskobj=int_load_do(buf);
-#ifndef HAVE_ALLOCA
-  free(buf);
-#endif
   return diskobj;
 }
 

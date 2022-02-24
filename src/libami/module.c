@@ -156,6 +156,7 @@ int md_command(XID id, int cmd, void *data, int data_len, char **buffer)
   mcmd.cmd = cmd;
   mcmd.len = data_len;
 
+  // wb_win_icon: return -1 immediately instead of continuing
   if(md_write(&mcmd, sizeof(mcmd))!=sizeof(mcmd) ||
      md_write(data, data_len)!=data_len ||
      md_read(&res, sizeof(res))!=sizeof(res))
