@@ -3,12 +3,8 @@
 #include <X11/Xmd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
-#endif
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 #include <string.h>
 
 #include "alloc.h"
@@ -16,11 +12,6 @@
 #include "prefs.h"
 #include "screen.h"
 #include "libami.h"
-
-#ifdef AMIGAOS
-#include <pragmas/xlib_pragmas.h>
-extern struct Library *XLibBase;
-#endif
 
 extern Display *dpy;
 extern char *progname;
@@ -56,20 +47,9 @@ Pixmap image_to_pixmap_scr(Scrn *scr, struct Image *im, int width, int height,
 void load_do(const char *filename, struct IconPixmaps *ip)
 {
   struct DiskObject *dobj;
-#ifdef AMIGAOS
-  char fn[256];
-  strncpy(fn, prefs.icondir, sizeof(fn)-1);
-  fn[sizeof(fn)-1]='\0';
-  AddPart(fn,filename,sizeof(fn));
-#else
-  int rl=strlen(filename)+strlen(prefs.icondir)+2;
-#ifdef HAVE_ALLOCA
+  int rl=strlen(filename)+strlen(prefs.icondir)+2; 
   char *fn=alloca(rl);
-#else
-  char fn[1024];
-#endif
   sprintf(fn, "%s/%s", prefs.icondir, filename);
-#endif
   fn[strlen(fn)-5]=0;
   if((dobj=GetDiskObject(fn))) {
     ip->pm=image_to_pixmap_scr(scr, (struct Image *)dobj->do_Gadget.GadgetRender,

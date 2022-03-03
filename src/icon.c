@@ -53,22 +53,20 @@ void redrawicon(Icon *i, Window w)
       unsigned int w, h, bw, d;
       XGetGeometry(dpy, pm, &r, &x, &y, &w, &h, &bw, &d);
       if(i->maskpm) {
-	xgc.clip_mask = i->maskpm;
-	xgc.clip_x_origin = xgc.clip_y_origin = 4;
-	XChangeGC(dpy, scr->gc, GCClipXOrigin|GCClipYOrigin|GCClipMask, &xgc);
+        xgc.clip_mask = i->maskpm;
+        xgc.clip_x_origin = xgc.clip_y_origin = 4;
+        XChangeGC(dpy, scr->gc, GCClipXOrigin|GCClipYOrigin|GCClipMask, &xgc);
       }
       if(d!=scr->depth) {
-	XSetForeground(dpy, scr->gc, scr->dri.dri_Pens[SHADOWPEN]);
-	XSetBackground(dpy, scr->gc, scr->dri.dri_Pens[BACKGROUNDPEN]);
-	XCopyPlane(dpy, pm, i->window, scr->gc, 0, 0,
-		i->width-8, i->height-8, 4, 4, 1);
+        XSetForeground(dpy, scr->gc, scr->dri.dri_Pens[SHADOWPEN]);
+        XSetBackground(dpy, scr->gc, scr->dri.dri_Pens[BACKGROUNDPEN]);
+        XCopyPlane(dpy, pm, i->window, scr->gc, 0, 0, i->width-8, i->height-8, 4, 4, 1);
       }
       else
-	XCopyArea(dpy, pm, i->window, scr->gc, 0, 0,
-		  i->width-8, i->height-8, 4, 4);
+        XCopyArea(dpy, pm, i->window, scr->gc, 0, 0, i->width-8, i->height-8, 4, 4);
       if(i->maskpm) {
-	xgc.clip_mask = None;
-	XChangeGC(dpy, scr->gc, GCClipMask, &xgc);
+          xgc.clip_mask = None;
+          XChangeGC(dpy, scr->gc, GCClipMask, &xgc);
       }
     }
     XSetForeground(dpy, scr->gc, scr->dri.dri_Pens[i->selected? SHADOWPEN:SHINEPEN]);

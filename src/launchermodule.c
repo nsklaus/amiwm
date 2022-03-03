@@ -19,44 +19,12 @@ struct launcher {
   char cmdline[1];
 };
 
-#ifdef AMIGAOS
 void spawn(const char *cmd)
 {
-  char *line=malloc(strlen(cmd)+12);
-  if(line) {
-    sprintf(line, "RUN <>NIL: %s", cmd);
-    system(line);
-    free(line);
-  }
-}
-#else
-void spawn(const char *cmd)
-{
-#ifdef HAVE_ALLOCA
   char *line=alloca(strlen(cmd)+4);
-#else
-  char *line=malloc(strlen(cmd)+4);
-  if(line) {
-#endif
   sprintf(line, "%s &", cmd);
-#ifdef __ultrix
-  {
-    int pid, status;
-    if ((pid = fork ()) == 0) {
-      (void) setsid();
-      execl ("/bin/sh", "sh", "-c", line, 0);
-    } else
-      waitpid (pid, &status, 0);
-  }
-#else
   system(line);
-#endif
-#ifndef HAVE_ALLOCA
-    free(line);
-  }
-#endif
 }
-#endif
 
 static void broker_cb(XEvent *evt, unsigned long mask)
 {
@@ -78,8 +46,6 @@ static void create_broker()
 
 static void create_launcher(char *label, char *icon, char *cmdline)
 {
-
-  printf("create_launcher: label=%s icon=%s\n",label,icon);
   struct DiskObject *icon_do = NULL;
   Pixmap icon_icon1, icon_icon2;
   Window win;
@@ -94,12 +60,10 @@ static void create_launcher(char *label, char *icon, char *cmdline)
   strcpy(l->cmdline, cmdline);
 
   if (icon != NULL && *icon != 0) {
-    printf("\ncreate_launcher: icondir=%s\n",icondir);
     int rl=strlen(icon)+strlen(icondir)+2;
     char *fn=alloca(rl);
     sprintf(fn, "%s/%s", icondir, icon);
     fn[strlen(fn)-5]=0;
-    printf("fn=%s\n",fn);
     icon_do = GetDiskObject(fn);
   }
 
@@ -225,17 +189,6 @@ static void setup()
 
 int main(int argc, char *argv[])
 {
-//  sample output
-//   argc=5 argv[0]=Launcher
-//   argc=5 argv[1]=5
-//   argc=5 argv[2]=10
-//   argc=5 argv[3]=0x00200006
-//   argc=5 argv[4]=(Computer) (harddisk.info) (dolphin)
-
-  printf("\n");
-  for (int i=0;i<argc;i++){
-    printf("argc=%d argv[%d]=%s\n",argc,i,argv[i]);
-  }
   char *arg=md_init(argc, argv);
   progname=argv[0];
 

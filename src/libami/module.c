@@ -171,6 +171,8 @@ int md_command(XID id, int cmd, void *data, int data_len, char **buffer)
     *buffer=malloc(res);
     if(md_read(*buffer, res)!=res)
       return -1;
+    else
+      printf("module.c | md_command: res=%d\n",res);
   }
   return res;
 }

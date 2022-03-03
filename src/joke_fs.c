@@ -2,33 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
+#include <X11/Xutil.h> 
+#include <fcntl.h> 
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
+#include <sys/time.h> 
+#include <sys/select.h> 
+#include <sys/wait.h> 
+#include <unistd.h> 
 
 #include "libami.h"
 #include "drawinfo.h"
+#include "prefs.h"
 
-#ifdef BSD_STYLE_GETTIMEOFDAY
-#define GETTIMEOFDAY(tp) gettimeofday(tp, NULL)
-#else
-#define GETTIMEOFDAY(tp) gettimeofday(tp)
-#endif
+
+//#define GETTIMEOFDAY(tp) gettimeofday(tp)
 
 #define FIXUPTV(tv) { \
     while((tv).tv_usec<0) { (tv).tv_usec+=1000000; (tv).tv_sec--; } \
@@ -334,7 +322,7 @@ int main(int argc, char *argv[])
   activate();
   XSync(dpy, False);
 
-  GETTIMEOFDAY(&nextt);
+  //GETTIMEOFDAY(&nextt);
   for(;;) {
     XEvent event;
     struct timeval t;
@@ -353,7 +341,7 @@ int main(int argc, char *argv[])
     FD_ZERO(&rfd_set);
     FD_SET(x_fd, &rfd_set);
 
-    GETTIMEOFDAY(&t);
+    //GETTIMEOFDAY(&t);
     t.tv_sec = nextt.tv_sec - t.tv_sec;
     t.tv_usec = nextt.tv_usec - t.tv_usec;
     FIXUPTV(t);

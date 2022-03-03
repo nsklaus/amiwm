@@ -24,6 +24,7 @@
 #include <dirent.h>
 #include "libami.h"
 #include <sys/stat.h>
+#include "screen.h"
 
 #ifdef AMIGAOS
 #include <pragmas/xlib_pragmas.h>
@@ -55,7 +56,9 @@ int cur_x=6;
 char *progname;
 
 Display *dpy;
-
+Pixmap pm;
+Icon icon1;
+int width, height;
 struct DrawInfo dri;
 
 Window root, mainwin, strwin;
@@ -89,6 +92,8 @@ void refresh_main(void)
                 TOP_SPACE+dri.dri_Ascent, "some text", strlen("some text"));
 
   XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
+  XCopyArea(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50);
+  //XCopyPlane(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50, 8);
 }
 
 /** refresh text string in input field (typing) */
@@ -124,6 +129,7 @@ void endchoice()
 
 int main(int argc, char *argv[])
 {
+  /*
   DIR *dirp;
   struct dirent *dp;
 
@@ -132,19 +138,20 @@ int main(int argc, char *argv[])
   {
     if (dp->d_type & DT_DIR)
     {
-      /* exclude common system entries and (semi)hidden names */
+      // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.')
         printf ("DIRECTORY: %s\n", dp->d_name);
     } else
       printf ("FILE: %s\n", dp->d_name);
   }
   closedir(dirp);
+  */
+
 
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
-  Window ok, cancel;
-  int w2, c;
+
   char *p;
   progname=argv[0];
   if(!(dpy = XOpenDisplay(NULL))) {
@@ -152,6 +159,8 @@ int main(int argc, char *argv[])
 	    XDisplayName(NULL));
     exit(1);
   }
+  //int scr = DefaultScreen(dpy);
+  //dpy->iconcolor
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
@@ -159,11 +168,7 @@ int main(int argc, char *argv[])
   mainwin=XCreateSimpleWindow(dpy, root, 20, 20, 300, 150, 1,
 			      dri.dri_Pens[SHADOWPEN],
 			      dri.dri_Pens[BACKGROUNDPEN]);
-  strwin=XCreateSimpleWindow(dpy, mainwin, 20,20, 300, 150, 0,
-			     dri.dri_Pens[SHADOWPEN],
-			     dri.dri_Pens[BACKGROUNDPEN]);
   XSelectInput(dpy, mainwin, ExposureMask|KeyPressMask|ButtonPressMask);
-  XSelectInput(dpy, strwin, ExposureMask|StructureNotifyMask|ButtonPressMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -178,18 +183,18 @@ int main(int argc, char *argv[])
                   &txtprop1,
                   &txtprop2, argv, argc,
                   &size_hints, NULL, NULL);
+
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
-
   struct DiskObject *icon_do = NULL;
-  Pixmap icon_icon1, icon_icon2;
-  Window win;
+
   XContext launchercontext;
   launchercontext = XUniqueContext();
   char *icondir="/usr/local/lib/amiwm/icons";
   char *icon="harddisk.info";
-  char *label="workbench";
+
+
 
   // begin -- display icon in wb window
   struct launcher *l = malloc(sizeof(struct launcher)+strlen(cmdline));
@@ -204,78 +209,45 @@ int main(int argc, char *argv[])
     printf("fn=%s\n",fn);
     icon_do = GetDiskObject(fn);
   }
-  icon_icon2 =
-  md_image_to_pixmap(mainwin, dri.dri_Pens[BACKGROUNDPEN],
-                     (struct Image *)icon_do->do_Gadget.SelectRender,
-                     icon_do->do_Gadget.Width, icon_do->do_Gadget.Height,
-                     &l->colorstore2);
 
-  FreeDiskObject(icon_do);
+  width=icon_do->do_Gadget.Width;
+  height=icon_do->do_Gadget.Height;
+  unsigned long *iconcolor;
+  unsigned long bleh = 11184810;
+  iconcolor = &bleh;
+  struct Image *im = icon_do->do_Gadget.GadgetRender;
+  pm = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[SHADOWPEN], iconcolor, 7, im, width, height, &l->colorstore2);
+
+  //icon1=createicon(pm);
+
+  XCopyArea(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50);
+  //XCopyPlane(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50, 1);
+
   XSync(dpy, False);
-  // wb_win_icon: step in md_create_appicon .. follow segfault
-  win = md_create_appicon(mainwin, 0x80000000, 0x80000000,
-                          label, icon_icon2, icon_icon2, None);
-  XSaveContext(dpy, win, launchercontext, (XPointer)l);
+  FreeDiskObject(icon_do);
   // end -- display icon in wb window
 
   for(;;) {
     XEvent event;
     XNextEvent(dpy, &event);
-    //#ifdef USE_FONTSETS
     if(!XFilterEvent(&event, mainwin)) {
-    //#endif
       switch(event.type) {
         case Expose:
           if(!event.xexpose.count) {
             if(event.xexpose.window == mainwin) {
               refresh_main();
             }
-            else if(event.xexpose.window == strwin) {
-              refresh_str();
-            }
           }
         case LeaveNotify:
-          if(depressed &&
-            event.xcrossing.window==button[selected]) {
-            depressed=0;
-            toggle(selected);
-          }
           break;
         case EnterNotify:
-          if((!depressed) && selected &&
-            event.xcrossing.window==button[selected]) {
-            depressed=1;
-            toggle(selected);
-          }
           break;
         case ButtonPress:
-          if(event.xbutton.button==Button1) {
-            if(stractive && event.xbutton.window!=strwin) {
-              stractive=0;
-              refresh_str();
-            }
-            if((c=getchoice(event.xbutton.window))) {
-              abortchoice();
-              depressed=1;
-              toggle(selected=c);
-            }
-            else if(event.xbutton.window==strwin) {
-              strbutton(&event.xbutton);
-            }
-          }
           break;
         case ButtonRelease:
-          if(event.xbutton.button==Button1 && selected) {
-            if(depressed) {
-              endchoice();
-            }
-            else {
-              abortchoice();
-            }
-          }
           break;
         case KeyPress:
-          if(stractive) { strkey(&event.xkey); }
+          break;
       }
     }
   }

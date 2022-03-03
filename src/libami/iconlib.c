@@ -2,13 +2,9 @@
 #include "alloc.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
+#include <string.h> 
+#include <unistd.h> 
+#include <sys/stat.h> 
 
 #ifndef AMIGAOS
 
@@ -43,18 +39,9 @@ char *BumpRevision(char *newbuf, char *oldname)
 BOOL DeleteDiskObject(char *name)
 {
   int res;
-#ifdef HAVE_ALLOCA
   char *infoname=alloca(strlen(name)+8);
-#else
-  char *infoname=malloc(strlen(name)+8);
-  if(infoname==NULL)
-    return FALSE;
-#endif
   sprintf(infoname, "%s.info", name);
   res=unlink(infoname)>=0;
-#ifndef HAVE_ALLOCA
-  free(infoname);
-#endif
   return res;
 }
 
@@ -530,7 +517,6 @@ struct DiskObject *GetDiskObject(char *name)
   struct DiskObject *diskobj;
   char *buf = alloca(strlen(name)+6);
   sprintf(buf, "%s.info", name);
-  printf("iconlib:528_getdiskobject(buf): buf=%s\n",buf);
   diskobj=int_load_do(buf);
   return diskobj;
 }

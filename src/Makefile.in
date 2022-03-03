@@ -69,6 +69,9 @@ diskobject.o : diskobject.c
 filesystem.o : joke_fs.c
 	$(CC) -o $@ -c $(CPPFLAGS) $(ALL_CFLAGS) -DAMIWM_HOME=\"$(AMIWM_HOME)\" $<
 
+workbench.o : workbench.c
+	$(CC) -o $@ -c $(CPPFLAGS) $(ALL_CFLAGS) -DAMIWM_HOME=\"$(AMIWM_HOME)\" $<
+
 ppmtoinfo.o : ppmtoinfo.c
 	$(CC) -c $(CPPFLAGS) $(ALL_CFLAGS) -DAMIWM_HOME=\"$(AMIWM_HOME)\" $<
 
@@ -89,7 +92,7 @@ kbdlexer.c : kbdlexer.l
 	$(LEX) -t $< > kbdlexer.c
 
 install : $(PROGS) $(MODULES) Xsession Xsession2 Xinitrc amiwm-init
-	-mkdir -p $(AMIWM_HOME)
+	-mkdir -p $(AMIWM_HOME)/icons
 	$(INSTALL) $(STRIPFLAG) requestchoice $(AMIWM_HOME)/requestchoice
 	$(INSTALL) $(STRIPFLAG) executecmd $(AMIWM_HOME)/executecmd
 	$(INSTALL) $(STRIPFLAG) setup $(AMIWM_HOME)/setup

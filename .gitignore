@@ -11,6 +11,8 @@ requestchoice
 setup
 Launcher
 Keyboard
+Filesystem
+src/**/*.a
 
 # don't ignore these files
 !.gitignore

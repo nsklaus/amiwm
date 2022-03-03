@@ -25,6 +25,11 @@ struct prefs_struct prefs;
 #define RC_FILENAME ".amiwmrc"
 #endif
 
+#ifndef AMIWM_HOME
+#define AMIWM_HOME "/usr/local/lib/amiwm/"
+#endif
+
+
 FILE *rcfile;
 int ParseError=0;
 
@@ -35,7 +40,7 @@ void read_rc_file(char *filename, int manage_all)
   memset(&prefs, 0, sizeof(prefs));
   prefs.manage_all = manage_all;
   prefs.sizeborder=Psizeright;
-  prefs.icondir=AMIWM_HOME;
+  prefs.icondir=AMIWM_HOME"/icons";
   prefs.module_path=AMIWM_HOME;
   prefs.defaulticon="def_tool.info";
   prefs.borderwidth=1;

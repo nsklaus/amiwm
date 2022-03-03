@@ -572,6 +572,8 @@ ac_cr=`echo X | tr X '\015'`
 # On cygwin, bash can eat \r inside `` if the user requested igncr.
 # But we know of no other shell where ac_cr would be empty at this
 # point, so we can use a bashism as a fallback.
+# S["CFLAGS"]="-g -O2"
+
 if test "x$ac_cr" = x; then
   eval ac_cr=\$\'\\r\'
 fi
@@ -607,14 +609,15 @@ S["LEXLIB"]="-lfl"
 S["LEX_OUTPUT_ROOT"]="lex.yy"
 S["LEX"]="flex"
 S["YFLAGS"]=""
-S["YACC"]="bison -o y.tab.c"
+S["YACC"]="bison -y"
 S["AWK"]="mawk"
 S["OBJEXT"]="o"
 S["EXEEXT"]=""
 S["ac_ct_CC"]="gcc"
 S["CPPFLAGS"]=""
 S["LDFLAGS"]=""
-S["CFLAGS"]="-g -O2"
+S["CFLAGS"]="-g -O0"
+S["XXCFLAGS"]="-g -O0"
 S["CC"]="gcc"
 S["target_alias"]=""
 S["host_alias"]=""
@@ -640,6 +643,7 @@ S["infodir"]="${datarootdir}/info"
 S["docdir"]="${datarootdir}/doc/${PACKAGE}"
 S["oldincludedir"]="/usr/include"
 S["includedir"]="${prefix}/include"
+S["runstatedir"]="${localstatedir}/run"
 S["localstatedir"]="${prefix}/var"
 S["sharedstatedir"]="${prefix}/com"
 S["sysconfdir"]="${prefix}/etc"

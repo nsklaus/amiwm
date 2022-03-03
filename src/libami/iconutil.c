@@ -6,13 +6,9 @@
 #include "drawinfo.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
+#include <string.h> 
+#include <unistd.h> 
+#include <sys/stat.h> 
 
 Pixmap image_to_pixmap(Display *dpy, Window win, GC gc, unsigned long bg,
 		       unsigned long *iconcolor, int iconcolormask,
@@ -41,16 +37,9 @@ Pixmap image_to_pixmap(Display *dpy, Window win, GC gc, unsigned long bg,
     bitmap_pad = 16;
   else
     bitmap_pad = 8;
-  ximg=XCreateImage(dpy, attr.visual, attr.depth, ZPixmap, 0, NULL,
-		    im->Width, im->Height, bitmap_pad, 0);
-#ifndef HAVE_ALLOCA
-  if(!(ximg->data = malloc(ximg->bytes_per_line * im->Height))) {
-    XDestroyImage(ximg);
-    return None;
-  }
-#else
+  ximg=XCreateImage(dpy, attr.visual, attr.depth, ZPixmap, 0, NULL, im->Width, im->Height, bitmap_pad, 0);
   ximg->data = alloca(ximg->bytes_per_line * im->Height);
-#endif
+
   if(im->Depth==-1) {
     int transp, ncolors, flags;
     unsigned char *pal = img + im->Width * im->Height;
@@ -103,12 +92,8 @@ Pixmap image_to_pixmap(Display *dpy, Window win, GC gc, unsigned long bg,
   if((pm=(fail?None:XCreatePixmap(dpy, win, width, height, attr.depth)))) {
     XSetForeground(dpy, gc, bg);
     XFillRectangle(dpy, pm, gc, 0, 0, width, height);
-    XPutImage(dpy, pm, gc, ximg, 0, 0, im->LeftEdge, im->TopEdge,
-	      im->Width, im->Height);
+    XPutImage(dpy, pm, gc, ximg, 0, 0, im->LeftEdge, im->TopEdge, im->Width, im->Height);
   }
-#ifndef HAVE_ALLOCA
-  free(ximg->data);
-#endif
   ximg->data=NULL;
   XDestroyImage(ximg);
   if(pm == None)
