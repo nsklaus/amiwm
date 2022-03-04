@@ -134,6 +134,19 @@ extern int yydebug;
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
+/* Token kinds.  */
+#define YYEMPTY -2
+#define YYEOF 0
+#define YYerror 256
+#define YYUNDEF 257
+#define ERRORTOKEN 258
+#define META 259
+#define MODIFIER 260
+#define WHEREABOUTS 261
+#define COLON 262
+#define BAR 263
+#define KEYSYM 264
+#define FUNCTION 265
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -147,7 +160,7 @@ union YYSTYPE
   struct { unsigned int mods; int meta; } modifiers;
   void (*function)(Window);
 
-#line 151 "y.tab.c"
+#line 164 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1142,47 +1155,47 @@ yyreduce:
   case 4: /* binding: modifiers KEYSYM COLON whereabouts COLON command  */
 #line 41 "kbdmodule.y"
                                                                            { cx_hotkey((yyvsp[-4].keysym), (yyvsp[-5].modifiers).mods, (yyvsp[-5].modifiers).meta, (yyvsp[-2].num), docmd, (void*)(yyvsp[0].function)); }
-#line 1146 "y.tab.c"
+#line 1159 "y.tab.c"
     break;
 
   case 5: /* modifiers: modifiers MODIFIER  */
 #line 44 "kbdmodule.y"
                                              { (yyval.modifiers).mods=(yyvsp[-1].modifiers).mods|(yyvsp[0].num); (yyval.modifiers).meta=(yyvsp[-1].modifiers).meta; }
-#line 1152 "y.tab.c"
+#line 1165 "y.tab.c"
     break;
 
   case 6: /* modifiers: modifiers META  */
 #line 45 "kbdmodule.y"
                                          { (yyval.modifiers).mods=(yyvsp[-1].modifiers).mods; (yyval.modifiers).meta=1; }
-#line 1158 "y.tab.c"
+#line 1171 "y.tab.c"
     break;
 
   case 7: /* modifiers: %empty  */
 #line 46 "kbdmodule.y"
                           { (yyval.modifiers).mods=(yyval.modifiers).meta=0; }
-#line 1164 "y.tab.c"
+#line 1177 "y.tab.c"
     break;
 
   case 8: /* whereabouts: whereabouts BAR whereabouts  */
 #line 49 "kbdmodule.y"
                                                       { (yyval.num)=(yyvsp[-2].num)|(yyvsp[0].num); }
-#line 1170 "y.tab.c"
+#line 1183 "y.tab.c"
     break;
 
   case 9: /* whereabouts: WHEREABOUTS  */
 #line 50 "kbdmodule.y"
                                       { (yyval.num)=(yyvsp[0].num); }
-#line 1176 "y.tab.c"
+#line 1189 "y.tab.c"
     break;
 
   case 10: /* command: FUNCTION  */
 #line 53 "kbdmodule.y"
                                    { (yyval.function)=(yyvsp[0].function); }
-#line 1182 "y.tab.c"
+#line 1195 "y.tab.c"
     break;
 
 
-#line 1186 "y.tab.c"
+#line 1199 "y.tab.c"
 
       default: break;
     }

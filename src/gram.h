@@ -117,6 +117,71 @@ extern int yydebug;
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
+/* Token kinds.  */
+#define YYEMPTY -2
+#define YYEOF 0
+#define YYerror 256
+#define YYUNDEF 257
+#define ERRORTOKEN 258
+#define LEFTBRACE 259
+#define RIGHTBRACE 260
+#define YES 261
+#define NO 262
+#define RIGHT 263
+#define BOTTOM 264
+#define BOTH 265
+#define NONE 266
+#define MAGICWB 267
+#define SYSTEM 268
+#define SCHWARTZ 269
+#define ALWAYS 270
+#define AUTO 271
+#define MANUAL 272
+#define SEPARATOR 273
+#define T_DETAILPEN 274
+#define T_BLOCKPEN 275
+#define T_TEXTPEN 276
+#define T_SHINEPEN 277
+#define T_SHADOWPEN 278
+#define T_FILLPEN 279
+#define T_FILLTEXTPEN 280
+#define T_BACKGROUNDPEN 281
+#define T_HIGHLIGHTTEXTPEN 282
+#define T_BARDETAILPEN 283
+#define T_BARBLOCKPEN 284
+#define T_BARTRIMPEN 285
+#define FASTQUIT 286
+#define SIZEBORDER 287
+#define DEFAULTICON 288
+#define ICONDIR 289
+#define ICONPALETTE 290
+#define SCREENFONT 291
+#define ICONFONT 292
+#define TOOLITEM 293
+#define FORCEMOVE 294
+#define SCREEN 295
+#define MODULE 296
+#define MODULEPATH 297
+#define INTERSCREENGAP 298
+#define AUTORAISE 299
+#define FOCUS 300
+#define FOLLOWMOUSE 301
+#define CLICKTOTYPE 302
+#define SLOPPY 303
+#define CUSTOMICONSONLY 304
+#define TITLEBARCLOCK 305
+#define TITLECLOCKFORMAT 306
+#define OPAQUEMOVE 307
+#define OPAQUERESIZE 308
+#define SCREENMENU 309
+#define STYLE 310
+#define CLASS 311
+#define TITLE 312
+#define ICONTITLE 313
+#define ICON 314
+#define SHORTLABELICONS 315
+#define STRING 316
+#define NUMBER 317
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -127,7 +192,7 @@ union YYSTYPE
     int num;
     char *ptr;
 
-#line 131 "y.tab.h"
+#line 196 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

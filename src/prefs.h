@@ -27,5 +27,6 @@ extern struct prefs_struct {
 #define FOC_CLICKTOTYPE 1
 #define FOC_SLOPPY 2
 #define AMIWM_HOME "/usr/local/lib/amiwm"
+#define AMIWM_ICONS "/usr/local/lib/amiwm/icons"
 
 #endif

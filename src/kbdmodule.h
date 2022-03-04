@@ -65,6 +65,19 @@ extern int yydebug;
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
+/* Token kinds.  */
+#define YYEMPTY -2
+#define YYEOF 0
+#define YYerror 256
+#define YYUNDEF 257
+#define ERRORTOKEN 258
+#define META 259
+#define MODIFIER 260
+#define WHEREABOUTS 261
+#define COLON 262
+#define BAR 263
+#define KEYSYM 264
+#define FUNCTION 265
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -78,7 +91,7 @@ union YYSTYPE
   struct { unsigned int mods; int meta; } modifiers;
   void (*function)(Window);
 
-#line 82 "y.tab.h"
+#line 95 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

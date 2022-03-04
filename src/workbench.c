@@ -57,29 +57,23 @@ int cur_x=6;
 char *progname;
 
 Display *dpy;
-Pixmap pm;
+Pixmap pm1, pm2;
 Icon icon1;
-int width, height;
+int icon_x=10, icon_y=10, icon_width, icon_height;
 struct DrawInfo dri;
 
-Window root, mainwin, strwin;
+typedef struct {
+  char *name;
+  Pixmap pm1;
+  Pixmap mp2;
+} wbicon;
+
+Window root, mainwin;
+int win_x=20, win_y=20, win_width=300, win_height=150;
 GC gc;
 
 int strgadw, strgadh, fh, mainw, mainh, butw;
 static Window button[3];
-
-char *iconcolorname[256];
-int iconcolormask;
-static char *magicwbcolorname[]={
-  "#aaaaaa", "#000000", "#ffffff", "#6688bb",
-  "#999999", "#bbbbbb", "#bbaa99", "#ffbbaa"
-};
-
-void set_mwb_palette()
-{
-  iconcolormask=7;
-  memcpy(iconcolorname, magicwbcolorname, sizeof(magicwbcolorname));
-}
 
 /** get button number/id */
 int getchoice(Window w)
@@ -92,58 +86,24 @@ int getchoice(Window w)
   return 0;
 }
 
-/** refresh buttons in window */
-void refresh_button(Window w, const char *txt, int idx)
-{
-}
-
 /** refresh window background */
 void refresh_main(void)
 {
-  int w;
   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, TEXT_SIDE,
-                TOP_SPACE+dri.dri_Ascent, "some text", strlen("some text"));
+  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icon_x,
+                icon_y+35, "some text", strlen("some text"));
 
   XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
-  XCopyArea(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50);
+  XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
   //XCopyPlane(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50, 8);
 }
 
-/** refresh text string in input field (typing) */
-void refresh_str_text(void)
-{
-}
-
-/** refresh drawing of text field borders */
-void refresh_str(void)
-{
-}
-
-void strkey(XKeyEvent *e)
-{
-}
-
-/** stuff */
-void strbutton(XButtonEvent *e)
-{
-}
-
-void toggle(int c)
-{
-}
-
-void abortchoice()
-{
-}
-
-void endchoice()
-{
-}
 
 int main(int argc, char *argv[])
 {
+
   /*
+  // differentiate between files and directories
   DIR *dirp;
   struct dirent *dp;
 
@@ -161,29 +121,24 @@ int main(int argc, char *argv[])
   closedir(dirp);
   */
 
-
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
-
-  char *p;
   progname=argv[0];
   if(!(dpy = XOpenDisplay(NULL))) {
     fprintf(stderr, "%s: cannot connect to X server %s\n", progname,
 	    XDisplayName(NULL));
     exit(1);
   }
-  //int scr = DefaultScreen(dpy);
-  //dpy->iconcolor
-  //set_mwb_palette();
+
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
 
-  mainwin=XCreateSimpleWindow(dpy, root, 20, 20, 300, 150, 1,
+  mainwin=XCreateSimpleWindow(dpy, root, win_x, win_y, win_width, win_height, 1,
 			      dri.dri_Pens[SHADOWPEN],
 			      dri.dri_Pens[BACKGROUNDPEN]);
-  XSelectInput(dpy, mainwin, ExposureMask|KeyPressMask|ButtonPressMask);
+  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -202,20 +157,10 @@ int main(int argc, char *argv[])
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
-  struct DiskObject *icon_do = NULL;
-
-  XContext launchercontext;
-  launchercontext = XUniqueContext();
-  char *icondir="/usr/local/lib/amiwm/icons";
-  char *icon="harddisk.info";
-
-
-
   // begin -- display icon in wb window
-  //struct launcher *l = malloc(sizeof(struct launcher)+strlen(cmdline));
-  //memset(l, 0, sizeof(*l));
-  //strcpy(l->cmdline, cmdline);
-
+  struct DiskObject *icon_do = NULL;
+  char *icondir="/usr/local/lib/amiwm/icons";
+  char *icon="def_drawer.info";
   if (icon != NULL && *icon != 0) {
     int rl=strlen(icon)+strlen(icondir)+2;
     char *fn=alloca(rl);
@@ -225,19 +170,20 @@ int main(int argc, char *argv[])
     icon_do = GetDiskObject(fn);
   }
 
-  width=icon_do->do_Gadget.Width;
-  height=icon_do->do_Gadget.Height;
+  icon_width=icon_do->do_Gadget.Width;
+  icon_height=icon_do->do_Gadget.Height;
   unsigned long *iconcolor;
-  unsigned long bleh[7] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905 };
+  unsigned long bleh[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
   iconcolor = bleh;
-  struct Image *im = icon_do->do_Gadget.GadgetRender;
-  //printf("colorstore1=%p\n",*iconcolor);
-  pm = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7, im, width, height, &colorstore1);
+  struct Image *im1 = icon_do->do_Gadget.GadgetRender;
+  struct Image *im2 = icon_do->do_Gadget.SelectRender;
 
-  //icon1=createicon(pm);
+  pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
+                        iconcolor, 7, im1, icon_width, icon_height, &colorstore1);
+  pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
+                        iconcolor, 7, im2, icon_width, icon_height, &colorstore2);
 
-  XCopyArea(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50);
-  //XCopyPlane(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50, 1);
+  XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
 
   XSync(dpy, False);
   FreeDiskObject(icon_do);
@@ -267,6 +213,17 @@ int main(int argc, char *argv[])
           printf("release\n");
           break;
         case KeyPress:
+          break;
+        case ConfigureNotify: // resize or move event
+          printf("resize event: x=%d, y=%d, width=%d, height=%d\n",
+                 event.xconfigure.x,
+                 event.xconfigure.y,
+                 event.xconfigure.width,
+                 event.xconfigure.height);
+          win_x=event.xconfigure.x;
+          win_y=event.xconfigure.y;
+          win_width=event.xconfigure.width;
+          win_height=event.xconfigure.height;
           break;
       }
     }

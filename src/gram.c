@@ -222,6 +222,71 @@ extern int yydebug;
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
+/* Token kinds.  */
+#define YYEMPTY -2
+#define YYEOF 0
+#define YYerror 256
+#define YYUNDEF 257
+#define ERRORTOKEN 258
+#define LEFTBRACE 259
+#define RIGHTBRACE 260
+#define YES 261
+#define NO 262
+#define RIGHT 263
+#define BOTTOM 264
+#define BOTH 265
+#define NONE 266
+#define MAGICWB 267
+#define SYSTEM 268
+#define SCHWARTZ 269
+#define ALWAYS 270
+#define AUTO 271
+#define MANUAL 272
+#define SEPARATOR 273
+#define T_DETAILPEN 274
+#define T_BLOCKPEN 275
+#define T_TEXTPEN 276
+#define T_SHINEPEN 277
+#define T_SHADOWPEN 278
+#define T_FILLPEN 279
+#define T_FILLTEXTPEN 280
+#define T_BACKGROUNDPEN 281
+#define T_HIGHLIGHTTEXTPEN 282
+#define T_BARDETAILPEN 283
+#define T_BARBLOCKPEN 284
+#define T_BARTRIMPEN 285
+#define FASTQUIT 286
+#define SIZEBORDER 287
+#define DEFAULTICON 288
+#define ICONDIR 289
+#define ICONPALETTE 290
+#define SCREENFONT 291
+#define ICONFONT 292
+#define TOOLITEM 293
+#define FORCEMOVE 294
+#define SCREEN 295
+#define MODULE 296
+#define MODULEPATH 297
+#define INTERSCREENGAP 298
+#define AUTORAISE 299
+#define FOCUS 300
+#define FOLLOWMOUSE 301
+#define CLICKTOTYPE 302
+#define SLOPPY 303
+#define CUSTOMICONSONLY 304
+#define TITLEBARCLOCK 305
+#define TITLECLOCKFORMAT 306
+#define OPAQUEMOVE 307
+#define OPAQUERESIZE 308
+#define SCREENMENU 309
+#define STYLE 310
+#define CLASS 311
+#define TITLE 312
+#define ICONTITLE 313
+#define ICON 314
+#define SHORTLABELICONS 315
+#define STRING 316
+#define NUMBER 317
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -232,7 +297,7 @@ union YYSTYPE
     int num;
     char *ptr;
 
-#line 236 "y.tab.c"
+#line 301 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -1386,163 +1451,163 @@ yyreduce:
   case 7: /* stmt: toolsubmenu toolitems RIGHTBRACE  */
 #line 90 "gram.y"
                                                    { ti_level=0; }
-#line 1390 "y.tab.c"
+#line 1455 "y.tab.c"
     break;
 
   case 8: /* stmt: FASTQUIT truth  */
 #line 91 "gram.y"
                                  { prefs.fastquit = (yyvsp[0].num); }
-#line 1396 "y.tab.c"
+#line 1461 "y.tab.c"
     break;
 
   case 9: /* stmt: SIZEBORDER sizeborder  */
 #line 92 "gram.y"
                                         { prefs.sizeborder = (yyvsp[0].num); }
-#line 1402 "y.tab.c"
+#line 1467 "y.tab.c"
     break;
 
   case 10: /* stmt: DEFAULTICON string  */
 #line 93 "gram.y"
                                      { prefs.defaulticon = (yyvsp[0].ptr); }
-#line 1408 "y.tab.c"
+#line 1473 "y.tab.c"
     break;
 
   case 11: /* stmt: ICONDIR string  */
 #line 94 "gram.y"
                                  { prefs.icondir = (yyvsp[0].ptr); }
-#line 1414 "y.tab.c"
+#line 1479 "y.tab.c"
     break;
 
   case 12: /* stmt: ICONPALETTE SYSTEM  */
 #line 95 "gram.y"
                                      { set_sys_palette(); }
-#line 1420 "y.tab.c"
+#line 1485 "y.tab.c"
     break;
 
   case 13: /* stmt: ICONPALETTE MAGICWB  */
 #line 96 "gram.y"
                                       { set_mwb_palette(); }
-#line 1426 "y.tab.c"
+#line 1491 "y.tab.c"
     break;
 
   case 14: /* stmt: ICONPALETTE SCHWARTZ  */
 #line 97 "gram.y"
                                        { set_schwartz_palette(); }
-#line 1432 "y.tab.c"
+#line 1497 "y.tab.c"
     break;
 
   case 15: /* stmt: ICONPALETTE STRING  */
 #line 98 "gram.y"
                                      { set_custom_palette((yyvsp[0].ptr)); }
-#line 1438 "y.tab.c"
+#line 1503 "y.tab.c"
     break;
 
   case 16: /* stmt: dri_pen string  */
 #line 99 "gram.y"
                                  { default_colors[(yyvsp[-1].num)] = (yyvsp[0].ptr); }
-#line 1444 "y.tab.c"
+#line 1509 "y.tab.c"
     break;
 
   case 17: /* stmt: SCREENFONT string  */
 #line 100 "gram.y"
                                     { default_screenfont = (yyvsp[0].ptr); }
-#line 1450 "y.tab.c"
+#line 1515 "y.tab.c"
     break;
 
   case 18: /* stmt: ICONFONT string  */
 #line 101 "gram.y"
                                   { label_font_name = (yyvsp[0].ptr); }
-#line 1456 "y.tab.c"
+#line 1521 "y.tab.c"
     break;
 
   case 19: /* stmt: FORCEMOVE forcemove_policy  */
 #line 102 "gram.y"
                                              { prefs.forcemove = (yyvsp[0].num); }
-#line 1462 "y.tab.c"
+#line 1527 "y.tab.c"
     break;
 
   case 20: /* stmt: SCREEN string  */
 #line 103 "gram.y"
                                 { openscreen((yyvsp[0].ptr),DefaultRootWindow(dpy)); }
-#line 1468 "y.tab.c"
+#line 1533 "y.tab.c"
     break;
 
   case 21: /* stmt: SCREEN NUMBER string  */
 #line 104 "gram.y"
                                        { if(((yyvsp[-1].num)==DefaultScreen(dpy)||prefs.manage_all) && (yyvsp[-1].num)<ScreenCount(dpy)) openscreen((yyvsp[0].ptr),RootWindow(dpy,(yyvsp[-1].num))); }
-#line 1474 "y.tab.c"
+#line 1539 "y.tab.c"
     break;
 
   case 22: /* stmt: MODULEPATH string  */
 #line 105 "gram.y"
                                     { prefs.module_path = (yyvsp[0].ptr); }
-#line 1480 "y.tab.c"
+#line 1545 "y.tab.c"
     break;
 
   case 23: /* stmt: MODULE string STRING  */
 #line 106 "gram.y"
                                        { create_module((front? front->upfront:NULL), (yyvsp[-1].ptr), (yyvsp[0].ptr)); }
-#line 1486 "y.tab.c"
+#line 1551 "y.tab.c"
     break;
 
   case 24: /* stmt: MODULE string  */
 #line 107 "gram.y"
                                 { create_module((front? front->upfront:NULL), (yyvsp[0].ptr), NULL); }
-#line 1492 "y.tab.c"
+#line 1557 "y.tab.c"
     break;
 
   case 25: /* stmt: INTERSCREENGAP NUMBER  */
 #line 108 "gram.y"
                                         { prefs.borderwidth=(yyvsp[0].num); }
-#line 1498 "y.tab.c"
+#line 1563 "y.tab.c"
     break;
 
   case 26: /* stmt: AUTORAISE truth  */
 #line 109 "gram.y"
                                   { prefs.autoraise=(yyvsp[0].num); }
-#line 1504 "y.tab.c"
+#line 1569 "y.tab.c"
     break;
 
   case 27: /* stmt: OPAQUEMOVE truth  */
 #line 110 "gram.y"
                                    { prefs.opaquemove=(yyvsp[0].num); }
-#line 1510 "y.tab.c"
+#line 1575 "y.tab.c"
     break;
 
   case 28: /* stmt: OPAQUERESIZE truth  */
 #line 111 "gram.y"
                                      { prefs.opaqueresize=(yyvsp[0].num); }
-#line 1516 "y.tab.c"
+#line 1581 "y.tab.c"
     break;
 
   case 29: /* stmt: FOCUS focuspolicy  */
 #line 112 "gram.y"
                                     { prefs.focus=(yyvsp[0].num); }
-#line 1522 "y.tab.c"
+#line 1587 "y.tab.c"
     break;
 
   case 30: /* stmt: CUSTOMICONSONLY truth  */
 #line 113 "gram.y"
                                         { prefs.customiconsonly = (yyvsp[0].num); }
-#line 1528 "y.tab.c"
+#line 1593 "y.tab.c"
     break;
 
   case 31: /* stmt: SHORTLABELICONS truth  */
 #line 114 "gram.y"
                                         { prefs.shortlabelicons = (yyvsp[0].num); }
-#line 1534 "y.tab.c"
+#line 1599 "y.tab.c"
     break;
 
   case 32: /* stmt: TITLEBARCLOCK truth  */
 #line 115 "gram.y"
                                       { prefs.titlebarclock = (yyvsp[0].num); }
-#line 1540 "y.tab.c"
+#line 1605 "y.tab.c"
     break;
 
   case 33: /* stmt: TITLECLOCKFORMAT string  */
 #line 116 "gram.y"
                                           { prefs.titleclockformat = (yyvsp[0].ptr); }
-#line 1546 "y.tab.c"
+#line 1611 "y.tab.c"
     break;
 
   case 34: /* stmt: TITLECLOCKFORMAT NUMBER string  */
@@ -1550,37 +1615,37 @@ yyreduce:
                                                  { 
 					prefs.titleclockinterval=(yyvsp[-1].num); 
 					prefs.titleclockformat=(yyvsp[0].ptr); }
-#line 1554 "y.tab.c"
+#line 1619 "y.tab.c"
     break;
 
   case 35: /* stmt: SCREENMENU truth  */
 #line 120 "gram.y"
                                    { prefs.screenmenu=(yyvsp[0].num); }
-#line 1560 "y.tab.c"
+#line 1625 "y.tab.c"
     break;
 
   case 37: /* toolsubmenu: TOOLITEM string LEFTBRACE  */
 #line 124 "gram.y"
                                             { add_toolitem((yyvsp[-1].ptr), NULL, NULL, -1); ti_level=1; }
-#line 1566 "y.tab.c"
+#line 1631 "y.tab.c"
     break;
 
   case 40: /* toolitem: TOOLITEM string string  */
 #line 131 "gram.y"
                                          { add_toolitem((yyvsp[-1].ptr), (yyvsp[0].ptr), NULL, ti_level); }
-#line 1572 "y.tab.c"
+#line 1637 "y.tab.c"
     break;
 
   case 41: /* toolitem: TOOLITEM string string string  */
 #line 132 "gram.y"
                                                 { add_toolitem((yyvsp[-2].ptr), (yyvsp[-1].ptr), (yyvsp[0].ptr), ti_level); }
-#line 1578 "y.tab.c"
+#line 1643 "y.tab.c"
     break;
 
   case 42: /* toolitem: TOOLITEM SEPARATOR  */
 #line 133 "gram.y"
                                      { add_toolitem(NULL, NULL, NULL, ti_level); }
-#line 1584 "y.tab.c"
+#line 1649 "y.tab.c"
     break;
 
   case 43: /* stylespec: STYLE LEFTBRACE  */
@@ -1597,191 +1662,191 @@ yyreduce:
 				    else
 				      prefs.firststyle=s;
 				    prefs.laststyle=s; }
-#line 1601 "y.tab.c"
+#line 1666 "y.tab.c"
     break;
 
   case 46: /* styleitem: CLASS string  */
 #line 153 "gram.y"
                                { append_to(&prefs.laststyle->style_class, (yyvsp[0].ptr));}
-#line 1607 "y.tab.c"
+#line 1672 "y.tab.c"
     break;
 
   case 47: /* styleitem: TITLE string  */
 #line 154 "gram.y"
                                { append_to(&prefs.laststyle->style_title, (yyvsp[0].ptr));}
-#line 1613 "y.tab.c"
+#line 1678 "y.tab.c"
     break;
 
   case 48: /* styleitem: ICONTITLE string  */
 #line 155 "gram.y"
                                    { append_to(&prefs.laststyle->style_icon_title, (yyvsp[0].ptr));}
-#line 1619 "y.tab.c"
+#line 1684 "y.tab.c"
     break;
 
   case 49: /* styleitem: ICON string  */
 #line 156 "gram.y"
                               { prefs.laststyle->icon_name=(yyvsp[0].ptr); }
-#line 1625 "y.tab.c"
+#line 1690 "y.tab.c"
     break;
 
   case 50: /* string: STRING  */
 #line 159 "gram.y"
                          { (yyval.ptr) = strdup((yyvsp[0].ptr)); }
-#line 1631 "y.tab.c"
+#line 1696 "y.tab.c"
     break;
 
   case 51: /* truth: YES  */
 #line 162 "gram.y"
                       { (yyval.num) = True; }
-#line 1637 "y.tab.c"
+#line 1702 "y.tab.c"
     break;
 
   case 52: /* truth: NO  */
 #line 163 "gram.y"
                      { (yyval.num) = False; }
-#line 1643 "y.tab.c"
+#line 1708 "y.tab.c"
     break;
 
   case 53: /* sizeborder: RIGHT  */
 #line 166 "gram.y"
                         { (yyval.num) = Psizeright; }
-#line 1649 "y.tab.c"
+#line 1714 "y.tab.c"
     break;
 
   case 54: /* sizeborder: BOTTOM  */
 #line 167 "gram.y"
                          { (yyval.num) = Psizebottom; }
-#line 1655 "y.tab.c"
+#line 1720 "y.tab.c"
     break;
 
   case 55: /* sizeborder: BOTH  */
 #line 168 "gram.y"
                        { (yyval.num) = Psizeright|Psizebottom; }
-#line 1661 "y.tab.c"
+#line 1726 "y.tab.c"
     break;
 
   case 56: /* sizeborder: NONE  */
 #line 169 "gram.y"
                        { (yyval.num) = Psizetrans; }
-#line 1667 "y.tab.c"
+#line 1732 "y.tab.c"
     break;
 
   case 57: /* sizeborder: NO  */
 #line 170 "gram.y"
                      { (yyval.num) = Psizetrans; }
-#line 1673 "y.tab.c"
+#line 1738 "y.tab.c"
     break;
 
   case 58: /* focuspolicy: FOLLOWMOUSE  */
 #line 173 "gram.y"
                               { (yyval.num) = FOC_FOLLOWMOUSE; }
-#line 1679 "y.tab.c"
+#line 1744 "y.tab.c"
     break;
 
   case 59: /* focuspolicy: SLOPPY  */
 #line 174 "gram.y"
                          { (yyval.num) = FOC_SLOPPY; }
-#line 1685 "y.tab.c"
+#line 1750 "y.tab.c"
     break;
 
   case 60: /* focuspolicy: CLICKTOTYPE  */
 #line 175 "gram.y"
                               { (yyval.num) = FOC_CLICKTOTYPE; }
-#line 1691 "y.tab.c"
+#line 1756 "y.tab.c"
     break;
 
   case 61: /* dri_pen: T_DETAILPEN  */
 #line 178 "gram.y"
                               { (yyval.num) = DETAILPEN; }
-#line 1697 "y.tab.c"
+#line 1762 "y.tab.c"
     break;
 
   case 62: /* dri_pen: T_BLOCKPEN  */
 #line 179 "gram.y"
                              { (yyval.num) = BLOCKPEN; }
-#line 1703 "y.tab.c"
+#line 1768 "y.tab.c"
     break;
 
   case 63: /* dri_pen: T_TEXTPEN  */
 #line 180 "gram.y"
                             { (yyval.num) = TEXTPEN; }
-#line 1709 "y.tab.c"
+#line 1774 "y.tab.c"
     break;
 
   case 64: /* dri_pen: T_SHINEPEN  */
 #line 181 "gram.y"
                              { (yyval.num) = SHINEPEN; }
-#line 1715 "y.tab.c"
+#line 1780 "y.tab.c"
     break;
 
   case 65: /* dri_pen: T_SHADOWPEN  */
 #line 182 "gram.y"
                               { (yyval.num) = SHADOWPEN; }
-#line 1721 "y.tab.c"
+#line 1786 "y.tab.c"
     break;
 
   case 66: /* dri_pen: T_FILLPEN  */
 #line 183 "gram.y"
                             { (yyval.num) = FILLPEN; }
-#line 1727 "y.tab.c"
+#line 1792 "y.tab.c"
     break;
 
   case 67: /* dri_pen: T_FILLTEXTPEN  */
 #line 184 "gram.y"
                                 { (yyval.num) = FILLTEXTPEN; }
-#line 1733 "y.tab.c"
+#line 1798 "y.tab.c"
     break;
 
   case 68: /* dri_pen: T_BACKGROUNDPEN  */
 #line 185 "gram.y"
                                   { (yyval.num) = BACKGROUNDPEN; }
-#line 1739 "y.tab.c"
+#line 1804 "y.tab.c"
     break;
 
   case 69: /* dri_pen: T_HIGHLIGHTTEXTPEN  */
 #line 186 "gram.y"
                                      { (yyval.num) = HIGHLIGHTTEXTPEN; }
-#line 1745 "y.tab.c"
+#line 1810 "y.tab.c"
     break;
 
   case 70: /* dri_pen: T_BARDETAILPEN  */
 #line 187 "gram.y"
                                  { (yyval.num) = BARDETAILPEN; }
-#line 1751 "y.tab.c"
+#line 1816 "y.tab.c"
     break;
 
   case 71: /* dri_pen: T_BARBLOCKPEN  */
 #line 188 "gram.y"
                                 { (yyval.num) = BARBLOCKPEN; }
-#line 1757 "y.tab.c"
+#line 1822 "y.tab.c"
     break;
 
   case 72: /* dri_pen: T_BARTRIMPEN  */
 #line 189 "gram.y"
                                { (yyval.num) = BARTRIMPEN; }
-#line 1763 "y.tab.c"
+#line 1828 "y.tab.c"
     break;
 
   case 73: /* forcemove_policy: ALWAYS  */
 #line 192 "gram.y"
                           { (yyval.num) = FM_ALWAYS; }
-#line 1769 "y.tab.c"
+#line 1834 "y.tab.c"
     break;
 
   case 74: /* forcemove_policy: AUTO  */
 #line 193 "gram.y"
                         { (yyval.num) = FM_AUTO; }
-#line 1775 "y.tab.c"
+#line 1840 "y.tab.c"
     break;
 
   case 75: /* forcemove_policy: MANUAL  */
 #line 194 "gram.y"
                           { (yyval.num) = FM_MANUAL; }
-#line 1781 "y.tab.c"
+#line 1846 "y.tab.c"
     break;
 
 
-#line 1785 "y.tab.c"
+#line 1850 "y.tab.c"
 
       default: break;
     }
