@@ -53,7 +53,9 @@ Pixmap md_image_to_pixmap(Window w, unsigned long bgcolor, struct Image *i,
       return None;
     iconcolor = (unsigned long *)(void *)p;
     iconcolormask = (res/sizeof(unsigned long))-1;
-    printf("iconcolor=%lu  iconcolormask=%d\n", *iconcolor, iconcolormask);
+    for (int i=0;i<7;i++){
+      printf("iconcolor[%d]=%lu  iconcolormask=%d\n", i, iconcolor[i], iconcolormask);
+    }
   }
   pm = image_to_pixmap(md_display(), w, gc, bgcolor, iconcolor, iconcolormask,
 		       i, width, height, cs);

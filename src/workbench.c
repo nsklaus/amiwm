@@ -43,10 +43,11 @@ extern struct Library *XLibBase;
 #define BUT_HSPACE 8
 
 static int selected=0, depressed=0, stractive=1;
-struct launcher {
-  struct ColorStore colorstore1, colorstore2;
-  char cmdline[1];
-};
+struct ColorStore colorstore1, colorstore2;
+// struct launcher {
+//   struct ColorStore colorstore1, colorstore2;
+//   char cmdline[1];
+// };
 char cmdline[MAX_CMD_CHARS+1];
 int buf_len=0;
 int cur_pos=0;
@@ -66,6 +67,19 @@ GC gc;
 
 int strgadw, strgadh, fh, mainw, mainh, butw;
 static Window button[3];
+
+char *iconcolorname[256];
+int iconcolormask;
+static char *magicwbcolorname[]={
+  "#aaaaaa", "#000000", "#ffffff", "#6688bb",
+  "#999999", "#bbbbbb", "#bbaa99", "#ffbbaa"
+};
+
+void set_mwb_palette()
+{
+  iconcolormask=7;
+  memcpy(iconcolorname, magicwbcolorname, sizeof(magicwbcolorname));
+}
 
 /** get button number/id */
 int getchoice(Window w)
@@ -161,6 +175,7 @@ int main(int argc, char *argv[])
   }
   //int scr = DefaultScreen(dpy);
   //dpy->iconcolor
+  //set_mwb_palette();
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
@@ -197,9 +212,9 @@ int main(int argc, char *argv[])
 
 
   // begin -- display icon in wb window
-  struct launcher *l = malloc(sizeof(struct launcher)+strlen(cmdline));
-  memset(l, 0, sizeof(*l));
-  strcpy(l->cmdline, cmdline);
+  //struct launcher *l = malloc(sizeof(struct launcher)+strlen(cmdline));
+  //memset(l, 0, sizeof(*l));
+  //strcpy(l->cmdline, cmdline);
 
   if (icon != NULL && *icon != 0) {
     int rl=strlen(icon)+strlen(icondir)+2;
@@ -213,10 +228,11 @@ int main(int argc, char *argv[])
   width=icon_do->do_Gadget.Width;
   height=icon_do->do_Gadget.Height;
   unsigned long *iconcolor;
-  unsigned long bleh = 11184810;
-  iconcolor = &bleh;
+  unsigned long bleh[7] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905 };
+  iconcolor = bleh;
   struct Image *im = icon_do->do_Gadget.GadgetRender;
-  pm = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[SHADOWPEN], iconcolor, 7, im, width, height, &l->colorstore2);
+  //printf("colorstore1=%p\n",*iconcolor);
+  pm = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7, im, width, height, &colorstore1);
 
   //icon1=createicon(pm);
 
@@ -239,12 +255,16 @@ int main(int argc, char *argv[])
             }
           }
         case LeaveNotify:
+          printf("leave\n");
           break;
         case EnterNotify:
+          printf("enter\n");
           break;
         case ButtonPress:
+          printf("press\n");
           break;
         case ButtonRelease:
+          printf("release\n");
           break;
         case KeyPress:
           break;
