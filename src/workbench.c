@@ -60,30 +60,14 @@ void refresh_main(void)
 {
 
    for (int i=0; i<=dircount;i++){
-     // when i get here icons[i].name value is trashed,
-    // icons[0].name = "some";
-    // icons[1].name = "stuff";
-    // icons[2].name = "here";
-    //iconlabels[0]="grzz";
      if(icons[i].name != NULL) {
         XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
         XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
         XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
      }
    }
-//   }
-//   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-//   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, "some text", strlen("some text"));
-//
-//   XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
-//   XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, pm1);
-  //XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
-  //}
 }
 
-void set_names(int count, char*name ) {
-  icons[count].name = name;
-}
 
 void read_entries() {
   // differentiate between files and directories
