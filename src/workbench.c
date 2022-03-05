@@ -36,6 +36,8 @@ struct DrawInfo dri;
 
 typedef struct {
   char *name;
+  char *path;
+  Window iconwin;
   Pixmap pm1;
   Pixmap mp2;
   int x;
@@ -43,46 +45,80 @@ typedef struct {
   int width;
   int height;
 } wbicon;
+wbicon icon1;
 
-Window root, mainwin;
+Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
-int icon_x=10, icon_y=10, icon_width, icon_height;
+//int icon_x=10, icon_y=10, icon_width, icon_height;
 GC gc;
 
 /** refresh window background */
 void refresh_main(void)
 {
   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icon_x,
-                icon_y+35, "some text", strlen("some text"));
+  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icon1.x, icon1.y+35, "some text", strlen("some text"));
 
   XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
-  XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
-  //XCopyPlane(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50, 8);
+  XSetWindowBackgroundPixmap(dpy, icon1.iconwin, pm1);
+  //XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
 }
 
-int main(int argc, char *argv[])
-{
-
-  /*
+void read_entries() {
   // differentiate between files and directories
   DIR *dirp;
   struct dirent *dp;
 
   dirp = opendir("/home/klaus/Downloads/");
-  while ((dp = readdir(dirp)) != NULL)
-  {
-    if (dp->d_type & DT_DIR)
-    {
+  while ((dp = readdir(dirp)) != NULL) {
+    if (dp->d_type & DT_DIR) {
       // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.')
         printf ("DIRECTORY: %s\n", dp->d_name);
     } else
       printf ("FILE: %s\n", dp->d_name);
-  }
+    }
   closedir(dirp);
-  */
+}
 
+void list_entries() {
+  unsigned long *iconcolor;
+  unsigned long bleh[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
+  iconcolor = bleh;
+
+  struct DiskObject *icon_do = NULL;
+  char *icondir="/usr/local/lib/amiwm/icons";
+  char *icon="def_drawer.info";
+  if (icon != NULL && *icon != 0) {
+    int rl=strlen(icon)+strlen(icondir)+2;
+    char *fn=alloca(rl);
+    sprintf(fn, "%s/%s", icondir, icon);
+    fn[strlen(fn)-5]=0;
+    printf("fn=%s\n",fn);
+    icon_do = GetDiskObject(fn);
+  }
+  icon1.width=icon_do->do_Gadget.Width;
+  icon1.height=icon_do->do_Gadget.Height;
+  icon1.x=10;
+  icon1.y=10;
+
+  icon1.iconwin=XCreateSimpleWindow(dpy, mainwin, icon1.x, icon1.y, icon1.width, icon1.height, 1,
+                             dri.dri_Pens[BACKGROUNDPEN],
+                             dri.dri_Pens[BACKGROUNDPEN]);
+  XSelectInput(dpy, icon1.iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+
+
+  struct Image *im1 = icon_do->do_Gadget.GadgetRender;
+  struct Image *im2 = icon_do->do_Gadget.SelectRender;
+  pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
+                        iconcolor, 7, im1, icon1.width, icon1.height, &colorstore1);
+  pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
+                        iconcolor, 7, im2, icon1.width, icon1.height, &colorstore2);
+  XSetWindowBackgroundPixmap(dpy, icon1.iconwin, pm1);
+  FreeDiskObject(icon_do);
+}
+
+int main(int argc, char *argv[])
+{
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
@@ -98,8 +134,9 @@ int main(int argc, char *argv[])
   init_dri(&dri, dpy, root, attr.colormap, False);
 
   mainwin=XCreateSimpleWindow(dpy, root, win_x, win_y, win_width, win_height, 1,
-			      dri.dri_Pens[SHADOWPEN],
-			      dri.dri_Pens[BACKGROUNDPEN]);
+                              dri.dri_Pens[SHADOWPEN],
+                              dri.dri_Pens[BACKGROUNDPEN]);
+
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
@@ -116,45 +153,20 @@ int main(int argc, char *argv[])
                   &txtprop2, argv, argc,
                   &size_hints, NULL, NULL);
 
+  read_entries();
+  list_entries();
+
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
-
-  // begin -- display icon in wb window
-  struct DiskObject *icon_do = NULL;
-  char *icondir="/usr/local/lib/amiwm/icons";
-  char *icon="def_drawer.info";
-  if (icon != NULL && *icon != 0) {
-    int rl=strlen(icon)+strlen(icondir)+2;
-    char *fn=alloca(rl);
-    sprintf(fn, "%s/%s", icondir, icon);
-    fn[strlen(fn)-5]=0;
-    printf("fn=%s\n",fn);
-    icon_do = GetDiskObject(fn);
-  }
-
-  icon_width=icon_do->do_Gadget.Width;
-  icon_height=icon_do->do_Gadget.Height;
-  unsigned long *iconcolor;
-  unsigned long bleh[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
-  iconcolor = bleh;
-  struct Image *im1 = icon_do->do_Gadget.GadgetRender;
-  struct Image *im2 = icon_do->do_Gadget.SelectRender;
-
-  pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
-                        iconcolor, 7, im1, icon_width, icon_height, &colorstore1);
-  pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
-                        iconcolor, 7, im2, icon_width, icon_height, &colorstore2);
-
-  XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
-
   XSync(dpy, False);
-  FreeDiskObject(icon_do);
-  // end -- display icon in wb window
+
 
   for(;;) {
     XEvent event;
     XNextEvent(dpy, &event);
-    if(!XFilterEvent(&event, mainwin)) {
+    //printf("event type = (%d)\n",event.type);
+    if(!XFilterEvent(&event, mainwin) && !XFilterEvent(&event, icon1.iconwin) ) {
+
       switch(event.type) {
         case Expose:
           if(!event.xexpose.count) {
@@ -163,16 +175,25 @@ int main(int argc, char *argv[])
             }
           }
         case LeaveNotify:
-          printf("leave\n");
+          if(event.xcrossing.window==icon1.iconwin) {
+            printf("leave\n");
+          }
           break;
         case EnterNotify:
-          printf("enter\n");
+
+          if(event.xcrossing.window==icon1.iconwin) {
+            printf("enter\n");
+          }
           break;
         case ButtonPress:
-          printf("press\n");
+          if(event.xcrossing.window==icon1.iconwin) {
+            printf("press\n");
+          }
           break;
         case ButtonRelease:
-          printf("release\n");
+          if(event.xcrossing.window==icon1.iconwin) {
+            printf("release\n");
+          }
           break;
         case KeyPress:
           break;
