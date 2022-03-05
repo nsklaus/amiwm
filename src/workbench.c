@@ -47,6 +47,7 @@ typedef struct {
 } wbicon;
 //wbicon icon1;
 wbicon *icons;
+char *iconlabels;
 
 int dircount;
 Window root, mainwin;//, myicon;
@@ -57,8 +58,18 @@ GC gc;
 /** refresh window background */
 void refresh_main(void)
 {
-   for (int i=0; i<dircount;i++){
 
+   for (int i=0; i<=dircount;i++){
+     // when i get here icons[i].name value is trashed,
+    // icons[0].name = "some";
+    // icons[1].name = "stuff";
+    // icons[2].name = "here";
+    //iconlabels[0]="grzz";
+     if(icons[i].name != NULL) {
+        XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+        XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
+        XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
+     }
    }
 //   }
 //   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
@@ -68,6 +79,10 @@ void refresh_main(void)
 //   XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, pm1);
   //XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
   //}
+}
+
+void set_names(int count, char*name ) {
+  icons[count].name = name;
 }
 
 void read_entries() {
@@ -85,12 +100,37 @@ void read_entries() {
       }
     } else
       printf ("FILE: %s\n", dp->d_name);
-    }
-  closedir(dirp);
+  }
+  // get max number of instances of wbicon to allocate
   icons = calloc(dircount, sizeof(wbicon));
-  //printf("total dircount=%d sizeof(icons)=%lu\n", dircount, sizeof(*icons));
+  closedir(dirp);
+  }
 
+void getlabels(){
+  DIR *dirp;
+  struct dirent *dp;
+  int count=0;
+  dirp = opendir("/home/klaus/Downloads/");
+  while ((dp = readdir(dirp)) != NULL) {
+    if (dp->d_type & DT_DIR) {
+
+      // exclude common system entries and (semi)hidden names
+      if (dp->d_name[0] != '.'){
+        printf ("DIRECTORY: %s\n", dp->d_name);
+        //assign value
+        //icons[count].name = dp->d_name;
+        strcpy(icons[count].name,dp->d_name);
+        memcpy(icons[count].name, dp->d_name, strlen(dp->d_name)+1);
+        count++;
+      }
+    } else
+      printf ("FILE: %s\n", dp->d_name);
+  }
+
+  closedir(dirp);
 }
+
+
 
 void list_entries() {
   unsigned long *iconcolor;
@@ -127,6 +167,7 @@ void list_entries() {
                         iconcolor, 7, im2, icons[i].width, icons[i].height, &colorstore2);
   XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, pm1);
   XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+  printf("listing  icons[%d].name=%s\n",i,icons[i].name);
   }
   FreeDiskObject(icon_do);
 }
@@ -168,6 +209,7 @@ int main(int argc, char *argv[])
                   &size_hints, NULL, NULL);
 
   read_entries();
+  getlabels();
   list_entries();
 
   XMapSubwindows(dpy, mainwin);
