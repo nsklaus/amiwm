@@ -60,7 +60,7 @@ void refresh_main(void)
 {
 
    for (int i=0; i<=dircount;i++){
-     if(icons[i].name != NULL) {
+     if( icons[i].name != NULL) {
         XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
         XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
         XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
@@ -87,6 +87,7 @@ void read_entries() {
   }
   // get max number of instances of wbicon to allocate
   icons = calloc(dircount, sizeof(wbicon));
+  printf("xxxxx  icons[0].name=%s\n",icons[0].name);
   closedir(dirp);
   }
 
@@ -102,9 +103,13 @@ void getlabels(){
       if (dp->d_name[0] != '.'){
         printf ("DIRECTORY: %s\n", dp->d_name);
         //assign value
-        //icons[count].name = dp->d_name;
-        strcpy(icons[count].name,dp->d_name);
-        memcpy(icons[count].name, dp->d_name, strlen(dp->d_name)+1);
+//         icons[count].name = (char *) malloc(strlen(dp->d_name));
+//         icons[count].name = dp->d_name;
+
+        icons[count].name =  malloc(strlen(dp->d_name)+1);
+        strcpy(icons[count].name, dp->d_name);
+        //strcpy(icons[count].name,dp->d_name);
+        //memcpy(icons[count].name, dp->d_name, strlen(dp->d_name)+1);
         count++;
       }
     } else
