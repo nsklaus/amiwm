@@ -45,8 +45,10 @@ typedef struct {
   int width;
   int height;
 } wbicon;
-wbicon icon1;
+//wbicon icon1;
+wbicon *icons;
 
+int dircount;
 Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
 //int icon_x=10, icon_y=10, icon_width, icon_height;
@@ -55,12 +57,17 @@ GC gc;
 /** refresh window background */
 void refresh_main(void)
 {
-  XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icon1.x, icon1.y+35, "some text", strlen("some text"));
+   for (int i=0; i<dircount;i++){
 
-  XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
-  XSetWindowBackgroundPixmap(dpy, icon1.iconwin, pm1);
+   }
+//   }
+//   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+//   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, "some text", strlen("some text"));
+//
+//   XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
+//   XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, pm1);
   //XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
+  //}
 }
 
 void read_entries() {
@@ -72,12 +79,17 @@ void read_entries() {
   while ((dp = readdir(dirp)) != NULL) {
     if (dp->d_type & DT_DIR) {
       // exclude common system entries and (semi)hidden names
-      if (dp->d_name[0] != '.')
+      if (dp->d_name[0] != '.'){
         printf ("DIRECTORY: %s\n", dp->d_name);
+        dircount++;
+      }
     } else
       printf ("FILE: %s\n", dp->d_name);
     }
   closedir(dirp);
+  icons = calloc(dircount, sizeof(wbicon));
+  //printf("total dircount=%d sizeof(icons)=%lu\n", dircount, sizeof(*icons));
+
 }
 
 void list_entries() {
@@ -96,24 +108,26 @@ void list_entries() {
     printf("fn=%s\n",fn);
     icon_do = GetDiskObject(fn);
   }
-  icon1.width=icon_do->do_Gadget.Width;
-  icon1.height=icon_do->do_Gadget.Height;
-  icon1.x=10;
-  icon1.y=10;
-
-  icon1.iconwin=XCreateSimpleWindow(dpy, mainwin, icon1.x, icon1.y, icon1.width, icon1.height, 1,
-                             dri.dri_Pens[BACKGROUNDPEN],
-                             dri.dri_Pens[BACKGROUNDPEN]);
-  XSelectInput(dpy, icon1.iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
-
 
   struct Image *im1 = icon_do->do_Gadget.GadgetRender;
   struct Image *im2 = icon_do->do_Gadget.SelectRender;
+
+  for (int i=0;i<dircount;i++){
+  icons[i].width=icon_do->do_Gadget.Width;
+  icons[i].height=icon_do->do_Gadget.Height;
+  icons[i].x=10 + (i*80);
+  icons[i].y=10;
+
+  icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y, icons[i].width, icons[i].height, 1,
+                             dri.dri_Pens[BACKGROUNDPEN],
+                             dri.dri_Pens[BACKGROUNDPEN]);
   pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
-                        iconcolor, 7, im1, icon1.width, icon1.height, &colorstore1);
+                        iconcolor, 7, im1, icons[i].width, icons[i].height, &colorstore1);
   pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
-                        iconcolor, 7, im2, icon1.width, icon1.height, &colorstore2);
-  XSetWindowBackgroundPixmap(dpy, icon1.iconwin, pm1);
+                        iconcolor, 7, im2, icons[i].width, icons[i].height, &colorstore2);
+  XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, pm1);
+  XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+  }
   FreeDiskObject(icon_do);
 }
 
@@ -165,7 +179,8 @@ int main(int argc, char *argv[])
     XEvent event;
     XNextEvent(dpy, &event);
     //printf("event type = (%d)\n",event.type);
-    if(!XFilterEvent(&event, mainwin) && !XFilterEvent(&event, icon1.iconwin) ) {
+    if(!XFilterEvent(&event, mainwin)){
+     // && !XFilterEvent(&event, icon1.iconwin) ) {
 
       switch(event.type) {
         case Expose:
@@ -175,25 +190,25 @@ int main(int argc, char *argv[])
             }
           }
         case LeaveNotify:
-          if(event.xcrossing.window==icon1.iconwin) {
-            printf("leave\n");
-          }
+//           if(event.xcrossing.window==icon1.iconwin) {
+//             printf("leave\n");
+//           }
           break;
         case EnterNotify:
 
-          if(event.xcrossing.window==icon1.iconwin) {
-            printf("enter\n");
-          }
+//           if(event.xcrossing.window==icon1.iconwin) {
+//             printf("enter\n");
+//           }
           break;
         case ButtonPress:
-          if(event.xcrossing.window==icon1.iconwin) {
-            printf("press\n");
-          }
+//           if(event.xcrossing.window==icon1.iconwin) {
+//             printf("press\n");
+//           }
           break;
         case ButtonRelease:
-          if(event.xcrossing.window==icon1.iconwin) {
-            printf("release\n");
-          }
+//           if(event.xcrossing.window==icon1.iconwin) {
+//             printf("release\n");
+//           }
           break;
         case KeyPress:
           break;
