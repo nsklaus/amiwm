@@ -26,65 +26,28 @@
 #include <sys/stat.h>
 #include "screen.h"
 
-#ifdef AMIGAOS
-#include <pragmas/xlib_pragmas.h>
-extern struct Library *XLibBase;
-#endif
-
-#define MAX_CMD_CHARS 256
-#define VISIBLE_CMD_CHARS 35
-
-#define BOT_SPACE 4
-#define TEXT_SIDE 8
-#define BUT_SIDE 12
-#define TOP_SPACE 4
-#define INT_SPACE 7
-#define BUT_VSPACE 2
-#define BUT_HSPACE 8
-
 static int selected=0, depressed=0, stractive=1;
 struct ColorStore colorstore1, colorstore2;
-// struct launcher {
-//   struct ColorStore colorstore1, colorstore2;
-//   char cmdline[1];
-// };
-char cmdline[MAX_CMD_CHARS+1];
-int buf_len=0;
-int cur_pos=0;
-int left_pos=0;
-int cur_x=6;
 
 char *progname;
-
 Display *dpy;
 Pixmap pm1, pm2;
-Icon icon1;
-int icon_x=10, icon_y=10, icon_width, icon_height;
 struct DrawInfo dri;
 
 typedef struct {
   char *name;
   Pixmap pm1;
   Pixmap mp2;
+  int x;
+  int y;
+  int width;
+  int height;
 } wbicon;
 
 Window root, mainwin;
 int win_x=20, win_y=20, win_width=300, win_height=150;
+int icon_x=10, icon_y=10, icon_width, icon_height;
 GC gc;
-
-int strgadw, strgadh, fh, mainw, mainh, butw;
-static Window button[3];
-
-/** get button number/id */
-int getchoice(Window w)
-{
-  int i;
-  int totalbuttons = (int)(sizeof button / sizeof button[0]);
-  for(i=1; i<totalbuttons; i++)
-    if(button[i]==w)
-      return i;
-  return 0;
-}
 
 /** refresh window background */
 void refresh_main(void)
@@ -97,7 +60,6 @@ void refresh_main(void)
   XCopyArea(dpy, pm1, mainwin, gc, 0, 0, icon_width, icon_height, icon_x, icon_y);
   //XCopyPlane(dpy, pm, mainwin, gc, 0, 0, width, height, 50, 50, 8);
 }
-
 
 int main(int argc, char *argv[])
 {
