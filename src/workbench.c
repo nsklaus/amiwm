@@ -40,41 +40,32 @@ typedef struct {
   Window iconwin;
   Pixmap pm1;
   Pixmap pm2;
-  Pixmap pmA;
+  Pixmap pmA; /* active pixmap */
   int x;
   int y;
   int width;
   int height;
 } wbicon;
-//wbicon icon1;
-wbicon *icons;
-char *iconlabels;
 
+wbicon *icons;
 
 int dircount;
 Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
-//int icon_x=10, icon_y=10, icon_width, icon_height;
 GC gc;
 
 /** refresh window background */
 void refresh_main(void)
 {
-
-   for (int i=0; i<=dircount;i++){
-     if( icons[i].name != NULL) {
-        //XCopyArea(dpy, icons[i].pmA, mainwin, gc, 0, 0, icons[i].width, icons[i].height, icons[i].x, icons[i].y);
-       //icons[i].pmA = icons[i].pm2;
-        XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-        XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-        XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
-        XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
-        printf("icons[i].name=%s icons[i].iconwin=%lu icons[i].x=%d\n",icons[i].name, icons[i].iconwin, icons[i].x);
-
-     }
-   }
+  for (int i=0; i<=dircount;i++){
+    if( icons[i].name != NULL) {
+      //XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+      XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
+      XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
+    }
+  }
 }
-
 
 void read_entries() {
   // differentiate between files and directories,
@@ -120,8 +111,6 @@ void getlabels(){
   closedir(dirp);
 }
 
-
-
 void list_entries() {
   unsigned long *iconcolor;
   unsigned long bleh[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
@@ -145,25 +134,25 @@ void list_entries() {
   for (int i=0;i<dircount;i++){
   icons[i].width=icon_do->do_Gadget.Width;
   icons[i].height=icon_do->do_Gadget.Height;
-  icons[i].x=10 + (i*80);
+  icons[i].x=10 + (i*80); /* hardcoded icon offset */
   icons[i].y=10;
 
-  icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y, icons[i].width, icons[i].height, 1,
-                             dri.dri_Pens[BACKGROUNDPEN],
-                             dri.dri_Pens[BACKGROUNDPEN]);
+  icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
+                                       icons[i].width, icons[i].height, 1,
+                                       dri.dri_Pens[BACKGROUNDPEN],
+                                       dri.dri_Pens[BACKGROUNDPEN]);
+
   pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
                         iconcolor, 7, im1, icons[i].width, icons[i].height, &colorstore1);
+
   pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
                         iconcolor, 7, im2, icons[i].width, icons[i].height, &colorstore2);
   icons[i].pm1 = pm1;
   icons[i].pm2 = pm2;
-  icons[i].pmA = pm1;
+  icons[i].pmA = pm1; /* set active pixmap */
 
   XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-  //XCopyArea(dpy, icons[i].pmA, icons[i].iconwin, gc, 0, 0, icons[i].width, icons[i].height, icons[i].x, icons[i].y);
   XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
-
-  printf("listing  icons[%d].name=%s\n",i,icons[i].name);
   }
   FreeDiskObject(icon_do);
 }
@@ -205,14 +194,12 @@ int main(int argc, char *argv[])
                   &size_hints, NULL, NULL);
 
   read_entries();
-  getlabels();
+  getlabels();  /* todo: try to remove one of the two loop  */
   list_entries();
-  printf("sizeof(icons)=%zu\n",sizeof(icons));
-  printf("sizeof(progname)=%zu\n",sizeof(progname));
+
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
   XSync(dpy, False);
-
 
   for(;;) {
     XEvent event;
@@ -248,10 +235,7 @@ int main(int argc, char *argv[])
               else if (icons[i].pmA == icons[i].pm2)
                 icons[i].pmA = icons[i].pm1;
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-              //XCopyArea(dpy, icons[i].pmA, mainwin, gc, 0, 0, icons[i].width, icons[i].height, icons[i].x, icons[i].y);
-              printf("icon=[%s] event=[press]  pm1=%lu pm2=%lu pmA=%lu\n",icons[i].name, icons[i].pm1, icons[i].pm2, icons[i].pmA);
               XClearWindow(dpy, icons[i].iconwin);
-              //refresh_main();
             }
           }
           break;
@@ -273,9 +257,6 @@ int main(int argc, char *argv[])
           win_width=event.xconfigure.width;
           win_height=event.xconfigure.height;
           break;
-      }
-      if (!XPending(dpy)) {
-        // No more events, redraw if needed
       }
     }
   }
