@@ -210,9 +210,9 @@ void spawn_new_wb(const char *cmd){
   const char *exec = "/usr/local/lib/amiwm/workbench";
   int temp = strlen(exec);
   char *line=alloca(strlen(exec) + strlen(cmd)+4);
-  sprintf(line, "%s %s", exec, cmd);
+  sprintf(line, "%s %s &", exec, cmd);
   //sprintf(line, "%s &", cmd);
-  //printf("my exec line=%s\n",line);
+  printf("my exec line=%s\n",line);
   system(line);
 
 //   read_entries(path);
