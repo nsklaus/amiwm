@@ -24,6 +24,7 @@
 #include <dirent.h>
 #include "libami.h"
 #include <sys/stat.h>
+#include <math.h>
 #include "screen.h"
 
 static int selected=0, depressed=0, stractive=1;
@@ -73,7 +74,7 @@ void read_entries() {
   DIR *dirp;
   struct dirent *dp;
 
-  dirp = opendir("/home/klaus/Downloads/");
+  dirp = opendir("/home/klaus/");
   while ((dp = readdir(dirp)) != NULL) {
     if (dp->d_type & DT_DIR) {
       // exclude common system entries and (semi)hidden names
@@ -94,7 +95,7 @@ void getlabels(){
   DIR *dirp;
   struct dirent *dp;
   int count=0;
-  dirp = opendir("/home/klaus/Downloads/");
+  dirp = opendir("/home/klaus/");
   while ((dp = readdir(dirp)) != NULL) {
     if (dp->d_type & DT_DIR) {
       // exclude common system entries and (semi)hidden names
@@ -131,11 +132,24 @@ void list_entries() {
   struct Image *im1 = icon_do->do_Gadget.GadgetRender;
   struct Image *im2 = icon_do->do_Gadget.SelectRender;
 
+  int newline_x = 0;
+  int newline_y = 0;
   for (int i=0;i<dircount;i++){
   icons[i].width=icon_do->do_Gadget.Width;
   icons[i].height=icon_do->do_Gadget.Height;
-  icons[i].x=10 + (i*80); /* hardcoded icon offset */
-  icons[i].y=10;
+
+  if(newline_x*80 < win_width){
+    icons[i].x=10 + (newline_x*80);
+    icons[i].y=10 + (newline_y*50);
+    newline_x++;
+  }
+  else if(newline_x*80 > win_width) {
+    newline_x = 0;
+    newline_y++;
+    icons[i].x=10 + (newline_x*80);
+    icons[i].y=10 + (newline_y*50);
+    newline_x++;
+  }
 
   icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
                                        icons[i].width, icons[i].height, 1,
@@ -213,6 +227,7 @@ int main(int argc, char *argv[])
           if(!event.xexpose.count) {
             if(event.xexpose.window == mainwin) {
               refresh_main();
+              printf("exposing\n");
             }
           }
 
