@@ -205,12 +205,12 @@ void list_entries() {
   FreeDiskObject(icon_do);
 }
 
-void spawn_new_wb(const char *cmd){
+void spawn_new_wb(const char *cmd, char *title){
   // /usr/local/lib/amiwm/workbench
   const char *exec = "/usr/local/lib/amiwm/workbench";
   int temp = strlen(exec);
-  char *line=alloca(strlen(exec) + strlen(cmd)+4);
-  sprintf(line, "%s %s &", exec, cmd);
+  char *line=alloca(strlen(exec) + strlen(cmd) + strlen(title) +4);
+  sprintf(line, "%s %s %s &", exec, cmd, title);
   //sprintf(line, "%s &", cmd);
   printf("my exec line=%s\n",line);
   system(line);
@@ -232,6 +232,11 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  // set default window title
+  if(argc<2) {
+    argv[2]= "home";
+  }
+
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
@@ -244,9 +249,10 @@ int main(int argc, char *argv[])
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
+
   size_hints.flags = USSize;
-  txtprop1.value=(unsigned char *)"workbench";
-  txtprop2.value=(unsigned char *)"ExecuteCmd";
+  txtprop1.value=(unsigned char *)argv[2];
+  txtprop2.value=(unsigned char *)argv[2];
   txtprop2.encoding=txtprop1.encoding=XA_STRING;
   txtprop2.format=txtprop1.format=8;
   txtprop1.nitems=strlen((char *)txtprop1.value);
@@ -313,8 +319,8 @@ int main(int argc, char *argv[])
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
               XClearWindow(dpy, icons[i].iconwin);
               XFlush(dpy);
-              //printf("\nspawn path=%s\n", icons[i].path);
-              spawn_new_wb(icons[i].path);
+              printf("\nspawn path=%s\n", icons[i].name);
+              spawn_new_wb(icons[i].path,icons[i].name );
             }
           }
           break;
