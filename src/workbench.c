@@ -68,46 +68,58 @@ void refresh_main(void)
   }
 }
 
-void read_entries() {
+void read_entries(char *path) {
   // differentiate between files and directories,
   // get max number of instances of wbicon
   DIR *dirp;
   struct dirent *dp;
 
-  dirp = opendir("/home/klaus/");
+  dirp = opendir(path);
   while ((dp = readdir(dirp)) != NULL) {
     if (dp->d_type & DT_DIR) {
       // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.'){
-        printf ("DIRECTORY: %s\n", dp->d_name);
+        //printf ("DIRECTORY: %s\n", dp->d_name);
         dircount++;
       }
-    } else
-      printf ("FILE: %s\n", dp->d_name);
+    }
+//     else
+//       printf ("FILE: %s\n", dp->d_name);
   }
   // get max number of instances of wbicon to allocate
   icons = calloc(dircount, sizeof(wbicon));
   closedir(dirp);
   }
 
-void getlabels(){
+void getlabels(char *path){
   // same loop, but for getting filenames this time
   DIR *dirp;
   struct dirent *dp;
   int count=0;
-  dirp = opendir("/home/klaus/");
+  dirp = opendir(path);
   while ((dp = readdir(dirp)) != NULL) {
     if (dp->d_type & DT_DIR) {
       // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.'){
-        printf ("DIRECTORY: %s\n", dp->d_name);
+        //printf ("DIRECTORY: %s\n", dp->d_name);
         //assign value
         icons[count].name =  malloc(strlen(dp->d_name)+1);
         strcpy(icons[count].name, dp->d_name);
+
+        int pathsize = strlen(path) + strlen(icons[count].name) +1;
+        char *tempo = malloc(pathsize);
+
+        strcpy(tempo,path);
+        strcat(tempo,icons[count].name);
+        strcat(tempo,"/");
+        printf("tempo=%s\n",tempo);
+        icons[count].path = malloc(pathsize);
+        icons[count].path = tempo;
         count++;
       }
-    } else
-      printf ("FILE: %s\n", dp->d_name);
+    }
+//     else
+//       printf ("FILE: %s\n", dp->d_name);
   }
   closedir(dirp);
 }
@@ -167,8 +179,24 @@ void list_entries() {
 
   XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
   XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+  printf("icon path=%s\n", icons[i].path);
   }
   FreeDiskObject(icon_do);
+}
+
+void spawn_new_wb(const char *cmd){
+  // /usr/local/lib/amiwm/workbench
+  const char *exec = "/usr/local/lib/amiwm/workbench";
+  int temp = strlen(exec);
+  char *line=alloca(strlen(exec) + strlen(cmd)+4);
+  sprintf(line, "%s %s", exec, cmd);
+  //sprintf(line, "%s &", cmd);
+  printf("my exec line=%s\n",line);
+  system(line);
+
+//   read_entries(path);
+//   getlabels(path);  /* todo: try to remove one of the two loop  */
+//   list_entries();
 }
 
 int main(int argc, char *argv[])
@@ -207,9 +235,20 @@ int main(int argc, char *argv[])
                   &txtprop2, argv, argc,
                   &size_hints, NULL, NULL);
 
-  read_entries();
-  getlabels();  /* todo: try to remove one of the two loop  */
-  list_entries();
+//   read_entries();
+//   getlabels();  /* todo: try to remove one of the two loop  */
+//   list_entries();
+//  spawn_new_wb("/home/klaus/");
+
+    for (int i=0;i<argc;i++) {
+      printf("argv[%d]=%s\n",i,argv[i]);
+    }
+    if(argv[1]==NULL) {
+      argv[1]= "/home/klaus/";
+    }
+    read_entries(argv[1]);
+    getlabels(argv[1]);  /* todo: try to remove one of the two loop  */
+    list_entries();
 
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
@@ -251,6 +290,9 @@ int main(int argc, char *argv[])
                 icons[i].pmA = icons[i].pm1;
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
               XClearWindow(dpy, icons[i].iconwin);
+              printf("\nspawn path=%s\n", icons[i].path);
+              spawn_new_wb(icons[i].path);
+              //spawn_new_wb();
             }
           }
           break;
