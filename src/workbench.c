@@ -32,7 +32,7 @@ struct ColorStore colorstore1, colorstore2;
 
 char *progname;
 Display *dpy;
-Pixmap pm1, pm2;
+
 struct DrawInfo dri;
 
 typedef struct {
@@ -58,14 +58,14 @@ GC gc;
 /** refresh window background */
 void refresh_main(void)
 {
-  for (int i=0; i<=dircount;i++){
-    if( icons[i].name != NULL) {
-      //XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
-      XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
-    }
-  }
+//   for (int i=0; i<=dircount;i++){
+//     if( icons[i].name != NULL) {
+//       //XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+//       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+//       XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, icons[i].x, icons[i].y+35, icons[i].name, strlen(icons[i].name));
+//       XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
+//     }
+//   }
 }
 
 void read_entries(char *path) {
@@ -112,7 +112,7 @@ void getlabels(char *path){
         strcpy(tempo,path);
         strcat(tempo,icons[count].name);
         strcat(tempo,"/");
-        printf("tempo=%s\n",tempo);
+        //printf("tempo=%s\n",tempo);
         icons[count].path = malloc(pathsize);
         icons[count].path = tempo;
         count++;
@@ -144,43 +144,64 @@ void list_entries() {
   struct Image *im1 = icon_do->do_Gadget.GadgetRender;
   struct Image *im2 = icon_do->do_Gadget.SelectRender;
 
+  Pixmap pm1, pm2;
   int newline_x = 0;
   int newline_y = 0;
   for (int i=0;i<dircount;i++){
-  icons[i].width=icon_do->do_Gadget.Width;
-  icons[i].height=icon_do->do_Gadget.Height;
+    icons[i].width=icon_do->do_Gadget.Width;
+    icons[i].height=icon_do->do_Gadget.Height;
 
-  if(newline_x*80 < win_width){
-    icons[i].x=10 + (newline_x*80);
-    icons[i].y=10 + (newline_y*50);
-    newline_x++;
+    if(newline_x*80 < win_width){
+      icons[i].x=10 + (newline_x*80);
+      icons[i].y=10 + (newline_y*50);
+      newline_x++;
+    }
+    else if(newline_x*80 > win_width) {
+      newline_x = 0;
+      newline_y++;
+      icons[i].x=10 + (newline_x*80);
+      icons[i].y=10 + (newline_y*50);
+      newline_x++;
+    }
+
+    icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
+                                        icons[i].width+18, icons[i].height+15, 1,
+                                         dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN],
+                                        dri.dri_Pens[BACKGROUNDPEN]);
+
+    pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7, im1, icons[i].width, icons[i].height, &colorstore1);
+
+    pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7, im2, icons[i].width, icons[i].height, &colorstore2);
+
+
+    icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width+18, icons[i].height+15, 24);
+    XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width+18, icons[i].height+15);
+    XCopyArea(dpy, pm1, icons[i].pm1, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
+
+    icons[i].pm2 = XCreatePixmap(dpy, pm2, icons[i].width+18, icons[i].height+15, 24);
+    XFillRectangle(dpy,icons[i].pm2, gc, 0,0,icons[i].width+18, icons[i].height+15);
+    XCopyArea(dpy, pm2, icons[i].pm2, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
+
+
+    icons[i].pmA = icons[i].pm1; /* set active pixmap */
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+
+    XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+    if (strlen(icons[i].name) < 10 ) {
+      int s_offset = (10-strlen(icons[i].name));
+      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, s_offset*4, 32, icons[i].name, strlen(icons[i].name));
+      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, s_offset*4, 32, icons[i].name, strlen(icons[i].name));
+    } else {
+    XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, 32, icons[i].name, strlen(icons[i].name));
+    XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, 32, icons[i].name, strlen(icons[i].name));
+    }
+    //printf("\nmy icon name=%s\n",icons[i].name);
+
+    XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+    //printf("icon path=%s\n", icons[i].path);
   }
-  else if(newline_x*80 > win_width) {
-    newline_x = 0;
-    newline_y++;
-    icons[i].x=10 + (newline_x*80);
-    icons[i].y=10 + (newline_y*50);
-    newline_x++;
-  }
-
-  icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
-                                       icons[i].width, icons[i].height, 1,
-                                       dri.dri_Pens[BACKGROUNDPEN],
-                                       dri.dri_Pens[BACKGROUNDPEN]);
-
-  pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
-                        iconcolor, 7, im1, icons[i].width, icons[i].height, &colorstore1);
-
-  pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN],
-                        iconcolor, 7, im2, icons[i].width, icons[i].height, &colorstore2);
-  icons[i].pm1 = pm1;
-  icons[i].pm2 = pm2;
-  icons[i].pmA = pm1; /* set active pixmap */
-
-  XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-  XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
-  printf("icon path=%s\n", icons[i].path);
-  }
+//   XFreePixmap(dpy, pm1);
+//   XFreePixmap(dpy, pm2);
   FreeDiskObject(icon_do);
 }
 
@@ -191,7 +212,7 @@ void spawn_new_wb(const char *cmd){
   char *line=alloca(strlen(exec) + strlen(cmd)+4);
   sprintf(line, "%s %s", exec, cmd);
   //sprintf(line, "%s &", cmd);
-  printf("my exec line=%s\n",line);
+  //printf("my exec line=%s\n",line);
   system(line);
 
 //   read_entries(path);
@@ -216,7 +237,7 @@ int main(int argc, char *argv[])
   init_dri(&dri, dpy, root, attr.colormap, False);
 
   mainwin=XCreateSimpleWindow(dpy, root, win_x, win_y, win_width, win_height, 1,
-                              dri.dri_Pens[SHADOWPEN],
+                              dri.dri_Pens[BACKGROUNDPEN],
                               dri.dri_Pens[BACKGROUNDPEN]);
 
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
@@ -265,7 +286,7 @@ int main(int argc, char *argv[])
         case Expose:
           if(!event.xexpose.count) {
             if(event.xexpose.window == mainwin) {
-              refresh_main();
+              //refresh_main();
               printf("exposing\n");
             }
           }
@@ -288,11 +309,12 @@ int main(int argc, char *argv[])
                 icons[i].pmA = icons[i].pm2;
               else if (icons[i].pmA == icons[i].pm2)
                 icons[i].pmA = icons[i].pm1;
+
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
               XClearWindow(dpy, icons[i].iconwin);
-              printf("\nspawn path=%s\n", icons[i].path);
+              XFlush(dpy);
+              //printf("\nspawn path=%s\n", icons[i].path);
               spawn_new_wb(icons[i].path);
-              //spawn_new_wb();
             }
           }
           break;
