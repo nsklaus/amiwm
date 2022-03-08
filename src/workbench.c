@@ -87,7 +87,7 @@ void read_entries(char *path) {
         dircount++;
       }
     }
-    else {
+    else if (dp->d_type & DT_REG){
       if (dp->d_name[0] != '.'){
       dircount++;
       }
@@ -144,9 +144,8 @@ void getlabels(char *path){
 }
 
 void list_entries() {
-  unsigned long *iconcolor;
-  unsigned long bleh[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
-  iconcolor = bleh;
+  unsigned long iconcolor[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
+
 
   int newline_x = 0;
   int newline_y = 0;
@@ -255,7 +254,9 @@ int textlength1 = XmbTextEscapement(dri.dri_FontSet, "D", strlen("D"));
 printf("my text1 length=%d for string=%s\n", textlength1,"D" );
 int textlength2 = XmbTextEscapement(dri.dri_FontSet, "o", strlen("o"));
 printf("my text2 length=%d for string=%s\n", textlength2,"o" );
+  if(icon_do != NULL){
   FreeDiskObject(icon_do);
+  }
 }
 
 void spawn_new_wb(const char *cmd, char *title){
