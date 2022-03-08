@@ -107,14 +107,15 @@ void getlabels(char *path){
   while ((dp = readdir(dirp)) != NULL) {
     if (dp->d_type & DT_DIR) {
       if (dp->d_name[0] != '.'){
+        printf("d_name=%s\n",dp->d_name);
         icons[count].name =  malloc(strlen(dp->d_name)+1);
         strcpy(icons[count].name, dp->d_name);
-        int pathsize = strlen(path) + strlen(icons[count].name) +1;
+        int pathsize = strlen(path) + strlen(icons[count].name) +2;
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
         strcat(tempo,icons[count].name);
         strcat(tempo,"/");
-        icons[count].path = malloc(pathsize);
+        //icons[count].path = malloc(pathsize);
         icons[count].path = tempo;
         icons[count].type = "directory";
         count++;
@@ -127,12 +128,12 @@ void getlabels(char *path){
         //wbicon_data(count, dp->d_name, path, "file" );
         icons[count].name =  malloc(strlen(dp->d_name)+1);
         strcpy(icons[count].name, dp->d_name);
-        int pathsize = strlen(path) + strlen(icons[count].name) +1;
+        int pathsize = strlen(path) + strlen(icons[count].name) +2;
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
         strcat(tempo,icons[count].name);
         strcat(tempo,"/");
-        icons[count].path = malloc(pathsize);
+        //icons[count].path = malloc(pathsize);
         icons[count].path = tempo;
         icons[count].type = "file";
         count++;
@@ -192,7 +193,7 @@ void list_entries() {
       }
       icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
                                           icons[i].width+18, icons[i].height+15, 1,
-                                          dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN],
+                                           dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN],
                                           dri.dri_Pens[BACKGROUNDPEN]);
 
       pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
@@ -213,18 +214,47 @@ void list_entries() {
       XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
 
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      if (strlen(icons[i].name) < 10 ) {
-        int s_offset = (10-strlen(icons[i].name));
-        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, s_offset*4, 32, icons[i].name, strlen(icons[i].name));
-        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, s_offset*4, 32, icons[i].name, strlen(icons[i].name));
+
+      //shorten long labels
+      if (strlen(icons[i].name) > 10 ) {
+        char *str1=icons[i].name;
+        char str2[i][11];
+        strncpy (str2[i],str1,8);
+        str2[i][8]='.';
+        str2[i][9]='.';
+        str2[i][10]='\0';
+        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
+        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
+        printf("str2[%d]=%s\n", i,  str2[i]);
       } else {
-      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, 32, icons[i].name, strlen(icons[i].name));
-      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, 32, icons[i].name, strlen(icons[i].name));
+        int my_offset = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+        int new_offset = icons[i].height/2;
+        printf("my_offset=%d new_offset=%d icons[%d].name=%s\n",my_offset,new_offset,i, icons[i].name);
+        int s_offset = (10-strlen(icons[i].name));
+        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
       }
+
+//       if (strlen(icons[i].name) < 10 ) {
+//         int s_offset = (10-strlen(icons[i].name));
+//         XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, s_offset*4, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+//         XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, s_offset*4, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+//       } else {
+//         XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+//         XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+//       }
+
       XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+//       int textlength = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+//       printf("my text length=%d for string=%s\n", textlength, icons[i].name);
+
   }
 //   XFreePixmap(dpy, pm1);
 //   XFreePixmap(dpy, pm2);
+int textlength1 = XmbTextEscapement(dri.dri_FontSet, "D", strlen("D"));
+printf("my text1 length=%d for string=%s\n", textlength1,"D" );
+int textlength2 = XmbTextEscapement(dri.dri_FontSet, "o", strlen("o"));
+printf("my text2 length=%d for string=%s\n", textlength2,"o" );
   FreeDiskObject(icon_do);
 }
 
