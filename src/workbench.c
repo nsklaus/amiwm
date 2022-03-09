@@ -317,6 +317,7 @@ int main(int argc, char *argv[])
           {
             if(event.xexpose.window == mainwin) { }//printf("event: exposing\n"); }
           }
+          break;
         case LeaveNotify:
           //  if(event.xcrossing.window==icon1.iconwin) {
           //     printf("leave\n");
@@ -328,13 +329,23 @@ int main(int argc, char *argv[])
           //   }
           break;
 
-
         case ButtonPress:
-
           for (int i=0;i<dircount;i++)
           {
+            if (event.xcrossing.window==mainwin)
+            {
+              // clicked on the window, abort clear all icon selection
+              icons[i].pmA = icons[i].pm1;
+              icons[i].selected = False;
+              icons[i].dragging = False;
+              XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+              XClearWindow(dpy, icons[i].iconwin);
+              XFlush(dpy);
+            }
+
             if(event.xcrossing.window==icons[i].iconwin)
             {
+              //handle double click
               if ((event.xbutton.time - last_icon_click) < dblClickTime)
               {
                 printf("* double click! *\n");
@@ -354,6 +365,7 @@ int main(int argc, char *argv[])
                   spawn_new_wb(icons[i].path,icons[i].name );
                 }
               }
+              // handle single click
               else
               {
                 last_icon_click=event.xbutton.time;
@@ -381,6 +393,8 @@ int main(int argc, char *argv[])
           {
             if(icons[i].dragging) {
               printf("grabpointer, name=%s x=%d y=%d\n",icons[i].name, event.xmotion.x_root,event.xmotion.y_root);
+              XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-50,event.xmotion.y_root-50);
+
             }
           }
           break;
@@ -394,26 +408,11 @@ int main(int argc, char *argv[])
               printf("release button, ungrabpointer\n");
             }
           }
-          // if(event.xcrossing.window==icon1.iconwin)  {
-          //   printf("release\n");
-          // }
           break;
         case KeyPress:
           break;
         case ConfigureNotify: // resize or move event
-          //  printf("resize event: x=%d, y=%d, width=%d, height=%d\n",
-          //         event.xconfigure.x,
-          //         event.xconfigure.y,
-          //         event.xconfigure.width,
-          //         event.xconfigure.height);
 
-          for (int i=0;i<dircount;i++)
-          {
-            if(icons[i].dragging)
-            {
-            XMoveWindow(dpy,icons[i].iconwin , event.xconfigure.x, event.xconfigure.y);
-            }
-          }
           win_x=event.xconfigure.x;
           win_y=event.xconfigure.y;
           win_width=event.xconfigure.width;
