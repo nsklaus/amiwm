@@ -94,9 +94,6 @@ void read_entries(char *path) {
         dircount++;
       }
     }
-//     else if (dp->d_type & DT_REG){
-//       if (dp->d_name[0] != '.'){ dircount++; }
-//     }
   }
   // get max number of instances of wbicon to allocate
   icons = calloc(dircount, sizeof(wbicon));
@@ -116,8 +113,6 @@ void getlabels(char *path)
     {
       if (dp->d_name[0] != '.')
       {
-        //printf("d_name=%s\n",dp->d_name);
-        printf("case directory: patharg=%s\n",path);
         icons[count].name =  malloc(strlen(dp->d_name)+1);
         strcpy(icons[count].name, dp->d_name);
         int pathsize = strlen(path) + strlen(icons[count].name) +2;
@@ -126,7 +121,6 @@ void getlabels(char *path)
         strcat(tempo,icons[count].name);
         strcat(tempo,"/");
         icons[count].path = tempo;
-        printf("directory: icons[%d].name=%s path=%s\n",count, icons[count].name, icons[count].path);
         icons[count].type = "directory";
         count++;
       }
@@ -138,14 +132,12 @@ void getlabels(char *path)
       {
         //printf ("FILE: %s\n", dp->d_name);
         //wbicon_data(count, dp->d_name, path, "file" );
-        printf("case file: patharg=%s\n",path);
         icons[count].name =  malloc(strlen(dp->d_name)+1);
         strcpy(icons[count].name, dp->d_name);
         int pathsize = strlen(path) +2;
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
         icons[count].path = tempo;
-        printf("file: icons[%d].name=%s path=%s\n",count, icons[count].name, icons[count].path);
         icons[count].type = "file";
         count++;
       }
@@ -340,15 +332,12 @@ int main(int argc, char *argv[])
           {
             if(event.xcrossing.window==icons[i].iconwin)
             {
-              //printf("event.xbutton.time=%lu  last_icon_click=%lu \n",event.xbutton.time, last_icon_click);
               if ((event.xbutton.time - last_icon_click) < dblClickTime)
               {
                 printf("* double click! *\n");
                 icons[i].pmA = icons[i].pm2;
-                //printf("icons[%d].type=%s icons[%d].name=%s\n", i,icons[i].type,i,icons[i].name);
                 if (strcmp(icons[i].type,"file")==0)
                 {
-                  //printf("it's a file ! icons[%d].type=%s icons[%d].name=%s\n",i,icons[i].type,i,icons[i].name);
                   const char *cmd = "DISPLAY=:1 xdg-open";
                   const char *path = icons[i].path;
                   const char *exec = icons[i].name;
@@ -359,7 +348,6 @@ int main(int argc, char *argv[])
                 }
                 else if (strcmp(icons[i].type,"directory")==0)
                 {
-                  //printf("are we getting here at all ? \n");
                   spawn_new_wb(icons[i].path,icons[i].name );
                 }
               }
