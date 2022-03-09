@@ -49,6 +49,19 @@ when pressing shift, when trying to drag at least 25% of the window
 ofscreen, or always, respectively.
 
 ```
+opaquemove {yes|no}
+```
+
+Enable displaying content of a window when it is being moved around.
+
+```
+opaqueresize {yes|no}
+```
+
+Enable non-blocking displaying of a window content when it is being resized.
+For example: resizing window of video player doesn't free the playing while the size of the window is being modified.
+
+```
 IconDir "path"
 ```
 
