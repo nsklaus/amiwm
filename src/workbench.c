@@ -27,7 +27,9 @@
 #include <math.h>
 #include "screen.h"
 
-int dblClickTime=1500;
+int dblClickTime=400;
+Time last_icon_click=0, last_double=0;
+
 static int selected=0, depressed=0, stractive=1;
 struct ColorStore colorstore1, colorstore2;
 
@@ -49,6 +51,7 @@ typedef struct
   int y;
   int width;
   int height;
+  Bool selected;
 } wbicon;
 
 wbicon *icons;
@@ -113,7 +116,7 @@ void getlabels(char *path)
     {
       if (dp->d_name[0] != '.')
       {
-        printf("d_name=%s\n",dp->d_name);
+        //printf("d_name=%s\n",dp->d_name);
         icons[count].name =  malloc(strlen(dp->d_name)+1);
         strcpy(icons[count].name, dp->d_name);
         int pathsize = strlen(path) + strlen(icons[count].name) +2;
@@ -254,7 +257,7 @@ void spawn_new_wb(const char *cmd, char *title)
   const char *exec = "/usr/local/lib/amiwm/workbench";
   char *line=alloca(strlen(exec) + strlen(cmd) + strlen(title) +4);
   sprintf(line, "%s %s %s &", exec, cmd, title);
-  printf("spawn_new_wb: my exec line=%s\n",line);
+  //printf("spawn_new_wb: my exec line=%s\n",line);
   system(line);
 }
 
@@ -319,7 +322,7 @@ int main(int argc, char *argv[])
         case Expose:
           if(!event.xexpose.count)
           {
-            if(event.xexpose.window == mainwin) { printf("event: exposing\n"); }
+            if(event.xexpose.window == mainwin) { }//printf("event: exposing\n"); }
           }
         case LeaveNotify:
           //  if(event.xcrossing.window==icon1.iconwin) {
@@ -332,19 +335,31 @@ int main(int argc, char *argv[])
           //   }
           break;
         case ButtonPress:
+
           for (int i=0;i<dircount;i++)
           {
             if(event.xcrossing.window==icons[i].iconwin)
             {
-              // toggle active icon
-              if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
-              else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+              //printf("event.xbutton.time=%lu  last_icon_click=%lu \n",event.xbutton.time, last_icon_click);
+              if ((event.xbutton.time - last_icon_click) < dblClickTime)
+              {
+                printf("* double click! *\n");
+                icons[i].pmA = icons[i].pm2;
+                spawn_new_wb(icons[i].path,icons[i].name );
+              }
+              else
+              {
+                last_icon_click=event.xbutton.time;
+                // toggle active icon
+                if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
+                else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+                printf("simple click!\n");
 
+              }
               // force redraw
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
               XClearWindow(dpy, icons[i].iconwin);
               XFlush(dpy);
-              spawn_new_wb(icons[i].path,icons[i].name );
             }
           }
           break;
