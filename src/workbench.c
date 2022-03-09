@@ -25,7 +25,6 @@
 #include "libami.h"
 #include <sys/stat.h>
 #include <math.h>
-#include "screen.h"
 
 int dblClickTime=400;
 Time last_icon_click=0, last_double=0;
@@ -238,7 +237,7 @@ void list_entries()
         XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
         XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
       }
-      XSelectInput(dpy, icons[i].iconwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+      XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
   }
   // XFreePixmap(dpy, pm1);
   // XFreePixmap(dpy, pm2);
@@ -256,6 +255,7 @@ void spawn_new_wb(const char *cmd, char *title)
 
 int main(int argc, char *argv[])
 {
+  //scr=c->scr;
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
                               dri.dri_Pens[BACKGROUNDPEN],
                               dri.dri_Pens[BACKGROUNDPEN]);
 
-  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -363,10 +363,9 @@ int main(int argc, char *argv[])
                 icons[i].dragging = TRUE;
                 if (icons[i].dragging)
                 {
-                  case MotionNotify:
-                    printf("motionnotify x=%d y=%d\n",event.xmotion.x_root,event.xmotion.y_root);
-                //icons[i].iconwin = event.xconfigure.x;
-                //icons[i].y = event.xconfigure.y;
+                  XGrabPointer(dpy, icons[i].iconwin, False, PointerMotionMask|Button1MotionMask|ButtonPressMask|
+                  ButtonReleaseMask, GrabModeAsync, GrabModeAsync, mainwin,
+                  None, CurrentTime);
                 }
                 printf("simple click!\n");
               }
@@ -377,13 +376,22 @@ int main(int argc, char *argv[])
             }
           }
           break;
+        case MotionNotify:
+          for (int i=0;i<dircount;i++)
+          {
+            if(icons[i].dragging) {
+              printf("grabpointer, name=%s x=%d y=%d\n",icons[i].name, event.xmotion.x_root,event.xmotion.y_root);
+            }
+          }
+          break;
         case ButtonRelease:
           for (int i=0;i<dircount;i++)
           {
             if(event.xcrossing.window==icons[i].iconwin)
             {
               icons[i].dragging = FALSE;
-              printf("release\n");
+              XUngrabPointer(dpy, CurrentTime);
+              printf("release button, ungrabpointer\n");
             }
           }
           // if(event.xcrossing.window==icon1.iconwin)  {
