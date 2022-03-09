@@ -52,6 +52,7 @@ typedef struct
   int width;
   int height;
   Bool selected;
+  Bool dragging;
 } wbicon;
 
 wbicon *icons;
@@ -326,6 +327,8 @@ int main(int argc, char *argv[])
           //     printf("enter\n");
           //   }
           break;
+
+
         case ButtonPress:
 
           for (int i=0;i<dircount;i++)
@@ -357,8 +360,15 @@ int main(int argc, char *argv[])
                 // toggle active icon
                 if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
                 else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+                icons[i].dragging = TRUE;
+                if (icons[i].dragging)
+                {
+                  case MotionNotify:
+                    printf("motionnotify x=%d y=%d\n",event.xmotion.x_root,event.xmotion.y_root);
+                //icons[i].iconwin = event.xconfigure.x;
+                //icons[i].y = event.xconfigure.y;
+                }
                 printf("simple click!\n");
-
               }
               // force redraw
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
@@ -368,6 +378,14 @@ int main(int argc, char *argv[])
           }
           break;
         case ButtonRelease:
+          for (int i=0;i<dircount;i++)
+          {
+            if(event.xcrossing.window==icons[i].iconwin)
+            {
+              icons[i].dragging = FALSE;
+              printf("release\n");
+            }
+          }
           // if(event.xcrossing.window==icon1.iconwin)  {
           //   printf("release\n");
           // }
@@ -380,6 +398,14 @@ int main(int argc, char *argv[])
           //         event.xconfigure.y,
           //         event.xconfigure.width,
           //         event.xconfigure.height);
+
+          for (int i=0;i<dircount;i++)
+          {
+            if(icons[i].dragging)
+            {
+            XMoveWindow(dpy,icons[i].iconwin , event.xconfigure.x, event.xconfigure.y);
+            }
+          }
           win_x=event.xconfigure.x;
           win_y=event.xconfigure.y;
           win_width=event.xconfigure.width;
