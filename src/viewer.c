@@ -19,12 +19,10 @@
 #include <locale.h>
 #include <wchar.h>
 #endif
+#include <dirent.h>
 
 #include "drawinfo.h"
-#include <dirent.h>
 #include "libami.h"
-#include <sys/stat.h>
-#include <math.h>
 
 
 int dblClickTime=400;
@@ -62,11 +60,6 @@ Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
 GC gc;
 
-// void open_icon()
-// {
-//   printf("BLEH!\n");
-// }
-
 void read_entries(char *path) {
   // differentiate between files and directories,
   // get max number of instances of wbicon
@@ -88,15 +81,11 @@ void read_entries(char *path) {
         strcat(temp,path);
         strcat(temp,dp->d_name);
         strcat(temp,"\"");
-        //strcat(temp," >/dev/null");
         char *my_cmd = temp;
-        //printf("my_cmd=%s\n",my_cmd);
         FILE *fp = popen(my_cmd, "r");
         char *ln = NULL;
         size_t len = 0;
-
-        while (getline(&ln, &len, fp) != -1)
-          fputs(ln, stdout);
+        getline(&ln, &len, fp);
 
         char *buf = ln;
         char * ptr;
@@ -104,7 +93,8 @@ void read_entries(char *path) {
         ptr = strrchr( buf, ch );
         if (ptr !=NULL)
         {
-          if(strstr(ptr, "Amiga") != NULL && (strstr(ptr, "icon") !=NULL ))
+          if(strstr(ptr, "Amiga") != NULL &&
+            (strstr(ptr, "icon") !=NULL ))
           {
             dircount++;
           }
@@ -118,7 +108,6 @@ void read_entries(char *path) {
   printf("total file count=%d\n",dircount);
   icons = calloc(dircount, sizeof(wbicon));
   closedir(dirp);
-  //exit(0);
   }
 
 void getlabels(char *path)
@@ -262,15 +251,6 @@ void list_entries(char *path)
   if(icon_do != NULL){ FreeDiskObject(icon_do); }
 }
 
-void spawn_new_wb(const char *cmd, char *title)
-{
-  const char *exec = "/usr/local/lib/amiwm/workbench";
-  char *line=alloca(strlen(exec) + strlen(cmd) + strlen(title) +4);
-  sprintf(line, "%s %s %s &", exec, cmd, title);
-  //printf("spawn_new_wb: my exec line=%s\n",line);
-  system(line);
-}
-
 void deselectAll()
 {
   for (int i=0;i<dircount;i++)
@@ -317,8 +297,6 @@ int main(int argc, char *argv[])
 	    XDisplayName(NULL));
     exit(1);
   }
-
-
 
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
@@ -388,39 +366,16 @@ int main(int argc, char *argv[])
 
             if(event.xcrossing.window==icons[i].iconwin)
             {
-              //handle double click
-              if ((event.xbutton.time - last_icon_click) < dblClickTime)
-              {
-                printf("* double click! *\n");
-                icons[i].pmA = icons[i].pm2;
-                if (strcmp(icons[i].type,"file")==0)
-                {
-                  const char *cmd = "DISPLAY=:1 xdg-open";
-                  const char *path = icons[i].path;
-                  const char *exec = icons[i].name;
-                  char *line=alloca(strlen(cmd) + strlen(icons[i].path) + strlen(exec) +2);
-                  sprintf(line, "%s %s%s &", cmd, path, exec);
-                  //printf("line=%s\n",line);
-                  system(line);
-                }
-                else if (strcmp(icons[i].type,"directory")==0)
-                {
-                  spawn_new_wb(icons[i].path,icons[i].name );
-                }
-              }
               // handle single click
-              else
-              {
-                last_icon_click=event.xbutton.time;
-                // clicked on icon, unselect others
-                // TODO: handle modifier & multiselect later
-                deselectAll();
-                // toggle active icon
-                if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
-                else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
-                icons[i].dragging = TRUE;
-                printf("simple click!\n");
-              }
+              last_icon_click=event.xbutton.time;
+              // clicked on icon, unselect others
+              // TODO: handle modifier & multiselect later
+              deselectAll();
+              // toggle active icon
+              if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
+              else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+              icons[i].dragging = TRUE;
+
               // force redraw
               XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
               XClearWindow(dpy, icons[i].iconwin);
