@@ -366,8 +366,8 @@ static struct DiskObject *int_load_do(char *filename)
        (diskobj=calloc(1, sizeof(struct DiskObject)))) {
       diskobj->do_Magic=getu16(&p); diskobj->do_Version=getu16(&p);
       if(diskobj->do_Magic!=WB_DISKMAGIC) {
-	free(diskobj);
-	return NULL;
+        free(diskobj);
+        return NULL;
       }
       diskobj->do_Gadget.NextGadget=(struct Gadget *)getu32(&p);
       diskobj->do_Gadget.LeftEdge=get16(&p);

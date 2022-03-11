@@ -439,7 +439,11 @@ void createmenubar()
   menu_layout(sm2);
   menu_layout(sm3);
   m=add_menu("Icons", DISABLED);
-  add_item(m,"Open",'O',DISABLED);
+
+  //meh
+  //add_item(m,"Open",'O',DISABLED);
+  add_item(m,"Open",'O', 0);
+
   add_item(m,"Copy",'C',DISABLED);
   add_item(m,"Rename...",'R',DISABLED);
   add_item(m,"Information...",'I',DISABLED);
@@ -772,6 +776,12 @@ void menuaction(struct Item *i, struct Item *si)
     }
     break;
   case 2: /* Icons */
+    switch(item) {
+      case 1:
+        // meh
+        //open_icon();
+        break;
+    }
     break;
   case 3: /* Tools */
 #ifndef AMIGAOS

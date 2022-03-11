@@ -20,7 +20,7 @@ Window md_create_appicon(Window p, int x, int y, char *name,
   // wb_win_icon: step in md_command .. follow segfault
   res=md_command(p, MCMD_CREATEAPPICON, nai, sizeof(struct NewAppIcon)+l, &data);
 
-  printf("\n mdicon.c_md_create_appicon: res=%d\n", res); //usualy, res=8
+  //printf("\n mdicon.c_md_create_appicon: res=%d\n", res); //usualy, res=8
   if(res<sizeof(w)) {
     if(data) free(data);
 #ifndef HAVE_ALLOCA
@@ -53,9 +53,9 @@ Pixmap md_image_to_pixmap(Window w, unsigned long bgcolor, struct Image *i,
       return None;
     iconcolor = (unsigned long *)(void *)p;
     iconcolormask = (res/sizeof(unsigned long))-1;
-    for (int i=0;i<8;i++){
-      printf("iconcolor[%d]=%lu  iconcolormask=%d\n", i, iconcolor[i], iconcolormask);
-    }
+//     for (int i=0;i<8;i++){
+//       printf("iconcolor[%d]=%lu  iconcolormask=%d\n", i, iconcolor[i], iconcolormask);
+//     }
   }
   pm = image_to_pixmap(md_display(), w, gc, bgcolor, iconcolor, iconcolormask,
 		       i, width, height, cs);

@@ -26,6 +26,8 @@
 #include <sys/stat.h>
 #include <math.h>
 #include "workbench.h"
+#include <Xm/Xm.h>
+
 
 int dblClickTime=400;
 Time last_icon_click=0, last_double=0;
@@ -62,11 +64,10 @@ Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
 GC gc;
 
-void open_icon()
-{
-  // test beginning to act through amiwm menu commands
-  printf("BLEH!\n");
-}
+// void open_icon()
+// {
+//   printf("BLEH!\n");
+// }
 
 void read_entries(char *path) {
   // differentiate between files and directories,
@@ -77,66 +78,98 @@ void read_entries(char *path) {
   dirp = opendir(path);
   while ((dp = readdir(dirp)) != NULL)
   {
-    if (dp->d_type & DT_DIR || (dp->d_type & DT_REG))
+    if (dp->d_type & DT_REG)
     {
       // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.'){
-        dircount++;
+
+        //printf("d_name=%s\n",dp->d_name);
+        printf("path=%s d_name=%s\n",path,dp->d_name);
+        int len_cmd = strlen("/usr/bin/file ") + strlen(path) + strlen(dp->d_name)+1;
+        char *temp = malloc(len_cmd);
+        strcpy(temp, "/usr/bin/file ");
+        strcat(temp,path);
+        strcat(temp,dp->d_name);
+        char *my_cmd = temp;
+        printf("my_cmd=%s\n",my_cmd);
+
+        FILE *fp = popen(my_cmd, "r");
+        char *ln = NULL;
+        size_t len = 0;
+
+        while (getline(&ln, &len, fp) != -1)
+          fputs(ln, stdout);
+
+        char *buf = ln;
+        char * ptr;
+        int    ch = ':';
+        ptr = strrchr( buf, ch );
+        printf("\nptr=%s\n",ptr);
+        if (ptr !=NULL)
+        {
+          if(strstr(ptr, "Amiga") != NULL)
+          {
+            dircount++;
+            printf("success, adding file: %s to count as number %d\n",dp->d_name, dircount);
+          }
+        }
+
+        free(ln);
+        pclose(fp);
       }
     }
   }
   // get max number of instances of wbicon to allocate
+  printf("total file count=%d\n",dircount);
   icons = calloc(dircount, sizeof(wbicon));
   closedir(dirp);
+  //exit(0);
   }
 
 void getlabels(char *path)
 {
   // same loop, but for getting filenames this time
-  DIR *dirp;
-  struct dirent *dp;
-  int count=0;
-  dirp = opendir(path);
-  while ((dp = readdir(dirp)) != NULL)
+  if (dircount > 0) // enter the loop only if we have files to process
   {
-    if (dp->d_type & DT_DIR)
+    DIR *dirp;
+    struct dirent *dp;
+    int count=0;
+    dirp = opendir(path);
+    while ((dp = readdir(dirp)) != NULL)
     {
-      if (dp->d_name[0] != '.')
+      if (dp->d_type & DT_REG)
       {
-        icons[count].name =  malloc(strlen(dp->d_name)+1);
-        strcpy(icons[count].name, dp->d_name);
-        int pathsize = strlen(path) + strlen(icons[count].name) +2;
-        char *tempo = malloc(pathsize);
-        strcpy(tempo,path);
-        strcat(tempo,icons[count].name);
-        strcat(tempo,"/");
-        icons[count].path = tempo;
-        icons[count].type = "directory";
-        count++;
-      }
-    }
+        if (dp->d_name[0] != '.')
+        {
+          char *buf = dp->d_name;
+          char * ptr;
+          int    ch = '.';
+          ptr = strrchr( buf, ch );
+          if (ptr !=NULL)
+          {
+            if ( strcmp(ptr, ".info") == 0 )
+            {
+              //printf ("FILE: %s\n", dp->d_name);
+              //wbicon_data(count, dp->d_name, path, "file" );
+              icons[count].name =  malloc(strlen(dp->d_name)+1);
+              strcpy(icons[count].name, dp->d_name);
 
-    else if (dp->d_type & DT_REG)
-    {
-      if (dp->d_name[0] != '.')
-      {
-        //printf ("FILE: %s\n", dp->d_name);
-        //wbicon_data(count, dp->d_name, path, "file" );
-        icons[count].name =  malloc(strlen(dp->d_name)+1);
-        strcpy(icons[count].name, dp->d_name);
-        int pathsize = strlen(path) +2;
-        char *tempo = malloc(pathsize);
-        strcpy(tempo,path);
-        icons[count].path = tempo;
-        icons[count].type = "file";
-        count++;
+              int pathsize = strlen(path) +2;
+              char *mypath = malloc(pathsize);
+              strcpy(mypath,path);
+              icons[count].path = mypath;
+              icons[count].type = "file";
+              count++;
+            }
+          }
+        }
       }
     }
+    closedir(dirp);
   }
-  closedir(dirp);
 }
 
-void list_entries()
+void list_entries(char *path)
 {
   // icon palette
   unsigned long iconcolor[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
@@ -144,12 +177,12 @@ void list_entries()
   int newline_x = 0;
   int newline_y = 0;
   struct DiskObject *icon_do = NULL;
-  char *icondir="/usr/local/lib/amiwm/icons";
-  char *icon = "def_drawer.info";//="def_tool.info";
+  char *icondir=path;
+
   for (int i=0;i<dircount;i++)
   {
-    if(strcmp(icons[i].type, "directory") == 0) { icon="def_drawer.info"; }
-    else if(strcmp(icons[i].type, "file") == 0) { icon="def_tool.info"; }
+
+    char *icon = icons[i].name;
 
     if (icon != NULL && *icon != 0)
     {
@@ -166,68 +199,68 @@ void list_entries()
 
     Pixmap pm1, pm2;
 
-      icons[i].width=icon_do->do_Gadget.Width;
-      icons[i].height=icon_do->do_Gadget.Height;
+    icons[i].width=icon_do->do_Gadget.Width;
+    icons[i].height=icon_do->do_Gadget.Height;
 
-      if(newline_x*80 < win_width)
-      {
-        icons[i].x=10 + (newline_x*80);
-        icons[i].y=10 + (newline_y*50);
-        newline_x++;
-      }
-      else if(newline_x*80 > win_width)
-      {
-        newline_x = 0;
-        newline_y++;
-        icons[i].x=10 + (newline_x*80);
-        icons[i].y=10 + (newline_y*50);
-        newline_x++;
-      }
-      icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
-                                          icons[i].width+18, icons[i].height+15, 1,
-                                           dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN], //
-                                          dri.dri_Pens[BACKGROUNDPEN]);
+    if(newline_x*80 < win_width)
+    {
+      icons[i].x=10 + (newline_x*80);
+      icons[i].y=10 + (newline_y*50);
+      newline_x++;
+    }
+    else if(newline_x*80 > win_width)
+    {
+      newline_x = 0;
+      newline_y++;
+      icons[i].x=10 + (newline_x*80);
+      icons[i].y=10 + (newline_y*50);
+      newline_x++;
+    }
+    icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
+                                         icons[i].width+18, icons[i].height+15, 1,
+                                         dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN], //
+                                         dri.dri_Pens[BACKGROUNDPEN]);
 
-      pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
-                            im1, icons[i].width, icons[i].height, &colorstore1);
-      pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
-                            im2, icons[i].width, icons[i].height, &colorstore2);
+    pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
+                          im1, icons[i].width, icons[i].height, &colorstore1);
+    pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
+                          im2, icons[i].width, icons[i].height, &colorstore2);
 
-      icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width+18, icons[i].height+15, 24);
-      XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width+18, icons[i].height+15);
-      XCopyArea(dpy, pm1, icons[i].pm1, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
+    icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width+18, icons[i].height+15, 24);
+    XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width+18, icons[i].height+15);
+    XCopyArea(dpy, pm1, icons[i].pm1, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
 
-      icons[i].pm2 = XCreatePixmap(dpy, pm2, icons[i].width+18, icons[i].height+15, 24);
-      XFillRectangle(dpy,icons[i].pm2, gc, 0,0,icons[i].width+18, icons[i].height+15);
-      XCopyArea(dpy, pm2, icons[i].pm2, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
+    icons[i].pm2 = XCreatePixmap(dpy, pm2, icons[i].width+18, icons[i].height+15, 24);
+    XFillRectangle(dpy,icons[i].pm2, gc, 0,0,icons[i].width+18, icons[i].height+15);
+    XCopyArea(dpy, pm2, icons[i].pm2, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
 
 
-      icons[i].pmA = icons[i].pm1; /* set active pixmap */
-      XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    icons[i].pmA = icons[i].pm1; /* set active pixmap */
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
 
-      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+    XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
 
-      //shorten long labels
-      if (strlen(icons[i].name) > 10 )
-      {
-        char *str1=icons[i].name;
-        char str2[i][12];
-        strncpy (str2[i],str1,9);
-        str2[i][9]='.';
-        str2[i][10]='.';
-        str2[i][11]='\0';
-        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
-        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
-      }
-      else
-      {
-        // get string length in pixels and calc offset
-        int my_offset = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
-        int new_offset = (icons[i].width+18 - my_offset)/2;
-        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
-        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
-      }
-      XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
+    //shorten long labels
+    if (strlen(icons[i].name) > 10 )
+    {
+      char *str1=icons[i].name;
+      char str2[i][12];
+      strncpy (str2[i],str1,9);
+      str2[i][9]='.';
+      str2[i][10]='.';
+      str2[i][11]='\0';
+      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
+      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
+    }
+    else
+    {
+      // get string length in pixels and calc offset
+      int my_offset = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+      int new_offset = (icons[i].width+18 - my_offset)/2;
+      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+    }
+    XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
   }
   // XFreePixmap(dpy, pm1);
   // XFreePixmap(dpy, pm2);
@@ -245,6 +278,9 @@ void spawn_new_wb(const char *cmd, char *title)
 
 int main(int argc, char *argv[])
 {
+  // set a default directory
+  if(argv[1]==NULL) { argv[1]= "/home/klaus/Downloads/icons/"; }
+
   //scr=c->scr;
   XWindowAttributes attr;
   static XSizeHints size_hints;
@@ -258,9 +294,6 @@ int main(int argc, char *argv[])
 
   // set default window title
   if(argc<2) {  argv[2]= "home"; }
-
-  // open default directory
-  if(argv[1]==NULL) { argv[1]= "/home/klaus/"; }
 
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
@@ -288,7 +321,7 @@ int main(int argc, char *argv[])
 
   read_entries(argv[1]);
   getlabels(argv[1]);  /* todo: try to remove one of the two loop  */
-  list_entries();
+  list_entries(argv[1]);
 
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
@@ -363,6 +396,12 @@ int main(int argc, char *argv[])
                 if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
                 else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
                 icons[i].dragging = TRUE;
+                if (icons[i].dragging)
+                {
+                  XGrabPointer(dpy, icons[i].iconwin, False, PointerMotionMask|Button1MotionMask|ButtonPressMask|
+                  ButtonReleaseMask, GrabModeAsync, GrabModeAsync, mainwin,
+                  None, CurrentTime);
+                }
                 printf("simple click!\n");
               }
               // force redraw
@@ -372,18 +411,13 @@ int main(int argc, char *argv[])
             }
           }
           break;
-        case ConfigureNotify: // resize or move event
-            win_x=event.xconfigure.x;
-            win_y=event.xconfigure.y;
-            win_width=event.xconfigure.width;
-            win_height=event.xconfigure.height;
-            break;
         case MotionNotify:
           for (int i=0;i<dircount;i++)
           {
             if(icons[i].dragging) {
-              XRaiseWindow(dpy, icons[i].iconwin);
-              XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-win_x-25,event.xmotion.y_root-win_y-25);
+              //printf("grabpointer, name=%s x=%d y=%d\n",icons[i].name, event.xmotion.x_root,event.xmotion.y_root);
+              XRaiseWindow(dpy,icons[i].iconwin);
+              XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-50,event.xmotion.y_root-50);
             }
           }
           break;
@@ -393,10 +427,19 @@ int main(int argc, char *argv[])
             if(event.xcrossing.window==icons[i].iconwin)
             {
               icons[i].dragging = FALSE;
+              XUngrabPointer(dpy, CurrentTime);
+              //printf("release button, ungrabpointer\n");
             }
           }
           break;
         case KeyPress:
+          break;
+        case ConfigureNotify: // resize or move event
+
+          win_x=event.xconfigure.x;
+          win_y=event.xconfigure.y;
+          win_width=event.xconfigure.width;
+          win_height=event.xconfigure.height;
           break;
       }
     }
