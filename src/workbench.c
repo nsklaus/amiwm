@@ -25,7 +25,6 @@
 #include "libami.h"
 #include <sys/stat.h>
 #include <math.h>
-#include "workbench.h"
 
 int dblClickTime=400;
 Time last_icon_click=0, last_double=0;
@@ -211,11 +210,11 @@ void list_entries()
       if (strlen(icons[i].name) > 10 )
       {
         char *str1=icons[i].name;
-        char str2[i][12];
-        strncpy (str2[i],str1,9);
-        str2[i][9]='.';
+        char str2[i][13];
+        strncpy (str2[i],str1,10);
         str2[i][10]='.';
-        str2[i][11]='\0';
+        str2[i][11]='.';
+        str2[i][12]='\0';
         XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
         XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
       }
@@ -241,6 +240,20 @@ void spawn_new_wb(const char *cmd, char *title)
   sprintf(line, "%s %s %s &", exec, cmd, title);
   //printf("spawn_new_wb: my exec line=%s\n",line);
   system(line);
+}
+
+void deselectAll()
+{
+  for (int i=0;i<dircount;i++)
+  {
+    // clicked on the window, abort clear all icon selection
+    icons[i].pmA = icons[i].pm1;
+    icons[i].selected = False;
+    icons[i].dragging = False;
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    XClearWindow(dpy, icons[i].iconwin);
+    XFlush(dpy);
+  }
 }
 
 int main(int argc, char *argv[])
@@ -325,12 +338,7 @@ int main(int argc, char *argv[])
             if (event.xcrossing.window==mainwin)
             {
               // clicked on the window, abort clear all icon selection
-              icons[i].pmA = icons[i].pm1;
-              icons[i].selected = False;
-              icons[i].dragging = False;
-              XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-              XClearWindow(dpy, icons[i].iconwin);
-              XFlush(dpy);
+              deselectAll();
             }
 
             if(event.xcrossing.window==icons[i].iconwin)
@@ -359,6 +367,9 @@ int main(int argc, char *argv[])
               else
               {
                 last_icon_click=event.xbutton.time;
+                // clicked on icon, unselect others
+                // TODO: handle modifier & multiselect later
+                deselectAll();
                 // toggle active icon
                 if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
                 else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
@@ -373,11 +384,11 @@ int main(int argc, char *argv[])
           }
           break;
         case ConfigureNotify: // resize or move event
-            win_x=event.xconfigure.x;
-            win_y=event.xconfigure.y;
-            win_width=event.xconfigure.width;
-            win_height=event.xconfigure.height;
-            break;
+          win_x=event.xconfigure.x;
+          win_y=event.xconfigure.y;
+          win_width=event.xconfigure.width;
+          win_height=event.xconfigure.height;
+          break;
         case MotionNotify:
           for (int i=0;i<dircount;i++)
           {

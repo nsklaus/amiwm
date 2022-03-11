@@ -25,8 +25,6 @@
 #include "libami.h"
 #include <sys/stat.h>
 #include <math.h>
-#include "workbench.h"
-#include <Xm/Xm.h>
 
 
 int dblClickTime=400;
@@ -83,16 +81,16 @@ void read_entries(char *path) {
       // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.'){
 
-        //printf("d_name=%s\n",dp->d_name);
-        printf("path=%s d_name=%s\n",path,dp->d_name);
-        int len_cmd = strlen("/usr/bin/file ") + strlen(path) + strlen(dp->d_name)+1;
+        int len_cmd = strlen("/usr/bin/file ") + strlen(path) + strlen(dp->d_name) + strlen(" >/dev/null") +3;
         char *temp = malloc(len_cmd);
         strcpy(temp, "/usr/bin/file ");
+        strcat(temp, "\"");
         strcat(temp,path);
         strcat(temp,dp->d_name);
+        strcat(temp,"\"");
+        //strcat(temp," >/dev/null");
         char *my_cmd = temp;
-        printf("my_cmd=%s\n",my_cmd);
-
+        //printf("my_cmd=%s\n",my_cmd);
         FILE *fp = popen(my_cmd, "r");
         char *ln = NULL;
         size_t len = 0;
@@ -104,16 +102,13 @@ void read_entries(char *path) {
         char * ptr;
         int    ch = ':';
         ptr = strrchr( buf, ch );
-        printf("\nptr=%s\n",ptr);
         if (ptr !=NULL)
         {
-          if(strstr(ptr, "Amiga") != NULL)
+          if(strstr(ptr, "Amiga") != NULL && (strstr(ptr, "icon") !=NULL ))
           {
             dircount++;
-            printf("success, adding file: %s to count as number %d\n",dp->d_name, dircount);
           }
         }
-
         free(ln);
         pclose(fp);
       }
@@ -276,10 +271,41 @@ void spawn_new_wb(const char *cmd, char *title)
   system(line);
 }
 
+void deselectAll()
+{
+  for (int i=0;i<dircount;i++)
+  {
+    // clicked on the window, abort clear all icon selection
+    icons[i].pmA = icons[i].pm1;
+    icons[i].selected = False;
+    icons[i].dragging = False;
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    XClearWindow(dpy, icons[i].iconwin);
+    XFlush(dpy);
+  }
+}
+
 int main(int argc, char *argv[])
 {
   // set a default directory
   if(argv[1]==NULL) { argv[1]= "/home/klaus/Downloads/icons/"; }
+
+  // create window title from argv[1] (path)
+  // take last dir and strip slashes, and add "view: " prefix
+  char *temp;
+  int length = strlen(argv[1]);
+  temp = alloca(length);
+  strcpy(temp,argv[1]);
+  temp[length-1] = '\0';
+  char * ptr;
+  int    ch = '/';
+  ptr = strrchr( temp, ch );
+  ptr[0] = ' ';
+  length = strlen("view: ") + strlen(ptr);
+  char *temp2 = alloca(length);
+  strcpy(temp2, "view: ");
+  strcat(temp2, ptr);
+  argv[2] = temp2;
 
   //scr=c->scr;
   XWindowAttributes attr;
@@ -292,8 +318,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  // set default window title
-  if(argc<2) {  argv[2]= "home"; }
+
 
   root = RootWindow(dpy, DefaultScreen(dpy));
   XGetWindowAttributes(dpy, root, &attr);
@@ -358,12 +383,7 @@ int main(int argc, char *argv[])
             if (event.xcrossing.window==mainwin)
             {
               // clicked on the window, abort clear all icon selection
-              icons[i].pmA = icons[i].pm1;
-              icons[i].selected = False;
-              icons[i].dragging = False;
-              XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-              XClearWindow(dpy, icons[i].iconwin);
-              XFlush(dpy);
+              deselectAll();
             }
 
             if(event.xcrossing.window==icons[i].iconwin)
@@ -392,16 +412,13 @@ int main(int argc, char *argv[])
               else
               {
                 last_icon_click=event.xbutton.time;
+                // clicked on icon, unselect others
+                // TODO: handle modifier & multiselect later
+                deselectAll();
                 // toggle active icon
                 if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
                 else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
                 icons[i].dragging = TRUE;
-                if (icons[i].dragging)
-                {
-                  XGrabPointer(dpy, icons[i].iconwin, False, PointerMotionMask|Button1MotionMask|ButtonPressMask|
-                  ButtonReleaseMask, GrabModeAsync, GrabModeAsync, mainwin,
-                  None, CurrentTime);
-                }
                 printf("simple click!\n");
               }
               // force redraw
@@ -411,13 +428,18 @@ int main(int argc, char *argv[])
             }
           }
           break;
+        case ConfigureNotify: // resize or move event
+          win_x=event.xconfigure.x;
+          win_y=event.xconfigure.y;
+          win_width=event.xconfigure.width;
+          win_height=event.xconfigure.height;
+          break;
         case MotionNotify:
           for (int i=0;i<dircount;i++)
           {
             if(icons[i].dragging) {
-              //printf("grabpointer, name=%s x=%d y=%d\n",icons[i].name, event.xmotion.x_root,event.xmotion.y_root);
-              XRaiseWindow(dpy,icons[i].iconwin);
-              XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-50,event.xmotion.y_root-50);
+              XRaiseWindow(dpy, icons[i].iconwin);
+              XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-win_x-25,event.xmotion.y_root-win_y-25);
             }
           }
           break;
@@ -427,19 +449,10 @@ int main(int argc, char *argv[])
             if(event.xcrossing.window==icons[i].iconwin)
             {
               icons[i].dragging = FALSE;
-              XUngrabPointer(dpy, CurrentTime);
-              //printf("release button, ungrabpointer\n");
             }
           }
           break;
         case KeyPress:
-          break;
-        case ConfigureNotify: // resize or move event
-
-          win_x=event.xconfigure.x;
-          win_y=event.xconfigure.y;
-          win_width=event.xconfigure.width;
-          win_height=event.xconfigure.height;
           break;
       }
     }

@@ -12,6 +12,7 @@ setup
 Launcher
 Keyboard
 Filesystem
+viewer
 src/**/*.a
 
 # don't ignore these files
