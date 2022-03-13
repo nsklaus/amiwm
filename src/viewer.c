@@ -225,9 +225,14 @@ void list_entries(char *path)
     XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
 
     //shorten long labels
-    if (strlen(icons[i].name) > 10 )
+    int length = strlen(icons[i].name);
+    char *temp = alloca(length);
+    strcpy(temp,icons[i].name);
+    temp[length-5] = '\0';
+
+    if (strlen(temp) > 10 )
     {
-      char *str1=icons[i].name;
+      char *str1=temp;
       char str2[i][12];
       strncpy (str2[i],str1,9);
       str2[i][9]='.';
@@ -239,10 +244,10 @@ void list_entries(char *path)
     else
     {
       // get string length in pixels and calc offset
-      int my_offset = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+      int my_offset = XmbTextEscapement(dri.dri_FontSet, temp, strlen(temp));
       int new_offset = (icons[i].width+18 - my_offset)/2;
-      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
-      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, temp, strlen(temp));
+      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, temp, strlen(temp));
     }
     XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
   }
