@@ -175,7 +175,14 @@ void list_entries()
 //     XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width, icons[i].height);
 //     XCopyArea(dpy, pm1, icons[i].pm1, gc, 0, 0, icons[i].width, icons[i].height, 0, 0);
 
-    XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+    if (strcmp(icons[i].type,"directory")==0)
+    {
+      XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
+    }
+    else if (strcmp(icons[i].type,"file")==0)
+    {
+      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+    }
     XmbDrawString(dpy, icons[i].iconwin, dri.dri_FontSet, gc, 0, 10, icons[i].name, strlen(icons[i].name));
     XMoveWindow(dpy,icons[i].iconwin,icons[i].x,icons[i].y);
   }
@@ -305,9 +312,12 @@ void deselectAll()
     icons[i].pmA = icons[i].pm1;
     icons[i].selected = False;
     icons[i].dragging = False;
-    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-    XClearWindow(dpy, icons[i].iconwin);
-    XFlush(dpy);
+    if (strcmp(get_viewmode(),"icons")==0)
+    {
+      XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+      XClearWindow(dpy, icons[i].iconwin);
+      XFlush(dpy);
+    }
   }
 }
 
