@@ -34,8 +34,10 @@ struct ColorStore colorstore1, colorstore2;
 
 char *progname;
 Display *dpy;
+char *viewmode="icons";
 
 struct DrawInfo dri;
+Pixmap pm1, pm2;
 
 typedef struct
 {
@@ -50,6 +52,8 @@ typedef struct
   int y;
   int width;
   int height;
+  int widthT;
+  int heightT;
   Bool selected;
   Bool dragging;
 } wbicon;
@@ -61,11 +65,8 @@ Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
 GC gc;
 
-void open_icon()
-{
-  // test beginning to act through amiwm menu commands
-  printf("BLEH!\n");
-}
+void build_icons();
+
 
 void read_entries(char *path) {
   // differentiate between files and directories,
@@ -135,13 +136,90 @@ void getlabels(char *path)
   closedir(dirp);
 }
 
+char * get_viewmode()
+{
+  return viewmode;
+}
+
+void reset_view()
+{
+  for (int i=0;i<dircount;i++)
+  {
+//     XFreePixmap(dpy, icons[i].pm1);
+//     XFreePixmap(dpy, icons[i].pm2);
+//     XFreePixmap(dpy, icons[i].pmA);
+    //XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, None);
+    XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[BACKGROUNDPEN]);
+    XClearWindow(dpy, icons[i].iconwin);
+  }
+  XFlush(dpy);
+}
+
 void list_entries()
 {
-  // icon palette
-  unsigned long iconcolor[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
+  viewmode="list";
+  printf("VIEWMODE now =%s\n",get_viewmode());
 
+  int newline_x=0;
+  int newline_y=20;
+  for (int i=0;i<dircount;i++)
+  {
+    int label_width = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+    icons[i].widthT = label_width;
+    icons[i].heightT = 30;
+    icons[i].x = 10;
+    icons[i].y = 10 +i*20;
+
+    XResizeWindow(dpy,icons[i].iconwin,icons[i].widthT,icons[i].heightT);
+//     icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width, icons[i].height, 24);
+//     XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width, icons[i].height);
+//     XCopyArea(dpy, pm1, icons[i].pm1, gc, 0, 0, icons[i].width, icons[i].height, 0, 0);
+
+    XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+    XmbDrawString(dpy, icons[i].iconwin, dri.dri_FontSet, gc, 0, 10, icons[i].name, strlen(icons[i].name));
+    XMoveWindow(dpy,icons[i].iconwin,icons[i].x,icons[i].y);
+  }
+}
+
+void list_entries_icons()
+{
+  viewmode="icons";
+  printf("VIEWMODE now=%s\n",get_viewmode());
+  //build_icons();
   int newline_x = 0;
   int newline_y = 0;
+
+   for (int i=0;i<dircount;i++)
+   {
+
+    if(newline_x*80 < win_width)
+    {
+      icons[i].x=10 + (newline_x*80);
+      icons[i].y=10 + (newline_y*50);
+      newline_x++;
+    }
+    else if(newline_x*80+50 > win_width)
+    {
+      newline_x = 0;
+      newline_y++;
+      icons[i].x=10 + (newline_x*80);
+      icons[i].y=10 + (newline_y*50);
+      newline_x++;
+    }
+    XMoveWindow(dpy,icons[i].iconwin,icons[i].x,icons[i].y);
+    XResizeWindow(dpy,icons[i].iconwin,icons[i].width+18,icons[i].height+15);
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    XClearWindow(dpy, icons[i].iconwin);
+    XFlush(dpy);
+
+  }
+}
+
+void build_icons()
+{
+  printf("passing through build icons\n");
+  // icon palette
+  unsigned long iconcolor[8] = { 11184810, 0, 16777215, 6719675, 10066329, 12303291, 12298905, 16759722 };
   struct DiskObject *icon_do = NULL;
   char *icondir="/usr/local/lib/amiwm/icons";
   char *icon = "def_drawer.info";//="def_tool.info";
@@ -163,74 +241,51 @@ void list_entries()
     struct Image *im1 = icon_do->do_Gadget.GadgetRender;
     struct Image *im2 = icon_do->do_Gadget.SelectRender;
 
-    Pixmap pm1, pm2;
+    icons[i].width=icon_do->do_Gadget.Width;
+    icons[i].height=icon_do->do_Gadget.Height;
+    //XResizeWindow(dpy,icons[i].iconwin,icons[i].width,icons[i].height);
 
-      icons[i].width=icon_do->do_Gadget.Width;
-      icons[i].height=icon_do->do_Gadget.Height;
+    pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
+                          im1, icons[i].width, icons[i].height, &colorstore1);
+    pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
+                          im2, icons[i].width, icons[i].height, &colorstore2);
+    icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width+18, icons[i].height+15, 24);
+    XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width+18, icons[i].height+15);
+    XCopyArea(dpy, pm1, icons[i].pm1, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
 
-      if(newline_x*80 < win_width)
-      {
-        icons[i].x=10 + (newline_x*80);
-        icons[i].y=10 + (newline_y*50);
-        newline_x++;
-      }
-      else if(newline_x*80 > win_width)
-      {
-        newline_x = 0;
-        newline_y++;
-        icons[i].x=10 + (newline_x*80);
-        icons[i].y=10 + (newline_y*50);
-        newline_x++;
-      }
-      icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
-                                          icons[i].width+18, icons[i].height+15, 1,
-                                           dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN], //
-                                          dri.dri_Pens[BACKGROUNDPEN]);
-
-      pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
-                            im1, icons[i].width, icons[i].height, &colorstore1);
-      pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
-                            im2, icons[i].width, icons[i].height, &colorstore2);
-
-      icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width+18, icons[i].height+15, 24);
-      XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width+18, icons[i].height+15);
-      XCopyArea(dpy, pm1, icons[i].pm1, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
-
-      icons[i].pm2 = XCreatePixmap(dpy, pm2, icons[i].width+18, icons[i].height+15, 24);
-      XFillRectangle(dpy,icons[i].pm2, gc, 0,0,icons[i].width+18, icons[i].height+15);
-      XCopyArea(dpy, pm2, icons[i].pm2, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
+    icons[i].pm2 = XCreatePixmap(dpy, pm2, icons[i].width+18, icons[i].height+15, 24);
+    XFillRectangle(dpy,icons[i].pm2, gc, 0,0,icons[i].width+18, icons[i].height+15);
+    XCopyArea(dpy, pm2, icons[i].pm2, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
 
 
-      icons[i].pmA = icons[i].pm1; /* set active pixmap */
-      XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    icons[i].pmA = icons[i].pm1; /* set active pixmap */
 
-      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
 
-      //shorten long labels
-      if (strlen(icons[i].name) > 10 )
-      {
-        char *str1=icons[i].name;
-        char str2[i][13];
-        strncpy (str2[i],str1,10);
-        str2[i][10]='.';
-        str2[i][11]='.';
-        str2[i][12]='\0';
-        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
-        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
-      }
-      else
-      {
-        // get string length in pixels and calc offset
-        int my_offset = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
-        int new_offset = (icons[i].width+18 - my_offset)/2;
-        XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
-        XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
-      }
-      XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
+    XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+
+    //shorten long labels
+    if (strlen(icons[i].name) > 10 )
+    {
+      char *str1=icons[i].name;
+      char str2[i][13];
+      strncpy (str2[i],str1,10);
+      str2[i][10]='.';
+      str2[i][11]='.';
+      str2[i][12]='\0';
+      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
+      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, 0, icons[i].height+10, str2[i], strlen(str2[i]));
+    }
+    else
+    {
+      // get string length in pixels and calc offset
+      int my_offset = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+      int new_offset = (icons[i].width+18 - my_offset)/2;
+      XmbDrawString(dpy, icons[i].pm1, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+      XmbDrawString(dpy, icons[i].pm2, dri.dri_FontSet, gc, new_offset, icons[i].height+10, icons[i].name, strlen(icons[i].name));
+    }
+    if(icon_do != NULL){ FreeDiskObject(icon_do); }
   }
-  // XFreePixmap(dpy, pm1);
-  // XFreePixmap(dpy, pm2);
-  if(icon_do != NULL){ FreeDiskObject(icon_do); }
+  //list_entries_icons();
 }
 
 void spawn_new_wb(const char *cmd, char *title)
@@ -283,7 +338,7 @@ int main(int argc, char *argv[])
                               dri.dri_Pens[BACKGROUNDPEN],
                               dri.dri_Pens[BACKGROUNDPEN]);
 
-  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask|Button1MotionMask);
+  XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask|EnterWindowMask|LeaveWindowMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -301,8 +356,19 @@ int main(int argc, char *argv[])
 
   read_entries(argv[1]);
   getlabels(argv[1]);  /* todo: try to remove one of the two loop  */
-  list_entries();
+  build_icons();
 
+  for (int i=0;i<dircount;i++)
+  {
+    icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
+                                        icons[i].width+18, icons[i].height+15, 1,
+                                        dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN], //
+                                        dri.dri_Pens[BACKGROUNDPEN]);
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
+
+  }
+  list_entries_icons();
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
   XSync(dpy, False);
@@ -318,7 +384,18 @@ int main(int argc, char *argv[])
         case Expose:
           if(!event.xexpose.count)
           {
-            if(event.xexpose.window == mainwin) { }//printf("event: exposing\n"); }
+            if(event.xexpose.window == mainwin) {
+              //list_entries_icons();
+              if(strcmp(viewmode,"icons")==0)
+              {
+                //list_entries_icons();
+                //build_icons();
+              }
+              else if(strcmp(viewmode,"list")==0)
+              {
+                list_entries();
+              }
+            }
           }
           break;
         case LeaveNotify:
@@ -333,6 +410,7 @@ int main(int argc, char *argv[])
           break;
 
         case ButtonPress:
+          printf("single click\n");
           for (int i=0;i<dircount;i++)
           {
             if (event.xcrossing.window==mainwin)
@@ -367,19 +445,26 @@ int main(int argc, char *argv[])
               else
               {
                 last_icon_click=event.xbutton.time;
+
                 // clicked on icon, unselect others
                 // TODO: handle modifier & multiselect later
-                deselectAll();
+
                 // toggle active icon
-                if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
-                else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
-                icons[i].dragging = TRUE;
+
                 printf("simple click!\n");
               }
               // force redraw
-              XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-              XClearWindow(dpy, icons[i].iconwin);
-              XFlush(dpy);
+              if (strcmp(get_viewmode(), "icons")==0)
+              {
+                deselectAll();
+                if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
+                else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+                icons[i].dragging = TRUE;
+                XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+                XClearWindow(dpy, icons[i].iconwin);
+                XFlush(dpy);
+              }
+
             }
           }
           break;
@@ -395,6 +480,7 @@ int main(int argc, char *argv[])
             if(icons[i].dragging) {
               XRaiseWindow(dpy, icons[i].iconwin);
               XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-win_x-25,event.xmotion.y_root-win_y-25);
+              //XReparentWindow(dpy, icons[i].iconwin,RootWindow(dpy, 0), 50,50);
             }
           }
           break;
@@ -408,6 +494,24 @@ int main(int argc, char *argv[])
           }
           break;
         case KeyPress:
+          printf("keypress event=%d\n",event.type);
+          if(strcmp(get_viewmode(),"icons")==0)
+          {
+            printf("toggling to list\n");
+            reset_view();
+            list_entries();
+          }
+          else if (strcmp(get_viewmode(),"list")==0)
+          {
+            printf("toggling to icons\n");
+            reset_view();
+            //build_icons();
+            list_entries_icons();
+          }
+
+          //list_entries();
+          //viewmode="list";
+          //printf("viewmode=%s\n",get_viewmode());
           break;
       }
     }
