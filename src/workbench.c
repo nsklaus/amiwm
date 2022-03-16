@@ -66,7 +66,7 @@ int win_x=20, win_y=20, win_width=300, win_height=150;
 GC gc;
 
 void build_icons();
-
+void event_loop();
 
 void read_entries(char *path) {
   // differentiate between files and directories,
@@ -325,6 +325,7 @@ int main(int argc, char *argv[])
 {
   //scr=c->scr;
   XWindowAttributes attr;
+  XSetWindowAttributes xswa;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
   progname=argv[0];
@@ -341,6 +342,8 @@ int main(int argc, char *argv[])
   if(argv[1]==NULL) { argv[1]= "/home/klaus/"; }
 
   root = RootWindow(dpy, DefaultScreen(dpy));
+  xswa.override_redirect = True;
+
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
 
@@ -370,12 +373,10 @@ int main(int argc, char *argv[])
 
   for (int i=0;i<dircount;i++)
   {
-    icons[i].iconwin=XCreateSimpleWindow(dpy, mainwin, icons[i].x, icons[i].y,
-                                        icons[i].width+18, icons[i].height+15, 1,
-                                        dri.dri_Pens[BACKGROUNDPEN],//TEXTPEN], //
-                                        dri.dri_Pens[BACKGROUNDPEN]);
+    icons[i].iconwin = XCreateWindow( dpy,mainwin, icons[i].x, icons[i].y, icons[i].width+18, icons[i].height+15, 1, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
+
     XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-    XSelectInput(dpy, icons[i].iconwin, ExposureMask|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
+    XSelectInput(dpy, icons[i].iconwin, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
 
   }
   list_entries_icons();
@@ -383,25 +384,34 @@ int main(int argc, char *argv[])
   XMapRaised(dpy, mainwin);
   XSync(dpy, False);
 
+event_loop();
+
+}
+
+void event_loop()
+{
+  Window ww; //xreparent and xtranslatecoordinates
+  wbicon icon_temp;
+  XWindowAttributes xwa;
+  int count_ev=0;
+
+
   for(;;)
   {
     XEvent event;
     XNextEvent(dpy, &event);
-    if(!XFilterEvent(&event, mainwin))
-    {
+
       switch(event.type)
       {
         case Expose:
+
           if(!event.xexpose.count)
           {
-            if(event.xexpose.window == mainwin) {
-              //list_entries_icons();
-              if(strcmp(viewmode,"icons")==0)
-              {
-                //list_entries_icons();
-                //build_icons();
-              }
-              else if(strcmp(viewmode,"list")==0)
+//             printf("%d : expose event, count=%d\n",count_ev,event.xexpose.count);
+//             count_ev++;
+            if(event.xexpose.window == mainwin)
+            {
+              if(strcmp(viewmode,"list")==0)
               {
                 list_entries();
               }
@@ -409,29 +419,21 @@ int main(int argc, char *argv[])
           }
           break;
         case LeaveNotify:
-          //  if(event.xcrossing.window==icon1.iconwin) {
-          //     printf("leave\n");
-          //  }
+          //printf("leave event\n");
           break;
         case EnterNotify:
-          //  if(event.xcrossing.window==icon1.iconwin) {
-          //     printf("enter\n");
-          //   }
+          //printf("enter event\n");
           break;
 
         case ButtonPress:
-          printf("single click\n");
+          //printf("buttonpress event\n");
           for (int i=0;i<dircount;i++)
           {
-            if (event.xcrossing.window==mainwin)
-            {
-              // clicked on the window, abort clear all icon selection
-              deselectAll();
-            }
+            if (event.xcrossing.window==mainwin) // click on mainwin
+            {  deselectAll(); }
 
-            if(event.xcrossing.window==icons[i].iconwin)
+            if(event.xcrossing.window==icons[i].iconwin) // click on icon
             {
-              //handle double click
               if ((event.xbutton.time - last_icon_click) < dblClickTime)
               {
                 printf("* double click! *\n");
@@ -443,66 +445,75 @@ int main(int argc, char *argv[])
                   const char *exec = icons[i].name;
                   char *line=alloca(strlen(cmd) + strlen(icons[i].path) + strlen(exec) +2);
                   sprintf(line, "%s %s%s &", cmd, path, exec);
-                  //printf("line=%s\n",line);
                   system(line);
                 }
                 else if (strcmp(icons[i].type,"directory")==0)
-                {
-                  spawn_new_wb(icons[i].path,icons[i].name );
-                }
+                { spawn_new_wb(icons[i].path,icons[i].name ); }
               }
-              // handle single click
               else
               {
                 last_icon_click=event.xbutton.time;
-
-                // clicked on icon, unselect others
-                // TODO: handle modifier & multiselect later
-
-                // toggle active icon
-
                 printf("simple click!\n");
               }
-              // force redraw
               if (strcmp(get_viewmode(), "icons")==0)
               {
                 deselectAll();
                 if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
                 else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
-                icons[i].dragging = TRUE;
-                XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-                XClearWindow(dpy, icons[i].iconwin);
-                XFlush(dpy);
+                icons[i].selected = TRUE;
+                XRaiseWindow(dpy, icons[i].iconwin);
+                xwa.x=0;
+                xwa.y=0;
+                XTranslateCoordinates(dpy, icons[i].iconwin,RootWindow(dpy, 0) ,xwa.x, xwa.y, &xwa.x, &xwa.y, &ww);
+                XReparentWindow(dpy, icons[i].iconwin,RootWindow(dpy, 0),xwa.x,xwa.y);
+                //printf("something\n");
+                icon_temp = icons[i];
               }
-
             }
           }
           break;
         case ConfigureNotify: // resize or move event
+          //printf("configurenotify event\n");
           win_x=event.xconfigure.x;
           win_y=event.xconfigure.y;
           win_width=event.xconfigure.width;
           win_height=event.xconfigure.height;
           break;
+
         case MotionNotify:
-          for (int i=0;i<dircount;i++)
-          {
-            if(icons[i].dragging) {
-              XRaiseWindow(dpy, icons[i].iconwin);
-              XMoveWindow(dpy,icons[i].iconwin,event.xmotion.x_root-win_x-25,event.xmotion.y_root-win_y-25);
-              //XReparentWindow(dpy, icons[i].iconwin,RootWindow(dpy, 0), 50,50);
+          //printf("motion event=%d\n",event.type);
+//           for (int i=0;i<dircount;i++)
+//           {
+            if(icon_temp.selected) {
+              icon_temp.dragging=True;
+              XMoveWindow(dpy,icon_temp.iconwin,event.xmotion.x_root-25, event.xmotion.y_root-25);
             }
-          }
+//          }
           break;
         case ButtonRelease:
-          for (int i=0;i<dircount;i++)
-          {
-            if(event.xcrossing.window==icons[i].iconwin)
+          //printf("buttonrelease event\n");
+          xwa.x=0;
+          xwa.y=0;
+          XTranslateCoordinates(dpy, icon_temp.iconwin,RootWindow(dpy, 0) ,xwa.x, xwa.y, &xwa.x, &xwa.y, &ww);
+          //printf("xwa.x=%d xwa.y=%d | it.x=%d it.y=%d | mw.x=%d mw.y=%d mw.w=%d mw.h=%d\n",xwa.x,xwa.y, icon_temp.x, icon_temp.y,win_x,win_y,win_x+win_width,win_y+win_height);
+            if (xwa.x > win_x && xwa.x < win_x+win_width &&
+              xwa.y > win_y && xwa.y < win_y+win_height)
             {
-              icons[i].dragging = FALSE;
+              printf("icon within bounds of window, reparenting\n");
+//               if (icons[i].dragging==True)
+//               {
+                 XReparentWindow(dpy, icon_temp.iconwin,mainwin, xwa.x-win_x,xwa.y-win_y);
+//                 icons[i].dragging = FALSE;
+//                 reparenting=False;
             }
-          }
+              XSetWindowBackgroundPixmap(dpy, icon_temp.iconwin, icon_temp.pmA);
+              XClearWindow(dpy, icon_temp.iconwin);
+              XFlush(dpy);
+       //     }
+//          }
           break;
+
+
         case KeyPress:
           printf("keypress event=%d\n",event.type);
           if(strcmp(get_viewmode(),"icons")==0)
@@ -518,12 +529,9 @@ int main(int argc, char *argv[])
             //build_icons();
             list_entries_icons();
           }
-
-          //list_entries();
-          //viewmode="list";
-          //printf("viewmode=%s\n",get_viewmode());
+          printf("key ww =%lu\n",ww);
           break;
       }
     }
   }
-}
+
