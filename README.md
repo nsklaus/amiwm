@@ -37,12 +37,21 @@ Configuration utility is not yet available; To configure amiwm, you'll need
 to create and edit .amiwmrc file in your home directory. To do so, read
 amiwm's manpage.
 
+
+## Development
+To work on amiwm from within another desktop, use xephyr and
+start amiwm with display environment variable to redirect amiwm to 
+start on xephyr session instead of replacing your own desktop wm.
+```
+Xephyr -br -ac -noreset -no-host-grab -screen 800x600 :1 &
+DISPLAY=:1 amiwm
+```
+
 ## Authors
 Originally created by **Marcus Comstedt**;
 Contributions by
 * Scott Lawrence
 * Nicolas Sipieter
-* redsPL.
 
 ## Previous repositories
 Previously, amiwm was using bzr instead of git; The bzr repository can be found [here](http://mc.pp.se/bzr/amiwm/)
