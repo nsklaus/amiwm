@@ -43,17 +43,22 @@ typedef struct
 {
   char *name;
   char *path;
-  char *type; // file or dir
+  char *type;   // file or dir
   Window iconwin;
-  Pixmap pm1;
-  Pixmap pm2;
-  Pixmap pmA; // active pixmap
+  Pixmap pm1;   // unselected icon
+  Pixmap pm2;   // selected icon
+  Pixmap pm3;   // unselected label
+  Pixmap pm4;   // selected label
+  Pixmap pmA;   // active pixmap
+
+  int p_width;  // store icon mode dimensions (pixmap)
+  int p_height;
+  int t_width;  // store list mode dimensions (text)
+  int t_height;
   int x;
   int y;
-  int width;
+  int width;    // active dimensions
   int height;
-  int widthT;
-  int heightT;
   Bool selected;
   Bool dragging;
 } wbicon;
@@ -167,30 +172,33 @@ void list_entries()
   int newline_y=20;
   for (int i=0;i<dircount;i++)
   {
-    int label_width = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
-    icons[i].widthT = label_width+10;
-    icons[i].heightT = 15;
+    icons[i].width  = icons[i].t_width;
+    icons[i].height = icons[i].t_height;
     icons[i].x = 10;
-    icons[i].y = 10 + i*15;
+    icons[i].y = 10 + i*16;
+    icons[i].pmA = icons[i].pm3;
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pm3);
+    XResizeWindow(dpy,icons[i].iconwin,icons[i].width,icons[i].height);
+    //XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[FILLPEN]);
 
-    XResizeWindow(dpy,icons[i].iconwin,icons[i].widthT,icons[i].heightT);
-    XClearWindow(dpy, icons[i].iconwin);
 
-    if (strcmp(icons[i].type,"directory")==0)
-    {
-      XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[FILLPEN]);
-      XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
-      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, icons[i].iconwin, gc, 5, 12, icons[i].name, strlen(icons[i].name));
-    }
-    else if (strcmp(icons[i].type,"file")==0)
-    {
-      XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[SHADOWPEN]);
-      XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
-      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, icons[i].iconwin, gc, 5, 12, icons[i].name, strlen(icons[i].name));
-    }
+//     if (strcmp(icons[i].type,"directory")==0)
+//     {
+//       XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[FILLPEN]);
+//       XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
+//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+//       XDrawImageString(dpy, icons[i].iconwin, gc, 5, 12, icons[i].name, strlen(icons[i].name));
+//     }
+//     else if (strcmp(icons[i].type,"file")==0)
+//     {
+//       XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[SHADOWPEN]);
+//       XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
+//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+//       XDrawImageString(dpy, icons[i].iconwin, gc, 5, 12, icons[i].name, strlen(icons[i].name));
+//     }
+
     XMoveWindow(dpy,icons[i].iconwin,icons[i].x,icons[i].y);
+    XClearWindow(dpy, icons[i].iconwin);
   }
   XFlush(dpy);
 }
@@ -220,8 +228,11 @@ void list_entries_icons()
       icons[i].y=10 + (newline_y*50);
       newline_x++;
     }
+    icons[i].width  = icons[i].p_width;
+    icons[i].height = icons[i].p_height;
     XMoveWindow(dpy,icons[i].iconwin,icons[i].x,icons[i].y);
     XResizeWindow(dpy,icons[i].iconwin,icons[i].width+18,icons[i].height+15);
+    icons[i].pmA = icons[i].pm1;
     XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
     XClearWindow(dpy, icons[i].iconwin);
     XFlush(dpy);
@@ -236,8 +247,19 @@ void build_icons()
   struct DiskObject *icon_do = NULL;
   char *icondir="/usr/local/lib/amiwm/icons";
   char *icon = "def_drawer.info";//="def_tool.info";
+  XSetWindowAttributes xswa;
+  xswa.override_redirect = True;
   for (int i=0;i<dircount;i++)
   {
+    icons[i].iconwin = XCreateWindow( dpy,mainwin, icons[i].x, icons[i].y, icons[i].width+18, icons[i].height+15, 1, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
+
+    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+    XSelectInput(dpy, icons[i].iconwin, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
+
+    int label_width = XmbTextEscapement(dri.dri_FontSet, icons[i].name, strlen(icons[i].name));
+    icons[i].t_width  = label_width+10;
+    icons[i].t_height = 15;
+
     if(strcmp(icons[i].type, "directory") == 0) { icon="def_drawer.info"; }
     else if(strcmp(icons[i].type, "file") == 0) { icon="def_tool.info"; }
 
@@ -254,13 +276,17 @@ void build_icons()
     struct Image *im1 = icon_do->do_Gadget.GadgetRender;
     struct Image *im2 = icon_do->do_Gadget.SelectRender;
 
-    icons[i].width=icon_do->do_Gadget.Width;
-    icons[i].height=icon_do->do_Gadget.Height;
+    icons[i].p_width  = icon_do->do_Gadget.Width;
+    icons[i].p_height = icon_do->do_Gadget.Height;
+    icons[i].width  = icons[i].p_width;
+    icons[i].height = icons[i].p_height;
 
     pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
                           im1, icons[i].width, icons[i].height, &colorstore1);
     pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
                           im2, icons[i].width, icons[i].height, &colorstore2);
+
+    // icon mode
     icons[i].pm1 = XCreatePixmap(dpy, pm1, icons[i].width+18, icons[i].height+15, 24);
     XFillRectangle(dpy,icons[i].pm1, gc, 0,0,icons[i].width+18, icons[i].height+15);
     XCopyArea(dpy, pm1, icons[i].pm1, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
@@ -268,6 +294,39 @@ void build_icons()
     icons[i].pm2 = XCreatePixmap(dpy, pm2, icons[i].width+18, icons[i].height+15, 24);
     XFillRectangle(dpy,icons[i].pm2, gc, 0,0,icons[i].width+18, icons[i].height+15);
     XCopyArea(dpy, pm2, icons[i].pm2, gc, -9, 0, icons[i].width+18, icons[i].height, 0, 0);
+
+    // list mode
+    icons[i].pm3 = XCreatePixmap(dpy, icons[i].iconwin, icons[i].t_width, icons[i].t_height, 24);
+    XFillRectangle(dpy,icons[i].pm3, gc, 0,0,icons[i].t_width, icons[i].t_height);
+    //XCopyArea(dpy, pm1, icons[i].pm3, gc, -9, 0, icons[i].t_width, icons[i].t_height, 0, 0);
+
+    icons[i].pm4 = XCreatePixmap(dpy, icons[i].iconwin, icons[i].t_width, icons[i].t_height, 24);
+    XFillRectangle(dpy,icons[i].pm4, gc, 0,0,icons[i].t_width, icons[i].t_height);
+    //XCopyArea(dpy, pm1, icons[i].pm4, gc, -9, 0, icons[i].t_width, icons[i].t_height, 0, 0);
+
+
+    if (strcmp(icons[i].type,"directory")==0)
+    {
+      //XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[FILLPEN]);
+      XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
+      XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
+      XDrawImageString(dpy, icons[i].pm3, gc, 5, 12, icons[i].name, strlen(icons[i].name));
+      XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
+      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      XDrawImageString(dpy, icons[i].pm4, gc, 5, 12, icons[i].name, strlen(icons[i].name));
+
+    }
+    else if (strcmp(icons[i].type,"file")==0)
+    {
+      //XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[SHADOWPEN]);
+      XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
+      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+      XDrawImageString(dpy, icons[i].pm3, gc, 5, 12, icons[i].name, strlen(icons[i].name));
+      XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
+      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      XDrawImageString(dpy, icons[i].pm4, gc, 5, 12, icons[i].name, strlen(icons[i].name));
+    }
+
 
     icons[i].pmA = icons[i].pm1; /* set active pixmap */
     XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
@@ -308,7 +367,7 @@ void spawn_new_wb(const char *cmd, char *title)
 void deselectAll()  // clicked on the window. abort, clear all icon selection
 {
   printf("run deselectAll\n");
-  //icon_temp.pmA = icon_temp.pm1;
+  icon_temp.pmA = icon_temp.pm1;
   icon_temp.selected=False;
   icon_temp.dragging=False;
   for (int i=0;i<dircount;i++)
@@ -329,9 +388,6 @@ void deselectAll()  // clicked on the window. abort, clear all icon selection
 void deselectOthers()  // clicked on the window. abort, clear all icon selection
 {
   printf("run deselectOthers\n");
-  //icon_temp.pmA = icon_temp.pm1;
-  // icon_temp.selected=False;
-  // icon_temp.dragging=False;
   for (int i=0;i<dircount;i++)
   {
     if ( ! (icons[i].iconwin == icon_temp.iconwin) )
@@ -353,7 +409,7 @@ void deselectOthers()  // clicked on the window. abort, clear all icon selection
 int main(int argc, char *argv[])
 {
   XWindowAttributes attr;
-  XSetWindowAttributes xswa;
+
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
   progname=argv[0];
@@ -370,7 +426,7 @@ int main(int argc, char *argv[])
   if(argv[1]==NULL) { argv[1]= "/home/klaus/"; }
 
   root = RootWindow(dpy, DefaultScreen(dpy));
-  xswa.override_redirect = True;
+
 
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
@@ -401,10 +457,7 @@ int main(int argc, char *argv[])
 
   for (int i=0;i<dircount;i++)
   {
-    icons[i].iconwin = XCreateWindow( dpy,mainwin, icons[i].x, icons[i].y, icons[i].width+18, icons[i].height+15, 1, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
 
-    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
-    XSelectInput(dpy, icons[i].iconwin, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
   }
   list_entries_icons();
   XMapSubwindows(dpy, mainwin);
@@ -426,8 +479,14 @@ void event_loop()
           {
             if(event.xexpose.window == mainwin)
             {
-              if(strcmp(viewmode,"list")==0)
-              { list_entries(); }
+//               if(strcmp(viewmode,"list")==0)
+//               {
+//                 list_entries();
+//               }
+//               if (strcmp(viewmode,"icons")==0)
+//               {
+//                 list_entries_icons();
+//               }
             }
           }
         break;
@@ -486,19 +545,22 @@ void event_loop()
                     else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
 
                     icons[i].selected = TRUE;
-                    icon_temp = icons[i];
+                    icon_temp = icons[i]; // copy selected icon
                     deselectOthers();
-                     // copy selected icon
+
                     XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
                     XClearWindow(dpy, icons[i].iconwin);
                     XFlush(dpy);
                   }
                   else if (strcmp(get_viewmode(), "list")==0)
                   {
-                    if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
-                    else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+                    if (icons[i].pmA == icons[i].pm3) { icons[i].pmA = icons[i].pm4; }
+                    else if (icons[i].pmA == icons[i].pm4) { icons[i].pmA = icons[i].pm3; }
                     icons[i].selected = TRUE;
                     icon_temp = icons[i]; //select icon (copy it to temp)
+                    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+                    XClearWindow(dpy, icons[i].iconwin);
+                    XFlush(dpy);
     //                XRaiseWindow(dpy, icons[i].iconwin);
     //                 xwa.x=0;
     //                 xwa.y=0;
