@@ -59,6 +59,9 @@ typedef struct
 } wbicon;
 
 wbicon *icons;
+Window ww; //xreparent and xtranslatecoordinates
+wbicon icon_temp; // copy of selected icon
+XWindowAttributes xwa;
 
 int dircount;
 Window root, mainwin;//, myicon;
@@ -302,20 +305,47 @@ void spawn_new_wb(const char *cmd, char *title)
   system(line);
 }
 
-void deselectAll()
+void deselectAll()  // clicked on the window. abort, clear all icon selection
 {
   printf("run deselectAll\n");
+  //icon_temp.pmA = icon_temp.pm1;
+  icon_temp.selected=False;
+  icon_temp.dragging=False;
   for (int i=0;i<dircount;i++)
   {
-    // clicked on the window, abort clear all icon selection
     icons[i].pmA = icons[i].pm1;
     icons[i].selected = False;
     icons[i].dragging = False;
+
     if (strcmp(get_viewmode(),"icons")==0)
     {
       XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
       XClearWindow(dpy, icons[i].iconwin);
       XFlush(dpy);
+    }
+  }
+}
+
+void deselectOthers()  // clicked on the window. abort, clear all icon selection
+{
+  printf("run deselectOthers\n");
+  //icon_temp.pmA = icon_temp.pm1;
+  // icon_temp.selected=False;
+  // icon_temp.dragging=False;
+  for (int i=0;i<dircount;i++)
+  {
+    if ( ! (icons[i].iconwin == icon_temp.iconwin) )
+    {
+      icons[i].pmA = icons[i].pm1;
+      icons[i].selected = False;
+      icons[i].dragging = False;
+
+      if (strcmp(get_viewmode(),"icons")==0)
+      {
+        XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+        XClearWindow(dpy, icons[i].iconwin);
+        XFlush(dpy);
+      }
     }
   }
 }
@@ -385,10 +415,6 @@ int main(int argc, char *argv[])
 
 void event_loop()
 {
-  Window ww; //xreparent and xtranslatecoordinates
-  wbicon icon_temp; // copy of selected icon
-  XWindowAttributes xwa;
-
   for(;;)
   {
     XEvent event;
@@ -416,60 +442,73 @@ void event_loop()
 
         case ButtonPress:
           //printf("buttonpress event\n");
-          for (int i=0;i<dircount;i++)
+          if (event.xcrossing.window==mainwin) // click on mainwin
           {
-            if (event.xcrossing.window==mainwin) // click on mainwin
-            {  deselectAll(); }
-
-            if(event.xcrossing.window==icons[i].iconwin) // click on icon
+            deselectAll();
+          }
+          else
+          {
+            for (int i=0;i<dircount;i++)
             {
-              if ((event.xbutton.time - last_icon_click) < dblClickTime) //double click
+              if(event.xcrossing.window==icons[i].iconwin) // click on icon
               {
-                printf("* double click! *\n");
-                icons[i].pmA = icons[i].pm2;
-                if (strcmp(icons[i].type,"file")==0)
+                if ((event.xbutton.time - last_icon_click) < dblClickTime) //double click
                 {
-                  const char *cmd = "DISPLAY=:1 xdg-open";
-                  const char *path = icons[i].path;
-                  const char *exec = icons[i].name;
-                  char *line=alloca(strlen(cmd) + strlen(icons[i].path) + strlen(exec) +2);
-                  sprintf(line, "%s %s%s &", cmd, path, exec);
-                  system(line);
+                  printf("* double click! *\n");
+                  icons[i].pmA = icons[i].pm2;
+                  if (strcmp(icons[i].type,"file")==0)
+                  {
+                    const char *cmd = "DISPLAY=:1 xdg-open";
+                    const char *path = icons[i].path;
+                    const char *exec = icons[i].name;
+                    char *line=alloca(strlen(cmd) + strlen(icons[i].path) + strlen(exec) +2);
+                    sprintf(line, "%s %s%s &", cmd, path, exec);
+                    system(line);
+                  }
+                  else if (strcmp(icons[i].type,"directory")==0)
+                  {
+                    spawn_new_wb(icons[i].path,icons[i].name );
+                  }
                 }
-                else if (strcmp(icons[i].type,"directory")==0)
-                { spawn_new_wb(icons[i].path,icons[i].name ); }
-              }
-              else  // single click
-              {
-                last_icon_click=event.xbutton.time;
-                deselectAll();
+                else  // single click
+                {
+                  last_icon_click=event.xbutton.time;
 
-                printf("simple click!\n");
+
+
+                  printf("simple click!\n");
+
+                  if (strcmp(get_viewmode(), "icons")==0)
+                  {
+                    printf("toggle pm\n");
+
+                    if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
+                    else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+
+                    icons[i].selected = TRUE;
+                    icon_temp = icons[i];
+                    deselectOthers();
+                     // copy selected icon
+                    XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
+                    XClearWindow(dpy, icons[i].iconwin);
+                    XFlush(dpy);
+                  }
+                  else if (strcmp(get_viewmode(), "list")==0)
+                  {
+                    if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
+                    else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
+                    icons[i].selected = TRUE;
+                    icon_temp = icons[i]; //select icon (copy it to temp)
+    //                XRaiseWindow(dpy, icons[i].iconwin);
+    //                 xwa.x=0;
+    //                 xwa.y=0;
+    //                 XTranslateCoordinates(dpy, icons[i].iconwin,RootWindow(dpy, 0) ,xwa.x, xwa.y, &xwa.x, &xwa.y, &ww);
+    //                 XReparentWindow(dpy, icons[i].iconwin,RootWindow(dpy, 0),xwa.x,xwa.y);
+
+                  }
+                }
+
               }
-              if (strcmp(get_viewmode(), "icons")==0)
-              {
-                if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
-                else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
-                icons[i].selected = TRUE;
-                icon_temp = icons[i]; // copy selected icon
-                XRaiseWindow(dpy, icons[i].iconwin);
-                xwa.x=0;
-                xwa.y=0;
-                XTranslateCoordinates(dpy, icons[i].iconwin,RootWindow(dpy, 0) ,xwa.x, xwa.y, &xwa.x, &xwa.y, &ww);
-                XReparentWindow(dpy, icons[i].iconwin,RootWindow(dpy, 0),xwa.x,xwa.y);
-              }
-              else if (strcmp(get_viewmode(), "list")==0)
-              {
-                if (icons[i].pmA == icons[i].pm1) { icons[i].pmA = icons[i].pm2; }
-                else if (icons[i].pmA == icons[i].pm2) { icons[i].pmA = icons[i].pm1; }
-                icons[i].selected = TRUE;
-                icon_temp = icons[i]; //select icon (copy it to temp)
-//                XRaiseWindow(dpy, icons[i].iconwin);
-//                 xwa.x=0;
-//                 xwa.y=0;
-//                 XTranslateCoordinates(dpy, icons[i].iconwin,RootWindow(dpy, 0) ,xwa.x, xwa.y, &xwa.x, &xwa.y, &ww);
-//                 XReparentWindow(dpy, icons[i].iconwin,RootWindow(dpy, 0),xwa.x,xwa.y);
-             }
             }
           }
         break;
@@ -485,13 +524,24 @@ void event_loop()
         case MotionNotify:
           if(icon_temp.selected)
           {
+            if( !(icon_temp.dragging))
+            {
+              printf("toggling dragging in motion notify\n");
+              //XRaiseWindow(dpy, icons[i].iconwin);
+              xwa.x=0;
+              xwa.y=0;
+              XTranslateCoordinates(dpy, icon_temp.iconwin,RootWindow(dpy, 0) ,xwa.x, xwa.y, &xwa.x, &xwa.y, &ww);
+              XReparentWindow(dpy, icon_temp.iconwin,RootWindow(dpy, 0),xwa.x,xwa.y);
+              icon_temp.dragging=True;
+            }
+            printf("motion notify\n");
             icon_temp.dragging=True;
             XMoveWindow(dpy,icon_temp.iconwin,event.xmotion.x_root-25, event.xmotion.y_root-25);
           }
         break;
 
         case ButtonRelease:
-          if (icon_temp.selected)
+          if (icon_temp.selected && icon_temp.dragging)
           {
             xwa.x=0;
             xwa.y=0;
