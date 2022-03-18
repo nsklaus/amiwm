@@ -8,9 +8,9 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#ifdef HAVE_UNISTD_H
+
 #include <unistd.h>
-#endif
+
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -263,13 +263,49 @@ void build_icons()
     if(strcmp(icons[i].type, "directory") == 0) { icon="def_drawer.info"; }
     else if(strcmp(icons[i].type, "file") == 0) { icon="def_tool.info"; }
 
+    /*
+    char *buf = icons[i].name;
+    char * ptr;
+    int    ch = '.';
+    ptr = strrchr( buf, ch );
+    if (ptr !=NULL)
+    {
+      if ( strcmp(ptr, ".info") == 0 )
+      {
+        printf("my_result=%s\n",icons[i].name);
+        icondir=icons[i].path;
+        icon=icons[i].name;
+
+      }
+      else {
+        icondir="/usr/local/lib/amiwm/icons";
+      }
+    }
+*/
+
+    //printf("path= %s icon=%s\n",icondir, icon);
+/*
+    char *fname = icons[i].name;
+    char *buf1 = alloca(strlen(fname)+6);
+    sprintf(buf1, "%s.info", fname);
+    printf("buf=%s\n",buf1);
+
+    if( access( icons[i].name, F_OK ) == 0 ) {
+      printf("file exists, name=%s\n",icons[i].name);
+      icon = icons[i].name;
+    }
+    else
+    {*/
+//       if(strcmp(icons[i].type, "directory") == 0) { icon="def_drawer.info"; }
+//       else if(strcmp(icons[i].type, "file") == 0) { icon="def_tool.info"; }
+//     }
     if (icon != NULL && *icon != 0)
     {
       int rl=strlen(icon)+strlen(icondir)+2;
       char *fn=alloca(rl);
       sprintf(fn, "%s/%s", icondir, icon);
       fn[strlen(fn)-5]=0;
-      //printf("fn=%s\n",fn);
+      printf("fn=%s\n",fn);
       icon_do = GetDiskObject(fn);
     }
 
@@ -360,7 +396,7 @@ void spawn_new_wb(const char *cmd, char *title)
   const char *exec = "/usr/local/lib/amiwm/workbench";
   char *line=alloca(strlen(exec) + strlen(cmd) + strlen(title) +4);
   sprintf(line, "%s %s %s &", exec, cmd, title);
-  //printf("spawn_new_wb: my exec line=%s\n",line);
+  printf("spawn_new_wb: my exec line=%s\n",line);
   system(line);
 }
 

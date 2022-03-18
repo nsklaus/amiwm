@@ -165,7 +165,6 @@ void list_entries(char *path)
 
   for (int i=0;i<dircount;i++)
   {
-
     char *icon = icons[i].name;
 
     if (icon != NULL && *icon != 0)
