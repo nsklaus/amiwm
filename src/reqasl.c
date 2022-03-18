@@ -41,8 +41,8 @@ extern struct Library *XLibBase;
 #define BUT_HSPACE 8
 
 static const char ok_txt[]="Ok", vol_txt[]="Volumes", par_txt[]="Parent", cancel_txt[]="Cancel";
-static const char enter_txt[]="Enter Command and its Arguments:";
-static const char cmd_txt[]="Command:";
+static const char drawer_txt[]="Drawer";
+static const char file_txt[]="File";
 
 XContext client_context, screen_context, icon_context;
 
@@ -63,7 +63,7 @@ Display *dpy;
 struct DrawInfo dri;
 
 Window root, mainwin, IFdir, IFfile, List;
-int win_x=20, win_y=20, win_width=260, win_height=350;
+int win_x=20, win_y=20, win_width=262, win_height=250;
 GC gc;
 
 /** width and height of input field borders */
@@ -123,7 +123,11 @@ void refresh_main(void)
   //   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
   //   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, TEXT_SIDE,
   //                 TOP_SPACE+dri.dri_Ascent, enter_txt, strlen(enter_txt));
-  XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
+  w=XmbTextEscapement(dri.dri_FontSet, drawer_txt, strlen(drawer_txt));
+
+  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 10, win_height-60, drawer_txt, strlen(drawer_txt));
+  XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 20, win_height-36, file_txt, strlen(file_txt));
+  //XSetForeground(dpy, gc, dri.dri_Pens[HIGHLIGHTTEXTPEN]);
 
 }
 
@@ -170,32 +174,48 @@ void refresh_str_text(void)
 
 void refresh_list()
 {
+
   XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-  XDrawLine(dpy, List, gc, 0, 0, win_width-20, 0);
-  XDrawLine(dpy, List, gc, 0, 0, 0, win_height-90);
+  XDrawLine(dpy, mainwin, gc, 9, 9, win_width-10, 9);
+  XDrawLine(dpy, mainwin, gc, 9, 9, 9, win_height-85);
   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-  XDrawLine(dpy, List, gc, 0, win_height-91, win_width-20,win_height-91);
-  XDrawLine(dpy, List, gc, win_width-21, win_height-90, win_width-21, 0);
+  XDrawLine(dpy, mainwin, gc, 9, win_height-85, win_width-10,win_height-85);
+  XDrawLine(dpy, mainwin, gc, win_width-10, win_height-85, win_width-10, 9);
 }
 
 /** refresh drawing of text field borders */
-void refresh_str(Window w)
+void refresh_str()
 {
   refresh_str_text();
   XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-  XDrawLine(dpy, w, gc, 0, strgadh-1, 0, 0);
-  XDrawLine(dpy, w, gc, 0, 0, strgadw-2, 0);
-  XDrawLine(dpy, w, gc, 3, strgadh-2, strgadw-4, strgadh-2);
-  XDrawLine(dpy, w, gc, strgadw-4, strgadh-2, strgadw-4, 2);
-  XDrawLine(dpy, w, gc, 1, 1, 1, strgadh-2);
-  XDrawLine(dpy, w, gc, strgadw-3, 1, strgadw-3, strgadh-2);
+  XDrawLine(dpy, IFdir, gc, 0, strgadh-1, 0, 0);
+  XDrawLine(dpy, IFdir, gc, 0, 0, strgadw-2, 0);
+  XDrawLine(dpy, IFdir, gc, 3, strgadh-2, strgadw-4, strgadh-2);
+  XDrawLine(dpy, IFdir, gc, strgadw-4, strgadh-2, strgadw-4, 2);
+  XDrawLine(dpy, IFdir, gc, 1, 1, 1, strgadh-2);
+  XDrawLine(dpy, IFdir, gc, strgadw-3, 1, strgadw-3, strgadh-2);
   XSetForeground(dpy, gc, dri.dri_Pens[SHADOWPEN]);
-  XDrawLine(dpy, w, gc, 1, strgadh-1, strgadw-1, strgadh-1);
-  XDrawLine(dpy, w, gc, strgadw-1, strgadh-1, strgadw-1, 0);
-  XDrawLine(dpy, w, gc, 3, strgadh-3, 3, 1);
-  XDrawLine(dpy, w, gc, 3, 1, strgadw-4, 1);
-  XDrawLine(dpy, w, gc, 2, 1, 2, strgadh-2);
-  XDrawLine(dpy, w, gc, strgadw-2, 1, strgadw-2, strgadh-2);
+  XDrawLine(dpy, IFdir, gc, 1, strgadh-1, strgadw-1, strgadh-1);
+  XDrawLine(dpy, IFdir, gc, strgadw-1, strgadh-1, strgadw-1, 0);
+  XDrawLine(dpy, IFdir, gc, 3, strgadh-3, 3, 1);
+  XDrawLine(dpy, IFdir, gc, 3, 1, strgadw-4, 1);
+  XDrawLine(dpy, IFdir, gc, 2, 1, 2, strgadh-2);
+  XDrawLine(dpy, IFdir, gc, strgadw-2, 1, strgadw-2, strgadh-2);
+
+  XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+  XDrawLine(dpy, IFfile, gc, 0, strgadh-1, 0, 0);
+  XDrawLine(dpy, IFfile, gc, 0, 0, strgadw-2, 0);
+  XDrawLine(dpy, IFfile, gc, 3, strgadh-2, strgadw-4, strgadh-2);
+  XDrawLine(dpy, IFfile, gc, strgadw-4, strgadh-2, strgadw-4, 2);
+  XDrawLine(dpy, IFfile, gc, 1, 1, 1, strgadh-2);
+  XDrawLine(dpy, IFfile, gc, strgadw-3, 1, strgadw-3, strgadh-2);
+  XSetForeground(dpy, gc, dri.dri_Pens[SHADOWPEN]);
+  XDrawLine(dpy, IFfile, gc, 1, strgadh-1, strgadw-1, strgadh-1);
+  XDrawLine(dpy, IFfile, gc, strgadw-1, strgadh-1, strgadw-1, 0);
+  XDrawLine(dpy, IFfile, gc, 3, strgadh-3, 3, 1);
+  XDrawLine(dpy, IFfile, gc, 3, 1, strgadw-4, 1);
+  XDrawLine(dpy, IFfile, gc, 2, 1, 2, strgadh-2);
+  XDrawLine(dpy, IFfile, gc, strgadw-2, 1, strgadw-2, strgadh-2);
 }
 
 
@@ -283,38 +303,38 @@ void strkey(XKeyEvent *e)
         if(stat == XLookupBoth)
           stat = XLookupChars;
     }
-    if(stat == XLookupChars) {
-      for(i=0; i<n && buf_len<MAX_CMD_CHARS; i++) {
-        for(x=buf_len; x>cur_pos; --x)
-          cmdline[x]=cmdline[x-1];
-        cmdline[cur_pos++]=buf[i];
-        buf_len++;
-      }
-      if(i<n)
-        XBell(dpy, 100);
+  if(stat == XLookupChars) {
+    for(i=0; i<n && buf_len<MAX_CMD_CHARS; i++) {
+      for(x=buf_len; x>cur_pos; --x)
+        cmdline[x]=cmdline[x-1];
+      cmdline[cur_pos++]=buf[i];
+      buf_len++;
     }
-    if(cur_pos<left_pos)
-      left_pos=cur_pos;
-    cur_x=6;
+    if(i<n)
+      XBell(dpy, 100);
+  }
+  if(cur_pos<left_pos)
+    left_pos=cur_pos;
+  cur_x=6;
 
-    if(cur_pos>left_pos)
-      cur_x+=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, cur_pos-left_pos);
-    if(cur_pos<buf_len) {
-      int l=mbrlen(cmdline+cur_pos, buf_len-cur_pos, NULL);
-      x=XmbTextEscapement(dri.dri_FontSet, cmdline+cur_pos, l);
-    } else
-      x=XExtentsOfFontSet(dri.dri_FontSet)->max_logical_extent.width;
+  if(cur_pos>left_pos)
+    cur_x+=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, cur_pos-left_pos);
+  if(cur_pos<buf_len) {
+    int l=mbrlen(cmdline+cur_pos, buf_len-cur_pos, NULL);
+    x=XmbTextEscapement(dri.dri_FontSet, cmdline+cur_pos, l);
+  } else
+    x=XExtentsOfFontSet(dri.dri_FontSet)->max_logical_extent.width;
 
-    if((x+=cur_x-(strgadw-6))>0) {
-      cur_x-=x;
-      while(x>0) {
-        int l=mbrlen(cmdline+left_pos, buf_len-left_pos, NULL);
-        x-=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, l);
-        left_pos += l;
-      }
-      cur_x+=x;
+  if((x+=cur_x-(strgadw-6))>0) {
+    cur_x-=x;
+    while(x>0) {
+      int l=mbrlen(cmdline+left_pos, buf_len-left_pos, NULL);
+      x-=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, l);
+      left_pos += l;
     }
-    refresh_str_text();
+    cur_x+=x;
+  }
+  refresh_str_text();
 }
 
 /** what is this for */
@@ -381,6 +401,18 @@ void endchoice()
   exit(0);
 }
 
+int button_spread(int pos, int div)
+{
+  int result;
+  if (pos*(win_width/div) > pos*60){
+    result = pos*(win_width/div);
+    return result;
+  }
+  else {
+    return pos*60;
+  }
+}
+
 int main(int argc, char *argv[])
 {
   XWindowAttributes attr;
@@ -402,7 +434,7 @@ int main(int argc, char *argv[])
   init_dri(&dri, dpy, root, attr.colormap, False);
 
   // width and height of input field borders
-  strgadw=178;
+  strgadw=win_width-70;
   strgadh=(fh=dri.dri_Ascent+dri.dri_Descent)+6;
 
   butw=XmbTextEscapement(dri.dri_FontSet, ok_txt, strlen(ok_txt))+2*BUT_HSPACE;
@@ -411,11 +443,11 @@ int main(int argc, char *argv[])
     butw=w2;
 
   mainw=2*(BUT_SIDE+butw)+BUT_SIDE;
-  w2=XmbTextEscapement(dri.dri_FontSet, enter_txt, strlen(enter_txt))+2*TEXT_SIDE;
+  w2=XmbTextEscapement(dri.dri_FontSet, drawer_txt, strlen(drawer_txt))+2*TEXT_SIDE;
   if(w2>mainw)
     mainw=w2;
 
-  w2=strgadw+XmbTextEscapement(dri.dri_FontSet, cmd_txt, strlen(cmd_txt))+
+  w2=strgadw+XmbTextEscapement(dri.dri_FontSet, file_txt, strlen(file_txt))+
   2*TEXT_SIDE+2*BUT_SIDE+butw;
   if(w2>mainw)
     mainw=w2;
@@ -425,15 +457,15 @@ int main(int argc, char *argv[])
   mainwin=XCreateSimpleWindow(dpy, root, 0, 0, win_width, win_height, 0,
                               dri.dri_Pens[SHADOWPEN],
                               dri.dri_Pens[BACKGROUNDPEN]);
-  List=XCreateSimpleWindow(dpy, mainwin, 10, 10, win_width-20, win_height-90, 0,
+  List=XCreateSimpleWindow(dpy, mainwin, 10, 10, win_width-20, win_height-95, 0,
                            dri.dri_Pens[SHADOWPEN],
                            dri.dri_Pens[BACKGROUNDPEN]);
 
-  IFdir=XCreateSimpleWindow(dpy, mainwin, 70, win_height-73, win_width-80, 20, 0,
+  IFdir=XCreateSimpleWindow(dpy, mainwin, 70, win_height-73, win_width-70, 20, 0,
                             dri.dri_Pens[SHADOWPEN],
                             dri.dri_Pens[BACKGROUNDPEN]);
 
-  IFfile=XCreateSimpleWindow(dpy, mainwin, 70, win_height-50, win_width-80, 20, 0,
+  IFfile=XCreateSimpleWindow(dpy, mainwin, 70, win_height-50, win_width-70, 20, 0,
                              dri.dri_Pens[SHADOWPEN],
                              dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -521,30 +553,30 @@ int main(int argc, char *argv[])
       switch(event.type) {
         case Expose:
           if(!event.xexpose.count) {
-            if(event.xexpose.window == mainwin) {
-              //printf("expose event %d, winh= \n", bleh+=1 );
-              refresh_main();
+
+            if(event.xexpose.window == IFdir) {
+              refresh_str();
             }
-            else if(event.xexpose.window == List) {
+            if(event.xexpose.window == IFfile) {
+              refresh_str();
+            }
+            if(event.xexpose.window == List) {
               refresh_list();
             }
-            else if(event.xexpose.window == IFdir) {
-              refresh_str(IFdir);
-            }
-            else if(event.xexpose.window == IFfile) {
-              refresh_str(IFfile);
-            }
-            else if(event.xexpose.window == b_ok) {
+            if(event.xexpose.window == b_ok) {
               refresh_button(b_ok, ok_txt, 1);
             }
-            else if(event.xexpose.window == b_vol) {
+            if(event.xexpose.window == b_vol) {
               refresh_button(b_vol, vol_txt, 2);
             }
-            else if(event.xexpose.window == b_par) {
+            if(event.xexpose.window == b_par) {
               refresh_button(b_par, par_txt, 3);
             }
-            else if(event.xexpose.window == b_cancel) {
+            if(event.xexpose.window == b_cancel) {
               refresh_button(b_cancel, cancel_txt, 4);
+            }
+            if(event.xexpose.window == mainwin) {
+              refresh_main();
             }
           }
         case ConfigureNotify:
@@ -554,10 +586,20 @@ int main(int argc, char *argv[])
             win_y=event.xconfigure.y;
             win_width=event.xconfigure.width;
             win_height=event.xconfigure.height;
-            XMoveWindow(dpy, b_ok, 10, event.xconfigure.height - 25);
-            XMoveWindow(dpy, b_vol, 70, event.xconfigure.height - 25);
-            XMoveWindow(dpy, b_par, 130, event.xconfigure.height - 25);
-            XMoveWindow(dpy, b_cancel, 190 , event.xconfigure.height - 25);
+            strgadw=win_width-70;
+            XMoveWindow(dpy, IFdir, 60, win_height-73);
+            XMoveWindow(dpy, IFfile, 60, win_height-50);
+            XMoveWindow(dpy, b_ok, button_spread(0,4)+5, event.xconfigure.height - 25);       // 10
+            XMoveWindow(dpy, b_vol, button_spread(1,4)+5, event.xconfigure.height - 25);      // 70
+            XMoveWindow(dpy, b_par, button_spread(2,4)+5, event.xconfigure.height - 25);     // 130
+            XMoveWindow(dpy, b_cancel,button_spread(3,4)+5 , event.xconfigure.height - 25); // 190
+            XResizeWindow(dpy,List,win_width-20, win_height-95);
+            XResizeWindow(dpy,IFdir,win_width-70, 20);
+            XResizeWindow(dpy,IFfile,win_width-70, 20);
+            //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
+            refresh_list();
+            refresh_str();
+            refresh_main();
           }
           break;
         case LeaveNotify:
@@ -582,7 +624,7 @@ int main(int argc, char *argv[])
           if(event.xbutton.button==Button1) {
             if(stractive && event.xbutton.window!=IFfile) {
               stractive=0;
-              refresh_str(IFfile);
+              refresh_str();
             }
             if((c=getchoice(event.xbutton.window))) {
               abortchoice();
