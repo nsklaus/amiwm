@@ -13,6 +13,7 @@ Launcher
 Keyboard
 Filesystem
 viewer
+reqasl
 src/**/*.a
 
 # don't ignore these files

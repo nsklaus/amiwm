@@ -63,7 +63,7 @@ Display *dpy;
 struct DrawInfo dri;
 
 Window root, mainwin, IFdir, IFfile, List;
-int win_x=20, win_y=20, win_width=260, win_height=400;
+int win_x=20, win_y=20, win_width=260, win_height=350;
 GC gc;
 
 /** width and height of input field borders */
@@ -168,24 +168,34 @@ void refresh_str_text(void)
   }
 }
 
+void refresh_list()
+{
+  XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+  XDrawLine(dpy, List, gc, 0, 0, win_width-20, 0);
+  XDrawLine(dpy, List, gc, 0, 0, 0, win_height-90);
+  XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+  XDrawLine(dpy, List, gc, 0, win_height-91, win_width-20,win_height-91);
+  XDrawLine(dpy, List, gc, win_width-21, win_height-90, win_width-21, 0);
+}
+
 /** refresh drawing of text field borders */
-void refresh_str(void)
+void refresh_str(Window w)
 {
   refresh_str_text();
   XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-  XDrawLine(dpy, IFfile, gc, 0, strgadh-1, 0, 0);
-  XDrawLine(dpy, IFfile, gc, 0, 0, strgadw-2, 0);
-  XDrawLine(dpy, IFfile, gc, 3, strgadh-2, strgadw-4, strgadh-2);
-  XDrawLine(dpy, IFfile, gc, strgadw-4, strgadh-2, strgadw-4, 2);
-  XDrawLine(dpy, IFfile, gc, 1, 1, 1, strgadh-2);
-  XDrawLine(dpy, IFfile, gc, strgadw-3, 1, strgadw-3, strgadh-2);
+  XDrawLine(dpy, w, gc, 0, strgadh-1, 0, 0);
+  XDrawLine(dpy, w, gc, 0, 0, strgadw-2, 0);
+  XDrawLine(dpy, w, gc, 3, strgadh-2, strgadw-4, strgadh-2);
+  XDrawLine(dpy, w, gc, strgadw-4, strgadh-2, strgadw-4, 2);
+  XDrawLine(dpy, w, gc, 1, 1, 1, strgadh-2);
+  XDrawLine(dpy, w, gc, strgadw-3, 1, strgadw-3, strgadh-2);
   XSetForeground(dpy, gc, dri.dri_Pens[SHADOWPEN]);
-  XDrawLine(dpy, IFfile, gc, 1, strgadh-1, strgadw-1, strgadh-1);
-  XDrawLine(dpy, IFfile, gc, strgadw-1, strgadh-1, strgadw-1, 0);
-  XDrawLine(dpy, IFfile, gc, 3, strgadh-3, 3, 1);
-  XDrawLine(dpy, IFfile, gc, 3, 1, strgadw-4, 1);
-  XDrawLine(dpy, IFfile, gc, 2, 1, 2, strgadh-2);
-  XDrawLine(dpy, IFfile, gc, strgadw-2, 1, strgadw-2, strgadh-2);
+  XDrawLine(dpy, w, gc, 1, strgadh-1, strgadw-1, strgadh-1);
+  XDrawLine(dpy, w, gc, strgadw-1, strgadh-1, strgadw-1, 0);
+  XDrawLine(dpy, w, gc, 3, strgadh-3, 3, 1);
+  XDrawLine(dpy, w, gc, 3, 1, strgadw-4, 1);
+  XDrawLine(dpy, w, gc, 2, 1, 2, strgadh-2);
+  XDrawLine(dpy, w, gc, strgadw-2, 1, strgadw-2, strgadh-2);
 }
 
 
@@ -328,7 +338,7 @@ void strbutton(XButtonEvent *e)
     cur_pos+=l;
   }
 
-  refresh_str();
+  //refresh_str();
 }
 
 void toggle(int c)
@@ -414,16 +424,16 @@ int main(int argc, char *argv[])
 
   mainwin=XCreateSimpleWindow(dpy, root, 0, 0, win_width, win_height, 0,
                               dri.dri_Pens[SHADOWPEN],
-                              dri.dri_Pens[TEXTPEN]);
-  List=XCreateSimpleWindow(dpy, mainwin, 10, 10, win_width-20, win_height-110, 0,
+                              dri.dri_Pens[BACKGROUNDPEN]);
+  List=XCreateSimpleWindow(dpy, mainwin, 10, 10, win_width-20, win_height-90, 0,
                            dri.dri_Pens[SHADOWPEN],
                            dri.dri_Pens[BACKGROUNDPEN]);
 
-  IFdir=XCreateSimpleWindow(dpy, mainwin, 70, win_height-90, win_width-80, 20, 0,
+  IFdir=XCreateSimpleWindow(dpy, mainwin, 70, win_height-73, win_width-80, 20, 0,
                             dri.dri_Pens[SHADOWPEN],
                             dri.dri_Pens[BACKGROUNDPEN]);
 
-  IFfile=XCreateSimpleWindow(dpy, mainwin, 70, win_height-60, win_width-80, 20, 0,
+  IFfile=XCreateSimpleWindow(dpy, mainwin, 70, win_height-50, win_width-80, 20, 0,
                              dri.dri_Pens[SHADOWPEN],
                              dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -459,6 +469,8 @@ int main(int argc, char *argv[])
   //totalbuttons = sizeof button / sizeof button[0];
   printf("totalbuttonlength=%d\n",(int)(sizeof button / sizeof button[0]));
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
+  XSelectInput(dpy, List, ExposureMask|StructureNotifyMask|ButtonPressMask);
+  XSelectInput(dpy, IFdir, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, IFfile, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, b_ok, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   XSelectInput(dpy, b_vol, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
@@ -513,11 +525,14 @@ int main(int argc, char *argv[])
               //printf("expose event %d, winh= \n", bleh+=1 );
               refresh_main();
             }
+            else if(event.xexpose.window == List) {
+              refresh_list();
+            }
             else if(event.xexpose.window == IFdir) {
-              refresh_str();
+              refresh_str(IFdir);
             }
             else if(event.xexpose.window == IFfile) {
-              refresh_str();
+              refresh_str(IFfile);
             }
             else if(event.xexpose.window == b_ok) {
               refresh_button(b_ok, ok_txt, 1);
@@ -567,7 +582,7 @@ int main(int argc, char *argv[])
           if(event.xbutton.button==Button1) {
             if(stractive && event.xbutton.window!=IFfile) {
               stractive=0;
-              refresh_str();
+              refresh_str(IFfile);
             }
             if((c=getchoice(event.xbutton.window))) {
               abortchoice();
