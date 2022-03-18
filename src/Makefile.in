@@ -22,7 +22,7 @@ LIBAMI = libami/libami.a
 DT_DIR = /etc/dt
 STRIPFLAG = -s
 
-PROGS = amiwm requestchoice executecmd workbench setup ppmtoinfo viewer
+PROGS = amiwm requestchoice executecmd workbench setup ppmtoinfo viewer reqasl
 
 MODULES = $(srcdir)/Background Keyboard Launcher
 
@@ -33,7 +33,7 @@ OBJS  = main.o screen.o client.o frame.o icc.o \
 SRCS = main.c screen.c client.c frame.c icc.c \
 		icon.c menu.c diskobject.c gram.c lex.c rc.c \
 		module.c \
-		requestchoice.c executecmd.c setup.c workbench.c kbdmodule.c kbdlexer.c \
+		requestchoice.c executecmd.c setup.c workbench.c reqasl.c kbdmodule.c kbdlexer.c \
 		launchermodule.c viewer.c
 
 DISTFILES = README README.modules INSTALL LICENSE amiwm.1 \
@@ -75,6 +75,9 @@ workbench.o : workbench.c
 viewer.o : viewer.c
 	$(CC) -o $@ -c $(CPPFLAGS) $(ALL_CFLAGS) -DAMIWM_HOME=\"$(AMIWM_HOME)\" $<
 
+reqasl.o : reqasl.c
+	$(CC) -o $@ -c $(CPPFLAGS) $(ALL_CFLAGS) -DAMIWM_HOME=\"$(AMIWM_HOME)\" $<
+
 ppmtoinfo.o : ppmtoinfo.c
 	$(CC) -c $(CPPFLAGS) $(ALL_CFLAGS) -DAMIWM_HOME=\"$(AMIWM_HOME)\" $<
 
@@ -101,6 +104,7 @@ install : $(PROGS) $(MODULES) Xsession Xsession2 Xinitrc amiwm-init
 	$(INSTALL) $(STRIPFLAG) setup $(AMIWM_HOME)/setup
 	$(INSTALL) $(STRIPFLAG) workbench $(AMIWM_HOME)/workbench
 	$(INSTALL) $(STRIPFLAG) viewer $(AMIWM_HOME)/viewer
+	$(INSTALL) $(STRIPFLAG) reqasl $(AMIWM_HOME)/reqasl
 	for module in $(MODULES); do \
 	  if [ "$$module" = "$(srcdir)/Background" ]; then \
 	    $(INSTALL) $$module $(AMIWM_HOME)/Background; \
@@ -172,6 +176,9 @@ viewer : viewer.o $(LIBAMI)
 
 setup : setup.o $(LIBAMI)
 	$(CC) -o setup setup.o $(LIBS)
+
+reqasl : reqasl.o $(LIBAMI)
+	$(CC) -o reqasl reqasl.o $(LIBS)
 
 Filesystem : filesystem.o $(LIBAMI)
 	$(CC) -o Filesystem filesystem.o $(LIBS)
