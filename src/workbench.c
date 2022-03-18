@@ -168,8 +168,6 @@ void list_entries()
   viewmode="list";
   printf("VIEWMODE now =%s\n",get_viewmode());
 
-  int newline_x=0;
-  int newline_y=20;
   for (int i=0;i<dircount;i++)
   {
     icons[i].width  = icons[i].t_width;

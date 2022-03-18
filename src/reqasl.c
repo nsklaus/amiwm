@@ -8,12 +8,7 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
+
 #include <errno.h>
 #ifdef USE_FONTSETS
 #include <locale.h>
@@ -21,13 +16,9 @@
 #endif
 
 #include "drawinfo.h"
-
-#include "client.h"
-
-#ifdef AMIGAOS
-#include <pragmas/xlib_pragmas.h>
-extern struct Library *XLibBase;
-#endif
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #define MAX_CMD_CHARS 256
 #define VISIBLE_CMD_CHARS 35
@@ -82,8 +73,129 @@ int mainw, mainh;
 /** button width */
 int butw;
 
+int fse_count;
+
 static XIM xim = (XIM) NULL;
 static XIC xic = (XIC) NULL;
+
+typedef struct
+{
+  char *name;
+  char *path;
+  char *type;   // file or dir
+  int x;
+  int y;
+  int width;    // active dimensions
+  int height;
+  Bool selected;
+  Bool dragging;
+} fs_obj;
+
+fs_obj *entries;
+
+void read_entries(char *path) {
+  // differentiate between files and directories,
+  // get max number of instances of wbicon
+  DIR *dirp;
+  struct dirent *dp;
+
+  dirp = opendir(path);
+  while ((dp = readdir(dirp)) != NULL)
+  {
+    if (dp->d_type & DT_DIR || (dp->d_type & DT_REG))
+    {
+      // exclude common system entries and (semi)hidden names
+      if (dp->d_name[0] != '.'){
+        fse_count++;
+      }
+    }
+  }
+  // get max number of instances of wbicon to allocate
+  entries = calloc(fse_count, sizeof(fs_obj));
+  closedir(dirp);
+}
+
+void getlabels(char *path)
+{
+  // same loop, but for getting filenames this time
+  DIR *dirp;
+  struct dirent *dp;
+  int count=0;
+  dirp = opendir(path);
+  while ((dp = readdir(dirp)) != NULL)
+  {
+    if (dp->d_type & DT_DIR)
+    {
+      if (dp->d_name[0] != '.')
+      {
+        entries[count].name =  malloc(strlen(dp->d_name)+1);
+        strcpy(entries[count].name, dp->d_name);
+        int pathsize = strlen(path) + strlen(entries[count].name) +2;
+        char *tempo = malloc(pathsize);
+        strcpy(tempo,path);
+        strcat(tempo,entries[count].name);
+        strcat(tempo,"/");
+        entries[count].path = tempo;
+        entries[count].type = "directory";
+        count++;
+      }
+    }
+
+    else if (dp->d_type & DT_REG)
+    {
+      if (dp->d_name[0] != '.')
+      {
+        //printf ("FILE: %s\n", dp->d_name);
+        //wbicon_data(count, dp->d_name, path, "file" );
+        entries[count].name =  malloc(strlen(dp->d_name)+1);
+        strcpy(entries[count].name, dp->d_name);
+        int pathsize = strlen(path) +2;
+        char *tempo = malloc(pathsize);
+        strcpy(tempo,path);
+        entries[count].path = tempo;
+        entries[count].type = "file";
+        count++;
+      }
+    }
+  }
+  closedir(dirp);
+}
+
+void list_entries()
+{
+  //viewmode="list";
+  //printf("VIEWMODE now =%s\n",get_viewmode());
+
+  for (int i=0;i<fse_count;i++)
+  {
+    entries[i].width  = win_width-30;
+    entries[i].height = win_height-100;
+    entries[i].x = 10;
+    entries[i].y = 15 + i*16;
+    //entries[i].pmA = entries[i].pm3;
+    if (strcmp(entries[i].type,"directory")==0)
+    {
+      //XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[FILLPEN]);
+      XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
+      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
+//       XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
+//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+//       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
+
+    }
+    else if (strcmp(entries[i].type,"file")==0)
+    {
+      //XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[SHADOWPEN]);
+      XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
+      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+      XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
+//       XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
+//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+//       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
+    }
+  }
+}
 
 /** get button number/id */
 int getchoice(Window w)
@@ -217,8 +329,6 @@ void refresh_str()
   XDrawLine(dpy, IFfile, gc, 2, 1, 2, strgadh-2);
   XDrawLine(dpy, IFfile, gc, strgadw-2, 1, strgadw-2, strgadh-2);
 }
-
-
 
 /** work with text string entered */
 void strkey(XKeyEvent *e)
@@ -530,7 +640,14 @@ int main(int argc, char *argv[])
     exit(1);
 
 
-  size_hints.flags = USSize; //PResizeInc;
+  size_hints.flags = PMinSize|PMaxSize; //PResizeInc;
+  //hints->flags = PMinSize|PMaxSize;
+  size_hints.min_width = 255;
+  size_hints.max_width = 700;
+  size_hints.min_height = 250;
+  size_hints.max_height = 500;
+  XSetWMNormalHints(dpy, mainwin, &size_hints);
+  XSetWMSizeHints(dpy, mainwin, &size_hints, PMinSize|PMaxSize);
   txtprop1.value=(unsigned char *)"Select";
   txtprop2.value=(unsigned char *)"ExecuteCmd";
   txtprop2.encoding=txtprop1.encoding=XA_STRING;
@@ -543,6 +660,10 @@ int main(int argc, char *argv[])
                    &size_hints, NULL, NULL);
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
+
+  read_entries("/home/klaus/");
+  getlabels("/home/klaus/");
+  list_entries();
 
   for(;;) {
     XEvent event;
@@ -584,7 +705,12 @@ int main(int argc, char *argv[])
             // make save and cancel button to stay at bottom of window when it gets resized
             win_x=event.xconfigure.x;
             win_y=event.xconfigure.y;
-            win_width=event.xconfigure.width;
+            if (event.xconfigure.width < 255) {
+              win_width=255;
+            }
+            else {
+              win_width=event.xconfigure.width;
+            }
             win_height=event.xconfigure.height;
             strgadw=win_width-70;
             XMoveWindow(dpy, IFdir, 60, win_height-73);
@@ -596,8 +722,9 @@ int main(int argc, char *argv[])
             XResizeWindow(dpy,List,win_width-20, win_height-95);
             XResizeWindow(dpy,IFdir,win_width-70, 20);
             XResizeWindow(dpy,IFfile,win_width-70, 20);
-            //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
+            printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
             refresh_list();
+            list_entries();
             refresh_str();
             refresh_main();
           }
