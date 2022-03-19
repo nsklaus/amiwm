@@ -39,7 +39,7 @@ XContext client_context, screen_context, icon_context;
 
 static int selected=0, depressed=0, stractive=1;
 static Window button[8];
-static const char *buttxt[]={ NULL, ok_txt, cancel_txt };
+static const char *buttxt[]={ NULL, ok_txt, vol_txt, par_txt, cancel_txt };
 
 char cmdline[MAX_CMD_CHARS+1];
 int buf_len=0;
@@ -90,8 +90,20 @@ typedef struct
   Bool selected;
   Bool dragging;
 } fs_obj;
+fs_obj *entries;  // entries = calloc(fse_count, sizeof(fs_obj));
 
-fs_obj *entries;
+
+void clean_reset()
+{
+//   for (int i=0;i<fse_count;i++)
+//   {
+//     free(entries[i].name);
+//     free(entries[i].path);
+//     free(entries[i].type);
+//   }
+  fse_count=0;
+  //free(entries);
+}
 
 void read_entries(char *path) {
   // differentiate between files and directories,
@@ -136,6 +148,7 @@ void getlabels(char *path)
         strcat(tempo,entries[count].name);
         strcat(tempo,"/");
         entries[count].path = tempo;
+        //printf("directory, path=%s name=%s\n",entries[count].path,entries[count].name);
         entries[count].type = "directory";
         count++;
       }
@@ -153,6 +166,7 @@ void getlabels(char *path)
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
         entries[count].path = tempo;
+        //printf("file, path=%s name=%s\n",entries[count].path,entries[count].name);
         entries[count].type = "file";
         count++;
       }
@@ -203,8 +217,13 @@ int getchoice(Window w)
   int i;
   int totalbuttons = (int)(sizeof button / sizeof button[0]);
   for(i=1; i<totalbuttons; i++)
+  {
     if(button[i]==w)
+    {
+      printf("button id=%d\n",i);
       return i;
+    }
+  }
   return 0;
 }
 
@@ -503,12 +522,59 @@ void endchoice()
 {
   int c=selected;
   abortchoice();
-  XCloseDisplay(dpy);
+
   if(c==1){
     printf("ss_cmdline=%s\n", cmdline);
     system(cmdline);
   }
-  exit(0);
+  if(c==2){
+    printf("volumes\n");
+    clean_reset();
+    XClearWindow(dpy,List);
+    read_entries("/");
+    getlabels("/");
+    list_entries();
+  }
+  if(c==3){
+    printf("parent\n");
+
+    char *buf;
+    for (int i=0; i<fse_count;i++)
+    {
+      if(strcmp(entries[i].type, "file")==0){
+        buf=entries[i].path;
+        break;
+      }
+    }
+    buf[strlen(buf)-1] ='\0'; //remove final slash
+
+    char * ptr;
+    int    ch = '/';
+    ptr = strrchr( buf, ch ); // find where last slash is now
+    int pos = ptr-buf;
+
+    if (ptr !=NULL)
+    {
+      char *newbuff = malloc(pos);
+      strncpy(newbuff,buf,pos);
+      char *finalbuf = malloc(strlen(newbuff)+1);
+      strcpy(finalbuf,newbuff);
+      strcat(finalbuf,"/");  //add final slash
+      free(newbuff);
+      printf("finalbuf=%s\n",finalbuf);
+
+      XClearWindow(dpy,List);
+      clean_reset();
+      read_entries(finalbuf);
+      getlabels(finalbuf);
+      list_entries();
+    }
+  }
+  if (c==4){
+    printf("gracefully end\n");
+    XCloseDisplay(dpy);
+    exit(0);
+  }
 }
 
 int button_spread(int pos, int div)
@@ -661,8 +727,8 @@ int main(int argc, char *argv[])
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
-  read_entries("/home/klaus/");
-  getlabels("/home/klaus/");
+  read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa/");
+  getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa/");
   list_entries();
 
   for(;;) {
@@ -722,7 +788,7 @@ int main(int argc, char *argv[])
             XResizeWindow(dpy,List,win_width-20, win_height-95);
             XResizeWindow(dpy,IFdir,win_width-70, 20);
             XResizeWindow(dpy,IFfile,win_width-70, 20);
-            printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
+            //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
             refresh_list();
             list_entries();
             refresh_str();
