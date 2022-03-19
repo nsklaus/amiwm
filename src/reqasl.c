@@ -53,7 +53,7 @@ Display *dpy;
 
 struct DrawInfo dri;
 
-Window root, mainwin, IFdir, IFfile, List;
+Window root, mainwin, IFdir, IFfile, List, input;
 int win_x=20, win_y=20, win_width=262, win_height=250;
 GC gc;
 
@@ -264,7 +264,7 @@ void refresh_main(void)
 
 /** refresh text string in input field (typing) */
 extern size_t mbrlen(); // define proto mbrlen() to silence ccompile warning
-void refresh_str_text(void)
+void refresh_str_text()
 {
   int l, mx=6;
   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
@@ -278,25 +278,26 @@ void refresh_str_text(void)
       mx=w;
       l+=c;
     }
-    XmbDrawImageString(dpy, IFfile, dri.dri_FontSet,
+
+    XmbDrawImageString(dpy, input, dri.dri_FontSet,
                        gc, 6, 3+dri.dri_Ascent,
                        cmdline+left_pos, l);
   }
   XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
-  XFillRectangle(dpy, IFfile, gc, mx, 3, strgadw-mx-6, fh);
+  XFillRectangle(dpy, input, gc, mx, 3, strgadw-mx-6, fh);
   if(stractive) {
     if(cur_pos<buf_len) {
       XSetBackground(dpy, gc, ~0);
 
       l=mbrlen(cmdline+cur_pos, buf_len-cur_pos, NULL);
-      XmbDrawImageString(dpy, IFfile, dri.dri_FontSet,
+      XmbDrawImageString(dpy, input, dri.dri_FontSet,
                          gc, cur_x, 3+dri.dri_Ascent,
                          cmdline+cur_pos, l);
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
     }
     else {
       XSetForeground(dpy, gc, ~0);
-      XFillRectangle(dpy, IFfile, gc, cur_x, 3,
+      XFillRectangle(dpy, input, gc, cur_x, 3,
                      XExtentsOfFontSet(dri.dri_FontSet)->
                      max_logical_extent.width, fh);
     }
@@ -486,8 +487,7 @@ void strbutton(XButtonEvent *e)
     cur_x+=w;
     cur_pos+=l;
   }
-
-  //refresh_str();
+  refresh_str();
 }
 
 void toggle(int c)
@@ -518,14 +518,26 @@ void abortchoice()
   selected=0;
 }
 
+void got_path(char *path)
+{
+  printf("got_path=%s\n", path);
+  clean_reset();
+  XClearWindow(dpy,List);
+  read_entries(path);
+  getlabels(path);
+  list_entries();
+}
+
 void endchoice()
 {
   int c=selected;
   abortchoice();
 
   if(c==1){
-    printf("ss_cmdline=%s\n", cmdline);
-    system(cmdline);
+//     printf("ss_cmdline=%s\n", cmdline);
+//     system(cmdline);
+
+    got_path(cmdline);
   }
   if(c==2){
     printf("volumes\n");
@@ -542,7 +554,7 @@ void endchoice()
     for (int i=0; i<fse_count;i++)
     {
       if(strcmp(entries[i].type, "file")==0){
-        buf=entries[i].path;
+        buf=entries[i].path;  //sample: "/home/klaus/Downlads/icons/"
         break;
       }
     }
@@ -550,18 +562,18 @@ void endchoice()
 
     char * ptr;
     int    ch = '/';
-    ptr = strrchr( buf, ch ); // find where last slash is now
+    ptr = strrchr( buf, ch ); // find where next "last" slash is now
     int pos = ptr-buf;
 
     if (ptr !=NULL)
     {
       char *newbuff = malloc(pos);
-      strncpy(newbuff,buf,pos);
+      strncpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
       char *finalbuf = malloc(strlen(newbuff)+1);
       strcpy(finalbuf,newbuff);
-      strcat(finalbuf,"/");  //add final slash
-      free(newbuff);
-      printf("finalbuf=%s\n",finalbuf);
+      strcat(finalbuf,"/");  //re-add a final slash
+      //free(newbuff);
+      printf("finalbuf=%s\n",finalbuf); // sample: "/home/klaus/Downloads/"
 
       XClearWindow(dpy,List);
       clean_reset();
@@ -727,6 +739,7 @@ int main(int argc, char *argv[])
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
+  input=IFdir;
   read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa/");
   getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa/");
   list_entries();
@@ -742,9 +755,11 @@ int main(int argc, char *argv[])
           if(!event.xexpose.count) {
 
             if(event.xexpose.window == IFdir) {
+              input=IFdir;
               refresh_str();
             }
             if(event.xexpose.window == IFfile) {
+              input=IFfile;
               refresh_str();
             }
             if(event.xexpose.window == List) {
@@ -815,6 +830,10 @@ int main(int argc, char *argv[])
             break;
         case ButtonPress:
           if(event.xbutton.button==Button1) {
+            if(stractive && event.xbutton.window!=IFdir) {
+              stractive=0;
+              refresh_str();
+            }
             if(stractive && event.xbutton.window!=IFfile) {
               stractive=0;
               refresh_str();
@@ -826,11 +845,16 @@ int main(int argc, char *argv[])
               toggle(selected=c);
               //printf("selected=%d\n",c);
             }
+            else if(event.xbutton.window==IFdir) {
+              strbutton(&event.xbutton);
+            }
             else if(event.xbutton.window==IFfile) {
               strbutton(&event.xbutton);
             }
-
           }
+          // if(event.xbutton.window==List) {}
+          if(event.xbutton.button==Button4) {printf("going up\n");}
+          if(event.xbutton.button==Button5) {printf("going down\n");}
           break;
         case ButtonRelease:
           if(event.xbutton.button==Button1 && selected) {
