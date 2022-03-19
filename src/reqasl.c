@@ -175,17 +175,18 @@ void getlabels(char *path)
   closedir(dirp);
 }
 
-void list_entries()
+void list_entries(int offset_y)
 {
   //viewmode="list";
   //printf("VIEWMODE now =%s\n",get_viewmode());
-
+  XClearWindow(dpy,List);
   for (int i=0;i<fse_count;i++)
   {
     entries[i].width  = win_width-30;
     entries[i].height = win_height-100;
     entries[i].x = 10;
     entries[i].y = 15 + i*16;
+    entries[i].y += offset_y;
     //entries[i].pmA = entries[i].pm3;
     if (strcmp(entries[i].type,"directory")==0)
     {
@@ -209,6 +210,7 @@ void list_entries()
 //       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
     }
   }
+
 }
 
 /** get button number/id */
@@ -525,7 +527,7 @@ void got_path(char *path)
   XClearWindow(dpy,List);
   read_entries(path);
   getlabels(path);
-  list_entries();
+  list_entries(0);
 }
 
 void endchoice()
@@ -545,7 +547,7 @@ void endchoice()
     XClearWindow(dpy,List);
     read_entries("/");
     getlabels("/");
-    list_entries();
+    list_entries(0);
   }
   if(c==3){
     printf("parent\n");
@@ -576,7 +578,7 @@ void endchoice()
       clean_reset();
       read_entries(newbuff);
       getlabels(newbuff);
-      list_entries();
+      list_entries(0);
     }
   }
   if (c==4){
@@ -739,7 +741,7 @@ int main(int argc, char *argv[])
   input=IFdir;
   read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
   getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
-  list_entries();
+  list_entries(0);
 
   for(;;) {
     XEvent event;
@@ -802,7 +804,7 @@ int main(int argc, char *argv[])
             XResizeWindow(dpy,IFfile,win_width-70, 20);
             //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
             refresh_list();
-            list_entries();
+            list_entries(0);
             refresh_str();
             refresh_main();
           }
@@ -850,8 +852,17 @@ int main(int argc, char *argv[])
             }
           }
           // if(event.xbutton.window==List) {}
-          if(event.xbutton.button==Button4) {printf("going up\n");}
-          if(event.xbutton.button==Button5) {printf("going down\n");}
+          if(event.xbutton.button==Button4)
+          {
+            printf("going up y=%d\n",event.xconfigure.height);
+            list_entries(1);
+
+          }
+          if(event.xbutton.button==Button5)
+          {
+            printf("going down y=%d\n",event.xconfigure.height);
+            list_entries(1);
+          }
           break;
         case ButtonRelease:
           if(event.xbutton.button==Button1 && selected) {
