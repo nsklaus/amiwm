@@ -73,6 +73,9 @@ int mainw, mainh;
 /** button width */
 int butw;
 
+/** keep scroll offset, cleared when entering a new path */
+int offset_y=0;
+
 int fse_count;
 
 static XIM xim = (XIM) NULL;
@@ -125,6 +128,7 @@ void read_entries(char *path) {
   // get max number of instances of wbicon to allocate
   entries = calloc(fse_count, sizeof(fs_obj));
   closedir(dirp);
+  offset_y = 0; // clear scroll offset upon loading a new directory
 }
 
 void getlabels(char *path)
@@ -175,7 +179,7 @@ void getlabels(char *path)
   closedir(dirp);
 }
 
-void list_entries(int offset_y)
+void list_entries()
 {
   //viewmode="list";
   //printf("VIEWMODE now =%s\n",get_viewmode());
@@ -187,6 +191,7 @@ void list_entries(int offset_y)
     entries[i].x = 10;
     entries[i].y = 15 + i*16;
     entries[i].y += offset_y;
+    //printf("entries[i].y=%d\n",entries[i].y);
     //entries[i].pmA = entries[i].pm3;
     if (strcmp(entries[i].type,"directory")==0)
     {
@@ -527,7 +532,7 @@ void got_path(char *path)
   XClearWindow(dpy,List);
   read_entries(path);
   getlabels(path);
-  list_entries(0);
+  list_entries();
 }
 
 void endchoice()
@@ -547,7 +552,7 @@ void endchoice()
     XClearWindow(dpy,List);
     read_entries("/");
     getlabels("/");
-    list_entries(0);
+    list_entries();
   }
   if(c==3){
     printf("parent\n");
@@ -578,7 +583,7 @@ void endchoice()
       clean_reset();
       read_entries(newbuff);
       getlabels(newbuff);
-      list_entries(0);
+      list_entries();
     }
   }
   if (c==4){
@@ -741,7 +746,7 @@ int main(int argc, char *argv[])
   input=IFdir;
   read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
   getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
-  list_entries(0);
+  list_entries();
 
   for(;;) {
     XEvent event;
@@ -804,7 +809,7 @@ int main(int argc, char *argv[])
             XResizeWindow(dpy,IFfile,win_width-70, 20);
             //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
             refresh_list();
-            list_entries(0);
+            list_entries();
             refresh_str();
             refresh_main();
           }
@@ -854,14 +859,16 @@ int main(int argc, char *argv[])
           // if(event.xbutton.window==List) {}
           if(event.xbutton.button==Button4)
           {
-            printf("going up y=%d\n",event.xconfigure.height);
-            list_entries(1);
+            //printf("going up y=%d\n",event.xconfigure.height);
+            offset_y+=5;
+            list_entries();
 
           }
           if(event.xbutton.button==Button5)
           {
-            printf("going down y=%d\n",event.xconfigure.height);
-            list_entries(1);
+            //printf("going down y=%d\n",event.xconfigure.height);
+            offset_y-=5;
+            list_entries();
           }
           break;
         case ButtonRelease:
