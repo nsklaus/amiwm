@@ -563,22 +563,19 @@ void endchoice()
     char * ptr;
     int    ch = '/';
     ptr = strrchr( buf, ch ); // find where next "last" slash is now
-    int pos = ptr-buf;
+    int pos = (ptr-buf);
 
     if (ptr !=NULL)
     {
       char *newbuff = malloc(pos);
-      strncpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
-      char *finalbuf = malloc(strlen(newbuff)+1);
-      strcpy(finalbuf,newbuff);
-      strcat(finalbuf,"/");  //re-add a final slash
-      //free(newbuff);
-      printf("finalbuf=%s\n",finalbuf); // sample: "/home/klaus/Downloads/"
+      memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+      newbuff[pos] = '\0';
+      printf("newbuff=%s\n",newbuff);
 
       XClearWindow(dpy,List);
       clean_reset();
-      read_entries(finalbuf);
-      getlabels(finalbuf);
+      read_entries(newbuff);
+      getlabels(newbuff);
       list_entries();
     }
   }
@@ -740,8 +737,8 @@ int main(int argc, char *argv[])
   XMapRaised(dpy, mainwin);
 
   input=IFdir;
-  read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa/");
-  getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa/");
+  read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
+  getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
   list_entries();
 
   for(;;) {
