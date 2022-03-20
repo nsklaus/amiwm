@@ -3,7 +3,8 @@ Amiga Workbench inspired window manager for Xorg..
 
 This repo aims at implementing some missing features of Amiwm as it currently stands,
 resume its development, and bring a more complete Amiga desktop experience to Linux.
-In time, missing gadgets will be implemented, such as sliders, and other types of buttons.
+In time, missing gadgets will be implemented, such as sliders, and other types of knobs and buttons,
+as well as missing functionalities, such as menu customization (toolsdaemon style).
 
 It's a work in progress and i just got started but so far there's the first steps toward a file manager, 
 there also a replica of the ASL requester, an icon viewer and some more general fixes and updates.
@@ -11,11 +12,11 @@ there also a replica of the ASL requester, an icon viewer and some more general 
 <div align="center">
 <table>
 <tr>
-  <td style="vertical-align:top"><img src="Screenshots/workbench1.png" alt="Workbench" title="Workbench"</img></td>
-  <td style="vertical-align:top"><img src="Screenshots/reqasl.png" alt="ASL requester" title="ASL requester"</img></td>
+  <td bgcolor=lightgray style="vertical-align:top"><img src="Screenshots/workbench1.png" alt="Workbench" title="Workbench"</img></td>
+  <td bgcolor=lightgray style="vertical-align:top"><img src="Screenshots/reqasl.png" alt="ASL requester" title="ASL requester"</img></td>
 </tr>
 <tr>
-  <td colspan=2 style="vertical-align:top"><img src="Screenshots/viewer.png" alt="Icon viewer" title="Icon Viewer"</img></td>
+  <td bgcolor=lightgray colspan=2 style="vertical-align:top"><img src="Screenshots/viewer.png" alt="Icon viewer" title="Icon Viewer"</img></td>
 </tr>
 </table>
 </div>
