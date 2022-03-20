@@ -17,6 +17,7 @@ there also a replica of the ASL requester, an icon viewer and some more general 
 <tr>
   <td colspan=2 style="vertical-align:top"><img src="Screenshots/viewer.png" alt="Icon viewer" title="Icon Viewer"</img></td>
 </tr>
+</table>
 </div>
 
 
