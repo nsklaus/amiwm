@@ -303,7 +303,7 @@ void build_icons()
       char *fn=alloca(rl);
       sprintf(fn, "%s/%s", icondir, icon);
       fn[strlen(fn)-5]=0;
-      printf("fn=%s\n",fn);
+      //printf("fn=%s\n",fn);
       icon_do = GetDiskObject(fn);
     }
 
@@ -453,11 +453,15 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
+  // find user's home
+  char homedir[50];
+  snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
+
   // set default window title
-  if(argc<2) {  argv[2]= "home"; }
+  if(argc<3) {  argv[2]= "home"; }
 
   // open default directory
-  if(argv[1]==NULL) { argv[1]= "/home/klaus/"; }
+  if(argv[1]==NULL) { argv[1]= homedir; }
 
   root = RootWindow(dpy, DefaultScreen(dpy));
 

@@ -69,14 +69,18 @@ int mainx=100, mainy=20;
 /** window width and height */
 int mainw, mainh;
 
-
 /** button width */
 int butw;
 
 /** keep scroll offset, cleared when entering a new path */
 int offset_y=0;
 
+/**  count max number of FS entries per visited dir */
 int fse_count;
+
+/** store screen resolution */
+int screen_width=0;
+int screen_height=0;
 
 static XIM xim = (XIM) NULL;
 static XIC xic = (XIC) NULL;
@@ -622,6 +626,10 @@ int main(int argc, char *argv[])
     exit(1);
   }
   root = RootWindow(dpy, DefaultScreen(dpy));
+  int snum = DefaultScreen(dpy);
+  screen_width = DisplayWidth(dpy, snum);
+  screen_height = DisplayHeight(dpy, snum);
+
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
 
@@ -646,7 +654,10 @@ int main(int argc, char *argv[])
 
   mainh=3*fh+TOP_SPACE+BOT_SPACE+2*INT_SPACE+2*BUT_VSPACE;
 
-  mainwin=XCreateSimpleWindow(dpy, root, 0, 0, win_width, win_height, 0,
+  int s_middle_x = (screen_width/2) - win_width/2;
+  int s_middle_y = (screen_height/2) - win_height;
+
+  mainwin=XCreateSimpleWindow(dpy, root, s_middle_x, s_middle_y, win_width, win_height, 0,
                               dri.dri_Pens[SHADOWPEN],
                               dri.dri_Pens[BACKGROUNDPEN]);
   List=XCreateSimpleWindow(dpy, mainwin, 10, 10, win_width-20, win_height-95, 0,
@@ -721,7 +732,6 @@ int main(int argc, char *argv[])
   if (!xic)
     exit(1);
 
-
   size_hints.flags = PMinSize|PMaxSize; //PResizeInc;
   //hints->flags = PMinSize|PMaxSize;
   size_hints.min_width = 255;
@@ -744,8 +754,10 @@ int main(int argc, char *argv[])
   XMapRaised(dpy, mainwin);
 
   input=IFdir;
-  read_entries("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
-  getlabels("/home/klaus/Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
+  char homedir[50];
+  snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
+  read_entries(homedir);//Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
+  getlabels(homedir);//Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
   list_entries();
 
   for(;;) {

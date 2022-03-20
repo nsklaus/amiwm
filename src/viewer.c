@@ -271,21 +271,32 @@ void deselectAll()
 
 int main(int argc, char *argv[])
 {
-  // set a default directory
-  if(argv[1]==NULL) { argv[1]= "/home/klaus/Downloads/icons/"; }
+  // find user's home as default directory
+  char homedir[50];
+  snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
+  if(argv[1]==NULL) { argv[1]= homedir; }
 
   // create window title from argv[1] (path)
   // take last dir and strip slashes, and add "view: " prefix
-  char *temp;
   int length = strlen(argv[1]);
-  temp = alloca(length);
-  strcpy(temp,argv[1]);
-  temp[length-1] = '\0';
+  char *temp;// = argv[1];
+
+  if(argv[1][length-1] == '/')
+  {
+    temp = alloca(length-1);
+    strcpy(temp, argv[1]);
+    temp[length-1] = '\0';
+  } else {
+    temp = alloca(length);
+    strcpy(temp, argv[1]);
+  }
   char * ptr;
   int    ch = '/';
   ptr = strrchr( temp, ch );
+  printf("ptr1=%s\n",ptr);
   ptr[0] = ' ';
-  length = strlen("view: ") + strlen(ptr);
+  printf("ptr2=%s\n",ptr);
+  length = strlen("view: ") + strlen(ptr) + strlen(argv[1]);
   char *temp2 = alloca(length);
   strcpy(temp2, "view: ");
   strcat(temp2, ptr);
@@ -326,9 +337,23 @@ int main(int argc, char *argv[])
                   &txtprop2, argv, argc,
                   &size_hints, NULL, NULL);
 
-  read_entries(argv[1]);
-  getlabels(argv[1]);  /* todo: try to remove one of the two loop  */
-  list_entries(argv[1]);
+
+  // make so provided path argument can work
+  // with and without final slash
+  length = strlen(argv[1]);
+  char *mypath;
+  if(argv[1][length-1] != '/') {
+    mypath = alloca(length+1);
+    strcpy(mypath, argv[1]);
+    mypath[length]='/';
+    mypath[length+1]='\0';
+  } else if (argv[1][length-1] == '/'){
+    mypath = alloca(length);
+    strcpy(mypath, argv[1]);
+  }
+  read_entries(mypath);
+  getlabels(mypath);  /* todo: try to remove one of the two loop  */
+  list_entries(mypath);
 
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
