@@ -94,6 +94,10 @@ typedef struct
   int y;
   int width;    // active dimensions
   int height;
+  Window win;
+  Pixmap pm1;
+  Pixmap pm2;
+  Pixmap pmA;
   Bool selected;
   Bool dragging;
 } fs_obj;
@@ -102,14 +106,21 @@ fs_obj *entries;  // entries = calloc(fse_count, sizeof(fs_obj));
 
 void clean_reset()
 {
-//   for (int i=0;i<fse_count;i++)
-//   {
-//     free(entries[i].name);
-//     free(entries[i].path);
-//     free(entries[i].type);
-//   }
+    for (int i=0;i<fse_count;i++)
+    {
+      entries[i].name = None;
+      entries[i].path = None;
+      entries[i].type = None;
+      entries[i].pm1 = None;
+      entries[i].pm2 = None;
+      entries[i].pmA = None;
+      entries[i].win = None;
+    }
+  XDestroySubwindows(dpy,List);
+  XClearWindow(dpy,mainwin);
+  XClearWindow(dpy,List);
   fse_count=0;
-  //free(entries);
+  free(entries);
 }
 
 void read_entries(char *path) {
@@ -195,6 +206,10 @@ void list_entries()
     entries[i].x = 10;
     entries[i].y = 15 + i*16;
     entries[i].y += offset_y;
+    XMoveWindow(dpy,entries[i].win,entries[i].x,entries[i].y );
+    //printf("list_entries: names=%s\n",entries[i].name);
+
+    /*
     //printf("entries[i].y=%d\n",entries[i].y);
     //entries[i].pmA = entries[i].pm3;
     if (strcmp(entries[i].type,"directory")==0)
@@ -203,9 +218,9 @@ void list_entries()
       XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
-//       XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
-//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-//       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
+      //       XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
+      //       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      //       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
 
     }
     else if (strcmp(entries[i].type,"file")==0)
@@ -214,12 +229,85 @@ void list_entries()
       XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
-//       XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
-//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-//       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
+      //       XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
+      //       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      //       XDrawImageString(dpy, List, gc, 5, entries[i].y, entries[i].name, strlen(entries[i].name));
     }
+    */
   }
 
+}
+
+void build_entries()
+{
+  printf("howmany times\n");
+  //   XSetWindowAttributes xswa;
+  //   xswa.override_redirect = True;
+  //   xswa.colormap = attr.colormap;
+  //   xswa.background_pixel = XWhitePixel(dpy,0);
+
+  //XSetWindowAttributes xswa;
+  //xswa.override_redirect = True;
+  //xswa.colormap = attr.colormap;
+  //xswa.background_pixel = XWhitePixel(dpy,0);
+  for (int i=0;i<fse_count;i++)
+  {
+
+    int width = XmbTextEscapement(dri.dri_FontSet, entries[i].name, strlen(entries[i].name));
+    entries[i].width  = win_width-40;
+    entries[i].height = 15;
+
+//         entries[i].win = XCreateWindow( dpy,List, entries[i].x, entries[i].y, entries[i].width, entries[i].height, 0, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
+
+    entries[i].win=XCreateSimpleWindow(dpy, List, entries[i].x, entries[i].y, entries[i].width, entries[i].height, 0,
+                                       dri.dri_Pens[SHADOWPEN],
+                                       dri.dri_Pens[BACKGROUNDPEN]);
+
+    entries[i].pm1 = XCreatePixmap(dpy, entries[i].win, entries[i].width, entries[i].height, 24);
+    entries[i].pm2 = XCreatePixmap(dpy, entries[i].win, entries[i].width, entries[i].height, 24);
+
+    XSetForeground(dpy, gc, 0xaaaaaa);
+    XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
+
+    if (strcmp(entries[i].type,"directory")==0)
+    {
+      XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
+      XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
+      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, entries[i].pm1, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
+
+      XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
+      XFillRectangle(dpy, entries[i].pm2, gc, 0, 0, entries[i].width, entries[i].height);
+      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, entries[i].pm2, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+    }
+    else if (strcmp(entries[i].type,"file")==0)
+    {
+      XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
+      XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
+      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, entries[i].pm1, gc, win_width-65, 12, "---", strlen("---"));
+      XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
+
+      XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
+      XFillRectangle(dpy, entries[i].pm2, gc, 0, 0, entries[i].width, entries[i].height);
+      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, entries[i].pm2, gc, win_width-65, 12, "---", strlen("---"));
+    }
+    XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
+    entries[i].pmA = entries[i].pm1; // set active pixmap
+    XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
+
+    XSelectInput(dpy, entries[i].win, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
+
+  }
+
+  XMapSubwindows(dpy,List);
 }
 
 /** get button number/id */
@@ -444,38 +532,38 @@ void strkey(XKeyEvent *e)
         if(stat == XLookupBoth)
           stat = XLookupChars;
     }
-  if(stat == XLookupChars) {
-    for(i=0; i<n && buf_len<MAX_CMD_CHARS; i++) {
-      for(x=buf_len; x>cur_pos; --x)
-        cmdline[x]=cmdline[x-1];
-      cmdline[cur_pos++]=buf[i];
-      buf_len++;
+    if(stat == XLookupChars) {
+      for(i=0; i<n && buf_len<MAX_CMD_CHARS; i++) {
+        for(x=buf_len; x>cur_pos; --x)
+          cmdline[x]=cmdline[x-1];
+        cmdline[cur_pos++]=buf[i];
+        buf_len++;
+      }
+      if(i<n)
+        XBell(dpy, 100);
     }
-    if(i<n)
-      XBell(dpy, 100);
-  }
-  if(cur_pos<left_pos)
-    left_pos=cur_pos;
-  cur_x=6;
+    if(cur_pos<left_pos)
+      left_pos=cur_pos;
+    cur_x=6;
 
-  if(cur_pos>left_pos)
-    cur_x+=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, cur_pos-left_pos);
-  if(cur_pos<buf_len) {
-    int l=mbrlen(cmdline+cur_pos, buf_len-cur_pos, NULL);
-    x=XmbTextEscapement(dri.dri_FontSet, cmdline+cur_pos, l);
-  } else
-    x=XExtentsOfFontSet(dri.dri_FontSet)->max_logical_extent.width;
+    if(cur_pos>left_pos)
+      cur_x+=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, cur_pos-left_pos);
+    if(cur_pos<buf_len) {
+      int l=mbrlen(cmdline+cur_pos, buf_len-cur_pos, NULL);
+      x=XmbTextEscapement(dri.dri_FontSet, cmdline+cur_pos, l);
+    } else
+      x=XExtentsOfFontSet(dri.dri_FontSet)->max_logical_extent.width;
 
-  if((x+=cur_x-(strgadw-6))>0) {
-    cur_x-=x;
-    while(x>0) {
-      int l=mbrlen(cmdline+left_pos, buf_len-left_pos, NULL);
-      x-=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, l);
-      left_pos += l;
+    if((x+=cur_x-(strgadw-6))>0) {
+      cur_x-=x;
+      while(x>0) {
+        int l=mbrlen(cmdline+left_pos, buf_len-left_pos, NULL);
+        x-=XmbTextEscapement(dri.dri_FontSet, cmdline+left_pos, l);
+        left_pos += l;
+      }
+      cur_x+=x;
     }
-    cur_x+=x;
-  }
-  refresh_str_text();
+    refresh_str_text();
 }
 
 /** what is this for */
@@ -533,9 +621,9 @@ void got_path(char *path)
 {
   printf("got_path=%s\n", path);
   clean_reset();
-  XClearWindow(dpy,List);
   read_entries(path);
   getlabels(path);
+  build_entries();
   list_entries();
 }
 
@@ -545,17 +633,17 @@ void endchoice()
   abortchoice();
 
   if(c==1){
-//     printf("ss_cmdline=%s\n", cmdline);
-//     system(cmdline);
+    //     printf("ss_cmdline=%s\n", cmdline);
+    //     system(cmdline);
 
     got_path(cmdline);
   }
   if(c==2){
     printf("volumes\n");
     clean_reset();
-    XClearWindow(dpy,List);
     read_entries("/");
     getlabels("/");
+    build_entries();
     list_entries();
   }
   if(c==3){
@@ -587,6 +675,7 @@ void endchoice()
       clean_reset();
       read_entries(newbuff);
       getlabels(newbuff);
+      build_entries();
       list_entries();
     }
   }
@@ -750,15 +839,20 @@ int main(int argc, char *argv[])
                    &txtprop1,
                    &txtprop2, argv, argc,
                    &size_hints, NULL, NULL);
-  XMapSubwindows(dpy, mainwin);
-  XMapRaised(dpy, mainwin);
+
+
 
   input=IFdir;
   char homedir[50];
   snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
   read_entries(homedir);//Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
   getlabels(homedir);//Downloads/icons/IconArchive/ImageDrawers/MonaLisa");
+  build_entries();
   list_entries();
+  XMapSubwindows(dpy,List);
+  //XMapRaised(dpy, List);
+  XMapSubwindows(dpy, mainwin);
+  XMapRaised(dpy, mainwin);
 
   for(;;) {
     XEvent event;
@@ -850,11 +944,11 @@ int main(int argc, char *argv[])
               stractive=0;
               refresh_str();
             }
-            if(stractive && event.xbutton.window!=IFfile) {
+            else if(stractive && event.xbutton.window!=IFfile) {
               stractive=0;
               refresh_str();
             }
-            if((c=getchoice(event.xbutton.window))) {
+            else if((c=getchoice(event.xbutton.window))) {
               abortchoice();
               depressed=1;
               printf("buttonpress_getchoice=%d\n\n",c);
@@ -868,20 +962,35 @@ int main(int argc, char *argv[])
               strbutton(&event.xbutton);
             }
           }
-          // if(event.xbutton.window==List) {}
-          if(event.xbutton.button==Button4)
+          else if(event.xbutton.button==Button4)
           {
             //printf("going up y=%d\n",event.xconfigure.height);
             offset_y+=5;
             list_entries();
 
           }
-          if(event.xbutton.button==Button5)
+          else if(event.xbutton.button==Button5)
           {
             //printf("going down y=%d\n",event.xconfigure.height);
             offset_y-=5;
             list_entries();
           }
+
+          for(int i=0; i<fse_count;i++)
+          {
+            if(event.xbutton.window == entries[i].win && event.xbutton.button==Button1)
+            {
+              printf("selected: %s\n",entries[i].name);
+              if (entries[i].pmA == entries[i].pm1) { entries[i].pmA = entries[i].pm2; }
+              else if (entries[i].pmA == entries[i].pm2) { entries[i].pmA = entries[i].pm1; }
+              XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
+              XClearWindow(dpy,entries[i].win);
+              XFlush(dpy);
+            }
+          }
+
+          // if(event.xbutton.window==List) {}
+
           break;
         case ButtonRelease:
           if(event.xbutton.button==Button1 && selected) {

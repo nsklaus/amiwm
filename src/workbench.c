@@ -492,11 +492,6 @@ int main(int argc, char *argv[])
   read_entries(argv[1]);// todo: try to remove one of the two loop
   getlabels(argv[1]);   // todo: try to remove one of the two loop
   build_icons();
-
-  for (int i=0;i<dircount;i++)
-  {
-
-  }
   list_entries_icons();
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
