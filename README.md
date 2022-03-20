@@ -1,6 +1,21 @@
 # amiwm
 Amiga Workbench inspired window manager for Xorg..
 
+This repo aims at implementing some missing features of Amiwm as it currently stands,
+resume its development, and bring a more complete Amiga desktop experience to Linux.
+In time, missing gadgets will be implemented, such as sliders, and other types of buttons.
+
+It's a work in progress and i just got started but so far there's the first steps toward a file manager, 
+there also a replica of the ASL requester, an icon viewer and some more general fixes and updates.
+ 
+<div align="center">
+        <img width="45%" src="Screenshots/workbench1.png" alt="Workbench1" title="Workbench, icon mode"</img>
+        <img width="45%" src="Screenshots/workbench2.png" alt="Workbench2" title="Workbench list mode"></img>
+        <img width="45%" src="Screenshots/reqasl.png" alt="ASL requester" title="ASL requester"</img>
+        <img width="45%" src="Screenshots/viewer.png" alt="Icon viewer" title="Icon Viewer"</img>
+</div>
+
+
 ## Getting started
 Before compiling, make sure that you have following packages installed:
 
