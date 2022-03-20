@@ -7,12 +7,16 @@ In time, missing gadgets will be implemented, such as sliders, and other types o
 
 It's a work in progress and i just got started but so far there's the first steps toward a file manager, 
 there also a replica of the ASL requester, an icon viewer and some more general fixes and updates.
- 
+
 <div align="center">
-        <img width="45%" src="Screenshots/workbench1.png" alt="Workbench1" title="Workbench, icon mode"</img>
-        <img width="45%" src="Screenshots/workbench2.png" alt="Workbench2" title="Workbench list mode"></img>
-        <img width="45%" src="Screenshots/reqasl.png" alt="ASL requester" title="ASL requester"</img>
-        <img width="45%" src="Screenshots/viewer.png" alt="Icon viewer" title="Icon Viewer"</img>
+<table>
+<tr>
+  <td style="vertical-align:top"><img src="Screenshots/workbench1.png" alt="Workbench" title="Workbench"</img></td>
+  <td style="vertical-align:top"><img src="Screenshots/reqasl.png" alt="ASL requester" title="ASL requester"</img></td>
+</tr>
+<tr>
+  <td colspan=2 style="vertical-align:top"><img src="Screenshots/viewer.png" alt="Icon viewer" title="Icon Viewer"</img></td>
+</tr>
 </div>
 
 
