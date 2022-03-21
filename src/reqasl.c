@@ -37,34 +37,27 @@ static const char file_txt[]="File";
 
 XContext client_context, screen_context, icon_context;
 
-static int selected=0, depressed=0;
-//, stractive=0;
-static int stractive_dir=0, selected_dir=0, depressed_dir=0;
-static int selected_file=0, stractive_file=0, depressed_file=0; // input fields
-
 static Window button[8];
 static const char *buttxt[]={ NULL, ok_txt, vol_txt, par_txt, cancel_txt };
 
+// handle button choice and selection
+static int selected=0, depressed=0;
+
+// handling input fields
+static int stractive_dir=0, selected_dir=0, depressed_dir=0;
+static int selected_file=0, stractive_file=0, depressed_file=0;
 char dir_path[MAX_CMD_CHARS+1];
 char file_path[MAX_CMD_CHARS+1];
-
-//int buf_len=0;
 int buf_len_dir=0;
 int buf_len_file=0;
-
-//int cur_pos=0;
 int cur_pos_dir=0;
 int cur_pos_file=0;
-
-//int left_pos=0;
 int left_pos_dir=0;
 int left_pos_file=0;
-
 int cur_x=6;
+
 char *progname;
-
 Display *dpy;
-
 struct DrawInfo dri;
 
 Window root, mainwin, IFdir, IFfile, List, input;
@@ -95,6 +88,10 @@ int fse_count;
 /** store screen resolution */
 int screen_width=0;
 int screen_height=0;
+
+// store browsing progression
+char *current_dir="";
+char *parent_dir="";
 
 static XIM xim = (XIM) NULL;
 static XIC xic = (XIC) NULL;
@@ -206,6 +203,68 @@ void getlabels(char *path)
     }
   }
   closedir(dirp);
+
+  char *buf="";
+  if(strcmp(entries[0].type, "file")==0)
+  {
+    current_dir=entries[0].path;
+    buf=entries[0].path;  //sample: "/home/klaus/Downlads/icons/"
+    printf("(f) current path=%s\n",buf);
+    buf[strlen(buf)-1] ='\0'; //remove final slash
+
+    char * ptr;
+    int    ch = '/';
+    ptr = strrchr( buf, ch ); // find where next "last" slash is now
+    int pos = (ptr-buf);
+
+    if (ptr !=NULL)
+    {
+      char *newbuff = malloc(pos);
+      memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+      newbuff[pos] = '/';
+      newbuff[pos+1] = '\0';
+      printf("(f) parent path=%s \n\n",newbuff);
+      parent_dir = newbuff;
+    }
+  }
+
+  else if(strcmp(entries[0].type, "directory")==0)
+  {
+    buf=entries[0].path;
+    //printf("DIR_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
+    buf[strlen(buf)-1] ='\0';
+
+    char * ptr;
+    int    ch = '/';
+    ptr = strrchr( buf, ch ); // find where next "last" slash is now
+    int pos = (ptr-buf);
+    //printf("pos=%d\n",pos);
+
+    if (ptr !=NULL && pos !=0)
+    {
+
+      char *newbuff = malloc(pos);
+      memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+      newbuff[pos] = '\0';
+      printf("(d) current path=%s\n",newbuff);
+      //printf("DIR_SEMI_FINAL: len_of_newbuff=%lu newbuff=%s \n",strlen(newbuff),newbuff);
+
+      char *nptr;
+      int ch = '/';
+      nptr = strrchr( newbuff, ch );
+      pos = (nptr-newbuff);
+      //printf("npos=%d\n",pos);
+      char *dirbuff = malloc(pos);
+      memcpy(dirbuff,newbuff,pos);
+      dirbuff[pos] = '/';
+      dirbuff[pos+1] = '\0';
+
+      printf("(d) parent path=%s \n\n",dirbuff);
+      parent_dir = dirbuff;
+
+    }
+
+  }
 }
 
 void list_entries()
@@ -248,30 +307,30 @@ void build_entries()
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
       XDrawImageString(dpy, entries[i].pm1, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
       XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
       XFillRectangle(dpy, entries[i].pm2, gc, 0, 0, entries[i].width, entries[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
       XDrawImageString(dpy, entries[i].pm2, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
     }
     else if (strcmp(entries[i].type,"file")==0)
     {
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
       XDrawImageString(dpy, entries[i].pm1, gc, win_width-65, 12, "---", strlen("---"));
+      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
       XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
       XFillRectangle(dpy, entries[i].pm2, gc, 0, 0, entries[i].width, entries[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
       XDrawImageString(dpy, entries[i].pm2, gc, win_width-65, 12, "---", strlen("---"));
+      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
     }
     XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
     entries[i].pmA = entries[i].pm1; // set active pixmap
@@ -301,7 +360,7 @@ int getchoice(Window w)
 /** refresh buttons in window */
 void refresh_button(Window w, const char *txt, int idx)
 {
-  printf("refresh_button \n");
+  //printf("refresh_button \n");
   int h=fh+2*BUT_VSPACE;
   int l=strlen(txt);
   int tw=XmbTextEscapement(dri.dri_FontSet, txt, l);
@@ -326,6 +385,7 @@ void refresh_main(void)
   w=XmbTextEscapement(dri.dri_FontSet, drawer_txt, strlen(drawer_txt));
   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 10, win_height-60, drawer_txt, strlen(drawer_txt));
   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 20, win_height-36, file_txt, strlen(file_txt));
+
 }
 
 
@@ -782,14 +842,28 @@ void abortchoice()
 
 void got_path(char *path)
 {
-  printf("got_path=%s\n", path);
-  if( access( path, F_OK ) == 0 ) {
+  printf("received path from input filed=%s\n", path);
+  if( access( path, F_OK ) == 0 ) { // check if path exists
+    int length = strlen(path);
+    if (path[length-1] != '/') //check if final slash exists
+    {
+      //printf("ALARM\n");
+      char *buf = malloc(length+1);
+      memcpy(buf,path,length);
+      buf[length]='/';
+      buf[length+1]='\0';
+      //printf("added final slash, buf is now=%s\n",buf);
+      memcpy(path,buf,length+1);
+      //printf("overwrote, path is now=%s\n",buf);
+    }
+
   clean_reset();
   read_entries(path);
   getlabels(path);
   build_entries();
   list_entries();
   }
+  else {printf("input path do not exists\n\n");}
 }
 
 void endchoice()
@@ -808,6 +882,10 @@ void endchoice()
   }
   if(c==2){
     printf("volumes\n");
+    current_dir="/";
+    parent_dir="/";
+    printf("(v) current path=/\n");
+    printf("(v) parent path=/\n\n");
     clean_reset();
     read_entries("/");
     getlabels("/");
@@ -817,32 +895,64 @@ void endchoice()
   if(c==3){
     printf("parent\n");
 
+    /*
     char *buf;
-    for (int i=0; i<fse_count;i++)
-    {
-      if(strcmp(entries[i].type, "file")==0){
-        buf=entries[i].path;  //sample: "/home/klaus/Downlads/icons/"
-        break;
+    if(strcmp(entries[0].type, "file")==0){
+      buf=entries[0].path;  //sample: "/home/klaus/Downlads/icons/"
+      printf("FILE_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
+      buf[strlen(buf)-1] ='\0'; //remove final slash
+
+      char * ptr;
+      int    ch = '/';
+      ptr = strrchr( buf, ch ); // find where next "last" slash is now
+      int pos = (ptr-buf);
+
+      if (ptr !=NULL)
+      {
+        char *newbuff = malloc(pos);
+        memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+        newbuff[pos] = '/';
+        newbuff[pos+1] = '\0';
+        printf("FILE_FINAL: len_of_newbuff=%lu newbuff=%s \n",strlen(newbuff),newbuff);
+        buf=newbuff;
       }
     }
-    buf[strlen(buf)-1] ='\0'; //remove final slash
-
-    char * ptr;
-    int    ch = '/';
-    ptr = strrchr( buf, ch ); // find where next "last" slash is now
-    int pos = (ptr-buf);
-
-    if (ptr !=NULL)
+    else if(strcmp(entries[0].type, "directory")==0)
     {
-      char *newbuff = malloc(pos);
-      memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
-      newbuff[pos] = '\0';
-      printf("newbuff=%s\n",newbuff);
+      buf=entries[0].path;
+      printf("DIR_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
+      buf[strlen(buf)-1] ='\0'; //remove final slash
 
-      XClearWindow(dpy,List);
+      char * ptr;
+      int    ch = '/';
+      ptr = strrchr( buf, ch ); // find where next "last" slash is now
+      int pos = (ptr-buf);
+
+      if (ptr !=NULL)
+      {
+        char *newbuff = malloc(pos);
+        memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+        newbuff[pos] = '/';
+        newbuff[pos+1] = '\0';
+        printf("DIR_FINAL: len_of_newbuff=%lu newbuff=%s \n",strlen(newbuff),newbuff);
+        buf=newbuff;
+      }
+    }
+
+    if(strchr(buf, '/') != NULL) { }
+    */
+
+    //XClearWindow(dpy,List);
+    if(parent_dir != NULL)
+    {
+      if (strcmp(parent_dir,"/")==0) {
+        printf("(p) current dir=/\n");
+        printf("(p) parent dir=/\n\n");
+      }
+      //printf("(p) --- parent dir=%s\n\n",parent_dir);
       clean_reset();
-      read_entries(newbuff);
-      getlabels(newbuff);
+      read_entries(parent_dir);
+      getlabels(parent_dir);
       build_entries();
       list_entries();
     }
@@ -959,7 +1069,7 @@ int main(int argc, char *argv[])
   button[4]=b_cancel;
 
   //totalbuttons = sizeof button / sizeof button[0];
-  printf("totalbuttonlength=%d\n",(int)(sizeof button / sizeof button[0]));
+  //printf("totalbuttonlength=%d\n",(int)(sizeof button / sizeof button[0]));
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   XSelectInput(dpy, List, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, IFdir, ExposureMask|StructureNotifyMask|ButtonPressMask);
@@ -1009,8 +1119,21 @@ int main(int argc, char *argv[])
                    &size_hints, NULL, NULL);
 
   input=IFdir;
+
   char homedir[50];
   snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
+
+  // add final slash,  getenv("HOME") provides
+  int pos = strlen(homedir);
+  char *newbuff = malloc(pos);
+
+  memcpy(newbuff,homedir,pos);  // sample: "/home/klaus/Downloads"
+  newbuff[pos] = '/';
+  newbuff[pos+1] = '\0';
+  strcpy(homedir,newbuff);
+  free(newbuff);
+
+  current_dir = homedir;
   read_entries(homedir);
   getlabels(homedir);
   build_entries();
@@ -1078,7 +1201,12 @@ int main(int argc, char *argv[])
             XResizeWindow(dpy,List,win_width-20, win_height-95);
             XResizeWindow(dpy,IFdir,win_width-70, 20);
             XResizeWindow(dpy,IFfile,win_width-70, 20);
+            for(int i=0;i<fse_count;i++)
+            {
+              entries[i].width =  win_width;
+            }
             //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
+            //finish dynamic resize of file list
             refresh_list();
             list_entries();
             refresh_str_dir();
