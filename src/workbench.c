@@ -79,7 +79,7 @@ char *current_dir="";
 char *parent_dir="";
 
 Window root, mainwin;//, myicon;
-int win_x=20, win_y=20, win_width=300, win_height=150;
+int win_x=100, win_y=80, win_width=300, win_height=150;
 GC gc;
 
 void build_icons();
@@ -282,7 +282,7 @@ void list_entries_icons()
       icons[i].y=10 + (newline_y*50);
       newline_x++;
     }
-    else if(newline_x*80+50 > win_width)
+    else if(newline_x*80*2 > win_width)
     {
       newline_x = 0;
       newline_y++;
@@ -388,7 +388,7 @@ void build_icons()
           int pos = (ptr-temp);
           char *newbuff = malloc(pos);
           memcpy(newbuff,temp,pos);
-          newbuff[pos+1] = '\0';
+          newbuff[pos] = '\0';
           printf("(f) parent path=%s \n\n",newbuff);
           icondir=newbuff;
           icon=icons[i].name;

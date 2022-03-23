@@ -57,7 +57,7 @@ wbicon *icons;
 
 int dircount;
 Window root, mainwin;//, myicon;
-int win_x=20, win_y=20, win_width=300, win_height=150;
+int win_x=100, win_y=80, win_width=500, win_height=250;
 GC gc;
 
 void read_entries(char *path) {
@@ -191,7 +191,7 @@ void list_entries(char *path)
       icons[i].y=10 + (newline_y*50);
       newline_x++;
     }
-    else if(newline_x*80 > win_width)
+    else if(newline_x*80+50 > win_width)
     {
       newline_x = 0;
       newline_y++;
