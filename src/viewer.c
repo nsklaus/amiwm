@@ -410,6 +410,22 @@ int main(int argc, char *argv[])
               XClearWindow(dpy, icons[i].iconwin);
               XFlush(dpy);
             }
+
+            // TODO: decoupling icon building from icon listing
+            // to enable mouse wheel events like reqasl
+//             if(event.xbutton.button==Button4)
+//             {
+//               printf("going up y=%d\n",event.xconfigure.height);
+//               offset_y+=5;
+//               list_entries();
+//
+//             }
+//             if(event.xbutton.button==Button5)
+//             {
+//               printf("going down y=%d\n",event.xconfigure.height);
+//               offset_y-=5;
+//               list_entries();
+//             }
           }
           break;
         case ConfigureNotify: // resize or move event

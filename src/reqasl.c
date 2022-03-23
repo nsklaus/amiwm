@@ -336,7 +336,7 @@ void build_entries()
     entries[i].pmA = entries[i].pm1; // set active pixmap
     XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
 
-    XSelectInput(dpy, entries[i].win, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
+    XSelectInput(dpy, entries[i].win, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask|ShiftMask);
   }
   XMapSubwindows(dpy,List);
 }
@@ -1279,6 +1279,7 @@ int main(int argc, char *argv[])
               printf("selected: %s\n",entries[i].name);
               if (entries[i].pmA == entries[i].pm1) { entries[i].pmA = entries[i].pm2; }
               else if (entries[i].pmA == entries[i].pm2) { entries[i].pmA = entries[i].pm1; }
+
               XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
               XClearWindow(dpy,entries[i].win);
               XFlush(dpy);
@@ -1301,6 +1302,11 @@ int main(int argc, char *argv[])
         case KeyPress:
           if(stractive_dir) { strkey_dir(&event.xkey); }
           if(stractive_file) { strkey_file(&event.xkey); }
+          //if(event.xkey.keycode){}
+          break;
+        case KeyRelease:
+          printf("key got released\n");
+          break;
       }
     }
   }

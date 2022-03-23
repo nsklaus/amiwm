@@ -43,7 +43,7 @@ typedef struct
 {
   char *name;
   char *path;
-  char *type;   // file or dir
+  char *type;   // file or dir or icon
   Window iconwin;
   Pixmap pm1;   // unselected icon
   Pixmap pm2;   // selected icon
@@ -63,12 +63,21 @@ typedef struct
   Bool dragging;
 } wbicon;
 
-wbicon *icons;
+wbicon *icons; // normal files
+wbicon *infos; // info files
+
 Window ww; //xreparent and xtranslatecoordinates
 wbicon icon_temp; // copy of selected icon
 XWindowAttributes xwa;
 
+// total amount of entries
 int dircount;
+int iconcount;
+
+// store browsing progression
+char *current_dir="";
+char *parent_dir="";
+
 Window root, mainwin;//, myicon;
 int win_x=20, win_y=20, win_width=300, win_height=150;
 GC gc;
@@ -89,12 +98,33 @@ void read_entries(char *path) {
     {
       // exclude common system entries and (semi)hidden names
       if (dp->d_name[0] != '.'){
-        dircount++;
+
+        char *buf = dp->d_name;
+        //printf("buf=%s\n",icons[i].name);
+        char * ptr;
+        int    ch = '.';
+        ptr = strrchr( buf, ch );
+        if (ptr !=NULL)
+        {
+          if ( strcmp(ptr, ".info") == 0 )
+          {
+            iconcount++;
+          }
+          else if ( strcmp(ptr, ".info") != 0 )
+          {
+            dircount++;
+          }
+        }
+        else if (ptr == NULL)
+        {
+          dircount++;
+        }
       }
     }
   }
   // get max number of instances of wbicon to allocate
   icons = calloc(dircount, sizeof(wbicon));
+  infos = calloc(iconcount, sizeof(wbicon));
   closedir(dirp);
   }
 
@@ -104,6 +134,7 @@ void getlabels(char *path)
   DIR *dirp;
   struct dirent *dp;
   int count=0;
+  int i_count=0;
   dirp = opendir(path);
   while ((dp = readdir(dirp)) != NULL)
   {
@@ -130,14 +161,47 @@ void getlabels(char *path)
       {
         //printf ("FILE: %s\n", dp->d_name);
         //wbicon_data(count, dp->d_name, path, "file" );
-        icons[count].name =  malloc(strlen(dp->d_name)+1);
-        strcpy(icons[count].name, dp->d_name);
-        int pathsize = strlen(path) +2;
-        char *tempo = malloc(pathsize);
-        strcpy(tempo,path);
-        icons[count].path = tempo;
-        icons[count].type = "file";
-        count++;
+        char *buf = dp->d_name;
+        printf("FILE: buf=%s\n",buf);
+        char * ptr;
+        int    ch = '.';
+        ptr = strrchr( buf, ch );
+        if (ptr !=NULL)
+        {
+          if ( strcmp(ptr, ".info") == 0 ) // this is .info file
+          {
+            infos[i_count].name =  malloc(strlen(dp->d_name)+1);
+            strcpy(infos[i_count].name, dp->d_name);
+            int pathsize1 = strlen(path) +2;
+            char *tempo1 = malloc(pathsize1);
+            strcpy(tempo1,path);
+            infos[i_count].path = tempo1;
+            infos[i_count].type = "file";
+            i_count++;
+          }
+          else if (strcmp(ptr, ".info") != 0) // not .info file
+          {
+            icons[count].name =  malloc(strlen(dp->d_name)+1);
+            strcpy(icons[count].name, dp->d_name);
+            int pathsize2 = strlen(path) +2;
+            char *tempo2 = malloc(pathsize2);
+            strcpy(tempo2,path);
+            icons[count].path = tempo2;
+            icons[count].type = "file";
+            count++;
+          }
+        }
+        else  // case with files without "." in filenames
+        {
+          icons[count].name =  malloc(strlen(dp->d_name)+1);
+          strcpy(icons[count].name, dp->d_name);
+          int pathsize2 = strlen(path) +2;
+          char *tempo2 = malloc(pathsize2);
+          strcpy(tempo2,path);
+          icons[count].path = tempo2;
+          icons[count].type = "file";
+          count++;
+        }
       }
     }
   }
@@ -151,7 +215,7 @@ char * get_viewmode()
 
 void reset_view()
 {
-  for (int i=0;i<dircount;i++)
+  for (int i=0;i<dircount-1;i++)
   {
 //     XFreePixmap(dpy, icons[i].pm1);
 //     XFreePixmap(dpy, icons[i].pm2);
@@ -237,6 +301,11 @@ void list_entries_icons()
   }
 }
 
+void geticon(char *path, char *file)
+{
+  printf("geticon: path=%s file=%s\n",path,file);
+}
+
 void build_icons()
 {
   printf("passing through build icons\n");
@@ -247,8 +316,16 @@ void build_icons()
   char *icon = "def_drawer.info";//="def_tool.info";
   XSetWindowAttributes xswa;
   xswa.override_redirect = True;
+//   for (int i=0;i<dircount;i++)
+//   {
+//     printf("i=%d name=%s\n",i ,icons[i].name);
+//   }
+
+  //char **substitution = calloc(iconcount, sizeof(char*)); 0_0  (braewoods)
   for (int i=0;i<dircount;i++)
   {
+
+
     icons[i].iconwin = XCreateWindow( dpy,mainwin, icons[i].x, icons[i].y, icons[i].width+18, icons[i].height+15, 1, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
 
     XSetWindowBackgroundPixmap(dpy, icons[i].iconwin, icons[i].pmA);
@@ -258,52 +335,100 @@ void build_icons()
     icons[i].t_width  = label_width+10;
     icons[i].t_height = 15;
 
+    //geticon(icons[i].path, icons[i].name);
+
+
+    icondir="/usr/local/lib/amiwm/icons";
     if(strcmp(icons[i].type, "directory") == 0) { icon="def_drawer.info"; }
     else if(strcmp(icons[i].type, "file") == 0) { icon="def_tool.info"; }
 
-    /*
-    char *buf = icons[i].name;
-    char * ptr;
-    int    ch = '.';
-    ptr = strrchr( buf, ch );
-    if (ptr !=NULL)
+    //printf("iconcount=%d\n",iconcount);
+    for (int j = 0; j<iconcount;j++)
     {
-      if ( strcmp(ptr, ".info") == 0 )
+      char *buf = infos[j].name;
+      //printf("\noriginal buf=%s\n",buf);
+      char * ptr;
+      int    ch = '.';
+      ptr = strrchr( buf, ch );
+      int pos = ptr-buf;
+      if (ptr !=NULL)
       {
-        printf("my_result=%s\n",icons[i].name);
-        icondir=icons[i].path;
-        icon=icons[i].name;
+        if ( strcmp(ptr, ".info") == 0 )
+        {
+          buf[pos]='\0';
+        }
+        //printf("new buf=%s\n",buf);
 
+        if (strcmp(icons[i].name, buf)==0)
+        {
+          //printf("ITS A FILE: name=%s buf=%s\n",icons[i].name, buf);
+          //printf("#### name=%s buf=%s\n",icons[i].name, buf);
+          char *temp = malloc(strlen(icons[i].path));
+          strcpy(temp,icons[i].path);
+          temp[(strlen(temp)-1)]='\0';
+          icondir=temp;
+          icon=icons[i].name;
+          //icondir[strlen(icondir)-1] = '\0';
+        }
       }
-      else {
-        icondir="/usr/local/lib/amiwm/icons";
+      if(strcmp(icons[i].type,"directory")==0)
+      {
+        //printf("ITS A DIRECTORY: name=%s buf=%s\n",icons[i].name,buf);
+        if (strcmp(icons[i].name, buf)==0)
+        {
+          //printf("\n========MATCH=========\n");
+          //printf("ITS A DIRECTORY: name=%s buf=%s\n",icons[i].name,buf);
+          printf("MATCH: path=%s name=%s buf=%s\n",icons[i].path, icons[i].name, buf);
+          char *temp = malloc(strlen(icons[i].path));
+          strcpy(temp,icons[i].path);
+          temp[(strlen(temp)-1)]='\0';
+          char * ptr;
+          int    ch = '/';
+          ptr = strrchr( temp, ch ); // find where next "last" slash is now
+          int pos = (ptr-temp);
+          char *newbuff = malloc(pos);
+          memcpy(newbuff,temp,pos);
+          newbuff[pos+1] = '\0';
+          printf("(f) parent path=%s \n\n",newbuff);
+          icondir=newbuff;
+          icon=icons[i].name;
+        }
       }
     }
-*/
 
-    //printf("path= %s icon=%s\n",icondir, icon);
-/*
-    char *fname = icons[i].name;
-    char *buf1 = alloca(strlen(fname)+6);
-    sprintf(buf1, "%s.info", fname);
-    printf("buf=%s\n",buf1);
-
-    if( access( icons[i].name, F_OK ) == 0 ) {
-      printf("file exists, name=%s\n",icons[i].name);
-      icon = icons[i].name;
-    }
-    else
-    {*/
-//       if(strcmp(icons[i].type, "directory") == 0) { icon="def_drawer.info"; }
-//       else if(strcmp(icons[i].type, "file") == 0) { icon="def_tool.info"; }
+    printf("---------->  icondir=%s icon=%s\n",icondir, icon);
+//     char *buf = icons[i].name;
+//     printf("buf=%s\n",icons[i].name);
+//     char * ptr;
+//     int    ch = '.';
+//     ptr = strrchr( buf, ch );
+//     if (ptr !=NULL)
+//     {
+//       if ( strcmp(ptr, ".info") == 0 )
+//       {
+//         printf("my_result=%s\n",icons[i].name);
+//         icondir=icons[i].path;
+//         icon=icons[i].name;
+//
+//       }
 //     }
-    if (icon != NULL && *icon != 0)
+    if (icon != NULL && *icon != 0 && strcmp(icondir,"/usr/local/lib/amiwm/icons")!=0)  // NOT default icon
     {
       int rl=strlen(icon)+strlen(icondir)+2;
       char *fn=alloca(rl);
       sprintf(fn, "%s/%s", icondir, icon);
-      fn[strlen(fn)-5]=0;
-      //printf("fn=%s\n",fn);
+      //fn[strlen(fn)-5]=0; // don't re-strip suffix .info
+      printf("fn=%s\n\n",fn);
+      icon_do = GetDiskObject(fn);
+    }
+
+    if (icon != NULL && *icon != 0 && strcmp(icondir,"/usr/local/lib/amiwm/icons")==0) // default icon
+    {
+      int rl=strlen(icon)+strlen(icondir)+2;
+      char *fn=alloca(rl);
+      sprintf(fn, "%s/%s", icondir, icon);
+      fn[strlen(fn)-5]=0; // strip suffix .info
+      printf("fn=%s\n",fn);
       icon_do = GetDiskObject(fn);
     }
 
@@ -343,7 +468,9 @@ void build_icons()
     {
       //XSetWindowBackground(dpy, icons[i].iconwin, dri.dri_Pens[FILLPEN]);
       XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
-      XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
+      //XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
+      //XSetForeground(dpy, gc, 0x372db0);
+      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
       XDrawImageString(dpy, icons[i].pm3, gc, 5, 12, icons[i].name, strlen(icons[i].name));
       XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
@@ -456,6 +583,17 @@ int main(int argc, char *argv[])
   // find user's home
   char homedir[50];
   snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
+  // add final slash,  getenv("HOME") provides
+  int pos = strlen(homedir);
+  char *newbuff = malloc(pos);
+
+  memcpy(newbuff,homedir,pos);  // sample: "/home/klaus/Downloads"
+  newbuff[pos] = '/';
+  newbuff[pos+1] = '\0';
+  strcpy(homedir,newbuff);
+  free(newbuff);
+
+  printf("homedir=%s\n",homedir);
 
   // set default window title
   if(argc<3) {  argv[2]= "home"; }
@@ -629,7 +767,7 @@ void event_loop()
               XReparentWindow(dpy, icon_temp.iconwin,RootWindow(dpy, 0),xwa.x,xwa.y);
               icon_temp.dragging=True;
             }
-            printf("motion notify\n");
+            //printf("motion notify\n");
             icon_temp.dragging=True;
             XMoveWindow(dpy,icon_temp.iconwin,event.xmotion.x_root-25, event.xmotion.y_root-25);
           }
