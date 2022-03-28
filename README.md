@@ -26,7 +26,7 @@ there also a replica of the ASL requester, an icon viewer and some more general 
 Before compiling, make sure that you have following packages installed:
 
 ```
-gcc make autoconf xorg xorg-xinit xorg-dev
+gcc make autoconf xorg xorg-xinit xorg-dev bison flex
 ```
 
 First, run configuration script:

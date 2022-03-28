@@ -1,0 +1,106 @@
+# show a requester before quit amiwm
+FastQuit No
+
+# resize gadget location
+SizeBorder bottom
+
+# allow app windows ignore screen boundaries
+ForceMove always
+
+IconPalette MagicWB
+IconDir "/usr/local/lib/amiwm/icons"
+
+# choose an icon as default icon 
+DefaultIcon "def_tool.info"
+
+# only use amiga icons (ignore apps internal icons)
+CustomIconsOnly yes 
+
+# shorten long label on iconified apps
+ShortLabelIcons yes 
+
+# enable titlebar clock
+TitlebarClock yes 
+
+# TitleClockFormat "%a %b %e %Y %l:%M %p" 
+TitleClockFormat "%l:%M %p" 
+
+# autoraise windows (yes/no)
+Autoraise yes 
+
+# change focus mode (clicktotype, followmouse)
+Focus clicktotype
+#Focus followmouse
+
+# change screen name
+Screen "Workbench Screen"
+
+#opaque move 
+opaquemove yes
+
+# opaque resize
+opaqueresize yes
+
+# set background image (require imagemagick installed)
+Module "Background" "/home/klaus/Pictures/tilebg.jpg"
+
+# configure Launcher module (add icons on desktop)
+Module "Launcher" "(Computer) (harddisk.info) (dolphin)"
+Module "Launcher" "(workbench) (harddisk.info) (workbench)"
+
+# april fool "jokefs" (only interesting for devs as example)
+#Module "Filesystem" "/home/klaus"
+
+# configure additional keyboard shortcuts
+Module "Keyboard" "\
+  meta<m>:all:rotatescreens\
+  Control<i>:window|frame:iconify\
+  meta<f>:window|frame:front\
+  meta<b>:window|frame:back"
+
+# force amiga icons on specific programs
+style { class "xterm" icon "shell.info" }
+style { class "Navigator" icon "browser.info" }
+style { class "netsurf" icon "browser.info" }
+style { class "vimb" icon "browser.info" }
+style { class "hexchat" icon "irc.info" }
+style { class "nedit" icon "texteditor.info" }
+style { class "featherpad" icon "texteditor.info" }
+style { class "kdevelop" icon "idedevel.info" }
+style { class "chromium" icon "browser.info" }
+style { class "Konversation" icon "irc.info" }
+style { class "sublime_text" icon "texteditor.info" }
+style { class "gimp" icon "paint.info" }
+style { class "Viewer" icon "viewer.info" }
+
+# create new menu entries
+ToolItem Separator
+ToolItem "Network"
+  {
+  ToolItem "Netsurf"  "netsurf"
+  ToolItem "Chromium" "chromium"
+  ToolItem "Konversation" "konversation"
+  ToolItem "vimb" "vimb"
+  ToolItem "hexchat"  "hexchat"
+  ToolItem "firefox" "firefox"
+  }
+ToolItem "Multimedia"
+  {
+  ToolItem "Video Player" "mpv"
+  ToolItem "SSrec"  "simplescreenrecorder"
+  }
+ToolItem "Devel"
+  {
+  ToolItem "kdevelop" "kdevelop"
+  }
+ToolItem "System"
+  {
+  ToolItem "Setup" "/usr/local/lib/amiwm/setup"
+  ToolItem "Terminal" "xterm"
+  ToolItem "spectale"  "spectacle"
+  ToolItem "Nedit"  "nedit"
+  ToolItem "sublime"  "subl"
+  ToolItem "Slock"  "slock"
+  }
+
+

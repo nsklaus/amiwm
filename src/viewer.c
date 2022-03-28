@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
   // make so provided path argument can work
   // with and without final slash
   length = strlen(argv[1]);
-  char *mypath;
+  char *mypath="";
   if(argv[1][length-1] != '/') {
     mypath = alloca(length+1);
     strcpy(mypath, argv[1]);
@@ -351,6 +351,12 @@ int main(int argc, char *argv[])
     mypath = alloca(length);
     strcpy(mypath, argv[1]);
   }
+  
+  XClassHint *myhint = XAllocClassHint();
+  myhint->res_class="viewer";
+  myhint->res_name="Viewer";
+  XSetClassHint(dpy,mainwin,myhint);
+  
   read_entries(mypath);
   getlabels(mypath);  /* todo: try to remove one of the two loop  */
   list_entries(mypath);

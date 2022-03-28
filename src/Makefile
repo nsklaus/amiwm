@@ -4,7 +4,7 @@ SHELL = /bin/sh
 CC = gcc
 LEX = flex
 YACC = bison -y
-CFLAGS = -g -O0
+CFLAGS = -g -O2 -g -O0
 YFLAGS = -d
 DEFS = -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DPACKAGE_URL=\"\" -DYYTEXT_POINTER=1 -DSTDC_HEADERS=1 -DHAVE_SYS_WAIT_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_FCNTL_H=1 -DHAVE_LIMITS_H=1 -DHAVE_SYS_TIME_H=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_UNISTD_H=1 -DHAVE_SYS_SELECT_H=1 -DHAVE_SYS_RESOURCE_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_TERMIO_H=1 -DHAVE_X11_EXTENSIONS_SHAPE_H=1 -DTIME_WITH_SYS_TIME=1 -DHAVE_ALLOCA_H=1 -DHAVE_ALLOCA=1 -DRETSIGTYPE=void -DHAVE_WAIT3=1 -DHAVE_SELECT=1 -DHAVE_STRDUP=1 -DHAVE_WAITPID=1 -DHAVE_XSHAPE=1 -DBSD_STYLE_GETTIMEOFDAY=1 -DHAVE_XCREATEFONTSET=1 -DHAVE_XMBTEXTESCAPEMENT=1 -DHAVE_XUTF8DRAWIMAGESTRING=1 -DUSE_FONTSETS=1 -DLAME_ENDIAN=1
 ALL_CFLAGS = -I. -I. -I./libami $(DEFS) $(CFLAGS) 
@@ -130,6 +130,8 @@ install : $(PROGS) $(MODULES) Xsession Xsession2 Xinitrc amiwm-init
 	$(INSTALL) -m 644 $(srcdir)./icons/soundeditor.info $(AMIWM_HOME)/icons/soundeditor.info
 	$(INSTALL) -m 644 $(srcdir)./icons/texteditor.info $(AMIWM_HOME)/icons/texteditor.info
 	$(INSTALL) -m 644 $(srcdir)./icons/viewer.info $(AMIWM_HOME)/icons/viewer.info
+	$(INSTALL) -m 644 $(srcdir)./icons/texteditor2.info $(AMIWM_HOME)/icons/texteditor2.info
+	$(INSTALL) -m 644 $(srcdir)./icons/idedevel.info $(AMIWM_HOME)/icons/idedevel.info
 	$(INSTALL) -m 644 $(srcdir)/system.amiwmrc $(AMIWM_HOME)/system.amiwmrc
 	$(INSTALL) -m 644 $(srcdir)/system.map $(AMIWM_HOME)/system.map
 	$(INSTALL) -m 644 $(srcdir)/magicwb.map $(AMIWM_HOME)/magicwb.map

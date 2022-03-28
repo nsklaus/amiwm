@@ -95,9 +95,11 @@ IconFont "fontname"
 
 Selects a font for icontitles.
 
+```
 {detailpen|blockpen|textpen|shinepen|shadowpen|fillpen|filltextpen|
 	backgroundpen|highlighttextpen|bardetailpen|barblockpen|
 	bartrimpen} "colorname"
+```
 
 Modifies the colour scheme for the window manager.
 

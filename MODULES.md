@@ -4,10 +4,10 @@ To get background images (aka backdrops) on your screens,
 use the Background module. The Module command should come
 after the Screen command, and the initstring should be the
 filename of the picture.  Example:
-
+```
 Screen "Workbench Screen"
 Module "Background" "~/megumin.png"
-
+```
 The Background module is really a shell script that requires the
 program 'display' from imagemagick package. Currently, it doesn't
 support any standard imagemagick parameters.
@@ -16,10 +16,10 @@ support any standard imagemagick parameters.
 
 Same as the Background module, but stretches your backdrop to size of
 your screen. Example:
-
+```
 Screen "Workbench Screen"
 Module "Background_stretch" "~/megumin.png"
-
+```
 Please note that this module will just stretch or downscale the image
 (depending on the size of the image) to your display ratio.
 If you don't want your image to look ugly, try the next module..
@@ -37,9 +37,9 @@ image, but repeated.
 With the Keyboard module, you can bind window manager functions to keys
 on the keyboard. The initstring should consist of keybindings on the
 form
-
+```
 modifiers<keysym>:where:func
-
+```
 ### modifiers
 
 Modifiers is 0 or more of:
@@ -73,12 +73,12 @@ iconify        -  Iconify the window in which the key is pressed
 
 
 #### Example
-
+```
 Module "Keyboard" "\
 	Meta<F1>:window|frame:front\
 	Meta<F2>:window|frame:iconify\
 	Meta<F3>:window|frame:back"
-
+```
 This binds the keys Meta-F1, Meta-F2 and Meta-F3 to front, back and
 iconify respectively.  The will only have effect inside windows and in
 window frames.  (These are the only places that front/iconfy/back has
@@ -88,8 +88,9 @@ effect anyway.)
 
 This is an april fools joke module, but at least it's a starting
 point for building out an icon on the desktop!
-
+```
 Module "Filesystem" "/path/to/open"
+```
 
 ## Launcher module
 
@@ -101,8 +102,8 @@ The module must be placed after the Screen definition you wish
 for it to show up in.
 
 The format is:
-
+```
 Module "Launcher" "(<label>) (<icon>) (<command and args>)"
-
+```
 The icon is one of the .info icons in the amiwm IconDir.
 

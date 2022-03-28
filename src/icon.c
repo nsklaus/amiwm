@@ -37,6 +37,8 @@ char *label_font_name="-b&h-lucida-medium-r-normal-sans-10-*-*-*-*-*-iso8859-1"
 #endif
 ;
 
+extern Atom wm_class;
+
 void redrawicon(Icon *i, Window w)
 {
   Pixmap pm;
@@ -201,7 +203,7 @@ void adjusticon(Icon *i)
     if(i2->parent==i->parent && i2!=i && i2->mapped &&
        nx<i2->x+i2->width && nx+i->width>i2->x &&
        ny<i2->y+i2->height+scr->lh+2 && ny+i->height+scr->lh+2>i2->y) {
-      ny=i2->y+i2->height+scr->lh+4;
+      ny=i2->y+i2->height+scr->lh+10;  // icon spacing
       if(ny+i->height+scr->lh+1>maxy) {
 	nx=i2->x+i2->width+5;
 	if(i->parent==scr->back && nx+i->width>maxx) {
@@ -388,7 +390,7 @@ Icon *createappicon(struct module *m, Window p, char *name,
   XSetWindowAttributes attr;
 
   if(x==NO_ICON_POSITION || y==NO_ICON_POSITION) {
-    x=0; y=0; ap++;
+    x=20; y=20; ap++; // icon position
   }
 
   i=(Icon *)calloc(1, sizeof(Icon));
@@ -539,7 +541,7 @@ void cleanupicons()
 	nicons++;
       }
     if(nicons) {
-      int i0=0, i, x=5, y=scr->bh+4, w, mw=0;
+      int i0=0, i, x=20, y=scr->bh+20, w, mw=0;
       qsort(icons, nicons, sizeof(*icons),
 	    (int (*)(const void *, const void *))cmp_iconpos);
       for(i=0; i<nicons; i++) {
@@ -556,7 +558,7 @@ void cleanupicons()
 	  w=icons[i]->labelwidth;
 	if(w>mw)
 	  mw=w;
-	y+=icons[i]->height+4+scr->lh;
+	y+=icons[i]->height+10+scr->lh; // icon spacing
       }
       placeicons(icons+i0, nicons-i0, x, mw);
     }
@@ -568,7 +570,7 @@ void newicontitle(Client *c)
 {
   Icon *i=c->icon;
 #ifdef USE_FONTSETS
-  XTextProperty prop;
+  XTextProperty prop, class_name;
   if(i->label) {
     free(i->label);
     i->label = NULL;
@@ -576,6 +578,12 @@ void newicontitle(Client *c)
   if(XGetWMIconName(dpy, c->window, &prop) && prop.value) {
     char **list;
     int n;
+    
+    //use wm_class instead of wm_name for icon labels
+    wm_class = XInternAtom(dpy, "WM_CLASS", False);
+    if(!XGetTextProperty(dpy, c->window, &class_name, wm_class))
+      class_name.value=NULL;
+    
     if(XmbTextPropertyToTextList(dpy, &prop, &list, &n) >= Success) {
       if(n > 0) {
 	if( prefs.shortlabelicons )
@@ -587,31 +595,45 @@ void newicontitle(Client *c)
 	    str2[8]='.';
 	    str2[9]='.';
 	    str2[10]='\0';
-	    i->label = strdup(str2);
+	    i->label = strdup(class_name.value);//str2);  //use wm_class instead of wm_name
 	  } else {
-	    i->label = strdup(list[0]);
+      i->label = strdup(class_name.value);//list[0]);
 	  }
 	} else {
-	  i->label = strdup(list[0]);
+    i->label = strdup(class_name.value);//list[0]);
 	}
-	i->labelwidth=XmbTextEscapement(labelfontset, i->label,
-					strlen(i->label));
+	//i->labelwidth=XmbTextEscapement(labelfontset, i->label,strlen(i->label));
+  i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
       }
       XFreeStringList(list);
     }
     XFree(prop.value);
   }
-  if(!i->label)
-    i->labelwidth = 0;
+  if(!i->label){
+      i->labelwidth = 0;
+//      i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
+//      i->label=strdup(class_name.value);
+//     int length = strlen(class_name.value);
+//     i->labelwidth = length;
+      
+    }
+//     else {
+//       int length = strlen(class_name.value);
+//       i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
+//       i->labelwidth = length;
+//       i->label=strdup(class_name.value);
+//     }
 #else
+
+
   if(i->label.value)
     XFree(i->label.value);
   if(!(XGetWMIconName(dpy, c->window, &i->label))) {
     i->label.value=NULL;
     i->labelwidth=0;
   } else
-    i->labelwidth=XTextWidth(labelfont, (char *)i->label.value,
-			     i->label.nitems);
+      i->labelwidth=XTextWidth(labelfont, (char *)i->label.value, i->label.nitems);
+
 #endif
   if(i->labelwidth)
     XResizeWindow(dpy, i->labelwin, i->labelwidth, c->scr->lh);

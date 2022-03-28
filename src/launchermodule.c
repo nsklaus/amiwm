@@ -91,6 +91,7 @@ static void create_launcher(char *label, char *icon, char *cmdline)
   XSync(dpy, False);
   win = md_create_appicon(md_root, 0x80000000, 0x80000000,
 			  label, icon_icon1, icon_icon2, None);
+  
   XSaveContext(dpy, win, launchercontext, (XPointer)l);
 }
 

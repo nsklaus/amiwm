@@ -1133,6 +1133,11 @@ int main(int argc, char *argv[])
   strcpy(homedir,newbuff);
   free(newbuff);
 
+  XClassHint *myhint = XAllocClassHint();
+  myhint->res_class="reqasl";
+  myhint->res_name="ReqASL";
+  XSetClassHint(dpy,mainwin,myhint);
+  
   current_dir = homedir;
   read_entries(homedir);
   getlabels(homedir);
