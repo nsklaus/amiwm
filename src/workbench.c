@@ -62,13 +62,9 @@ typedef struct
   Bool dragging;
 } fs_entity;
 
-fs_entity *fse_arr; // array for normal files
-fs_entity *fsi_arr; // array for info files
-int alloc_ecount = 20; // array size
-int alloc_icount = 20;
-
-int entries_count; // total amount of entries per dir
-int icon_count; // total amount of icons per dir
+fs_entity *fse_arr; // array for normal files 
+int alloc_ecount = 20; // array size 
+int entries_count; // total amount of entries per dir 
 
 Window ww; //xreparent and xtranslatecoordinates
 fs_entity icon_temp; // copy of selected icon
@@ -176,103 +172,6 @@ void read_entries(char *path) {
   printf("file_count=%d\n",file_count);
 }
 
-void getlabels(char *path)
-{
-  /*
-  // same loop, but for getting filenames this time
-  DIR *dirp;
-  struct dirent *dp;
-  int count=0;
-  int i_count=0;
-  dirp = opendir(path);
-  while ((dp = readdir(dirp)) != NULL)
-  {
-    if (dp->d_type & DT_DIR)
-    {
-      if (dp->d_name[0] != '.')
-      {
-        printf("name before malloc() name=%s\n",dp->d_name);
-        int length=strlen(dp->d_name)+1;
-        fse_arr[count].name =  malloc(length);
-        
-        strcpy(fse_arr[count].name, dp->d_name);
-        printf("last char for fse_arr[count].name=%c\n",fse_arr[count].name[length-1]);
-        int pathsize = strlen(path) + strlen(fse_arr[count].name) +2;
-
-        printf("pathsize=%d count=%d entries_count=%d name=%s\n",pathsize, count,entries_count,fse_arr[count].name );
-        char *tempo = malloc(pathsize);
-        strcpy(tempo,path);
-        strcat(tempo,fse_arr[count].name);
-        strcat(tempo,"/");
-        fse_arr[count].path = tempo;
-        fse_arr[count].type = "directory";
-        fse_arr[count].x = 20;
-        fse_arr[count].y = 20;
-        fse_arr[count].width = 20;
-        fse_arr[count].height = 20;
-        count++;
-      }
-    }
-
-    else if (dp->d_type & DT_REG)
-    {
-      if (dp->d_name[0] != '.')
-      {
-        //printf ("FILE: %s\n", dp->d_name);
-        //wbicon_data(count, dp->d_name, path, "file" );
-        char *buf = dp->d_name;
-        //printf("FILE: buf=%s\n",buf);
-        char * ptr;
-        int    ch = '.';
-        ptr = strrchr( buf, ch );
-        if (ptr !=NULL)
-        {
-          if ( strcmp(ptr, ".info") == 0 ) // this is .info file
-          {
-            fsi_arr[i_count].name =  malloc(strlen(dp->d_name)+1);
-            strcpy(fsi_arr[i_count].name, dp->d_name);
-            int pathsize1 = strlen(path)+2;
-
-            char *tempo1 = malloc(pathsize1);
-            strcpy(tempo1,path);
-            fsi_arr[i_count].path = tempo1;
-            fsi_arr[i_count].type = "file";
-            i_count++;
-          }
-          else if (strcmp(ptr, ".info") != 0) // not .info file
-          { 
-
-            fse_arr[count].name =  malloc(strlen(dp->d_name)+1);
-            strcpy(fse_arr[count].name, dp->d_name);
-            int pathsize2 = strlen(path)+2;
-
-            char *tempo2 = malloc(pathsize2);
-            strcpy(tempo2,path);
-            fse_arr[count].path = tempo2;
-            fse_arr[count].type = "file";
-            count++;
-          }
-        }
-        else  // case with files without "." in filenames
-        {
-
-          fse_arr[count].name =  malloc(strlen(dp->d_name)+1);
-          strcpy(fse_arr[count].name, dp->d_name);
-          int pathsize2 = strlen(path)+2;
-
-          char *tempo2 = malloc(pathsize2);
-          strcpy(tempo2,path);
-          fse_arr[count].path = tempo2;
-          fse_arr[count].type = "file";
-          count++;
-        }
-      }
-    }
-  }
-  closedir(dirp);
-*/
-}
-
 char * get_viewmode()
 {
   return viewmode;
@@ -333,14 +232,14 @@ void list_entries()
 void list_entries_icons()
 {
   viewmode="icons";
-  printf("VIEWMODE now=%s\n",get_viewmode());
+ // printf("VIEWMODE now=%s\n",get_viewmode());
   //build_icons();
   int newline_x = 0;
   int newline_y = 0;
 
    for (int i=0;i<entries_count;i++)
    {
-     printf("values of iconwin=%lu\n",fse_arr[i].iconwin);
+     //printf("values of iconwin=%lu\n",fse_arr[i].iconwin);
      if(fse_arr[i].iconwin != 0)
      {
 
@@ -377,7 +276,7 @@ void geticon(char *path, char *file)
 
 void make_icon( char *icondir, char *icon, int i)
 {
-  printf("make_icons, icondir=%s icon=%s\n", icondir,icon);
+  //printf("make_icons, icondir=%s icon=%s\n", icondir,icon);
   XSetWindowAttributes xswa;
   xswa.override_redirect = True;
   struct DiskObject *icon_do = NULL;  
@@ -395,14 +294,16 @@ void make_icon( char *icondir, char *icon, int i)
   fse_arr[i].t_height = 15;
   
   
-  
-  int rl=strlen(icon)+strlen(icondir)+2;
-  char *fn=alloca(rl);
-  sprintf(fn, "%s/%s", icondir, icon);
-  fn[strlen(fn)-5]=0; // strip suffix .info
-  printf("getDiskObject full path: FN=%s\n",fn);
-  icon_do = GetDiskObject(fn);
-  
+  if (icon != NULL && *icon != 0)
+  {
+    int rl=strlen(icon)+strlen(icondir)+2;
+    char *fn=malloc(rl);
+    sprintf(fn, "%s/%s", icondir, icon);
+    fn[strlen(fn)-5]=0; // strip suffix .info
+    //printf("getDiskObject full path: FN=%s\n",fn);
+    icon_do = GetDiskObject(fn);
+    free(fn);
+  }
 
   
   struct Image *im1 = icon_do->do_Gadget.GadgetRender;
@@ -479,6 +380,10 @@ void make_icon( char *icondir, char *icon, int i)
 //   {
     // get string length in pixels and calc offset
   int my_offset = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
+  //printf("my_offset=%d  my_width=%d name=%s\n",my_offset,  fse_arr[i].width, fse_arr[i].name);
+  if (my_offset>65)
+    my_offset=65;
+  
   int new_offset = (fse_arr[i].width+18 - my_offset)/2;
   XmbDrawString(dpy, fse_arr[i].pm1, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10, fse_arr[i].name, strlen(fse_arr[i].name));
   XmbDrawString(dpy, fse_arr[i].pm2, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10,fse_arr[i].name, strlen(fse_arr[i].name));
@@ -543,20 +448,21 @@ void build_icons()
         {
           if (strcmp(fse_arr[i].type,"file")==0)
           {
-            char *temp = malloc(strlen(fse_arr[i].path));
+            char *temp = alloca(strlen(fse_arr[i].path));
             strcpy(temp,fse_arr[i].path);
             temp[(strlen(temp)-1)]='\0';
             icondir=temp;
             icon=fse_arr[j].name;
             printf("case 1: icondir=%s icon=%s\n",icondir,icon);
-            make_icon(icondir, icon, i); 
+            make_icon(icondir, icon, i);
+
             
           }
           // case entity is a directory
           else if (strcmp(fse_arr[i].type,"directory")==0)
           {
             // strip last part of path
-            char *temp = malloc(strlen(fse_arr[i].path));
+            char *temp = alloca(strlen(fse_arr[i].path));
             strcpy(temp,fse_arr[i].path);
             temp[(strlen(temp)-1)]='\0';
             char * ptr;
@@ -564,7 +470,7 @@ void build_icons()
             ptr = strrchr( temp, ch ); // find where next "last" slash is now
             int pos = (ptr-temp);
             
-            char *newbuff = malloc(pos);
+            char *newbuff = alloca(pos);
             memcpy(newbuff,temp,pos);
             newbuff[pos] = '\0';
             icondir=newbuff;
@@ -590,7 +496,7 @@ void build_icons()
     {
       if (strcmp(fse_arr[i].type,"file")==0)
       {
-        char *temp = malloc(strlen(fse_arr[i].path));
+        char *temp = alloca(strlen(fse_arr[i].path));
         strcpy(temp,fse_arr[i].path);
         temp[(strlen(temp)-1)]='\0';
         icondir=temp;
@@ -598,126 +504,8 @@ void build_icons()
         printf("case 4: icondir=%s icon=%s\n",icondir,icon);
         make_icon(icondir, icon, i); 
       }
-      // case entity is a directory
-//       else if (strcmp(fse_arr[i].type,"directory")==0)
-//       {
-//         //strip last part of path
-//         char *temp = malloc(strlen(fse_arr[i].path));
-//         strcpy(temp,fse_arr[i].path);
-//         temp[(strlen(temp)-1)]='\0';
-//         char * ptr;
-//         int    ch = '/';
-//         ptr = strrchr( temp, ch ); // find where next "last" slash is now
-//         int pos = (ptr-temp);
-//         
-//         char *newbuff = malloc(pos);
-//         memcpy(newbuff,temp,pos);
-//         newbuff[pos] = '\0';
-//         icondir=newbuff;
-//         icon=fse_arr[i].name;
-//         printf("case 5: icondir=%s icon=%s\n",icondir,icon);
-//         make_icon(icondir, icon,fse_arr[i]); 
-//       }
     }
   }
-      
-
-    
-/*
-    // ===========================================
-    // icon processing done start creating windows 
-    // ===========================================
-    fse_arr[i].iconwin = XCreateWindow( dpy,mainwin, fse_arr[i].x, fse_arr[i].y, fse_arr[i].width+18, fse_arr[i].height+15, 1, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
-    
-    XSetWindowBackgroundPixmap(dpy, fse_arr[i].iconwin, fse_arr[i].pmA);
-    XSelectInput(dpy, fse_arr[i].iconwin, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
-    
-    int label_width = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
-    fse_arr[i].t_width  = label_width+10;
-    fse_arr[i].t_height = 15;
-    
-    struct Image *im1 = icon_do->do_Gadget.GadgetRender;
-    struct Image *im2 = icon_do->do_Gadget.SelectRender;
-
-    fse_arr[i].p_width  = icon_do->do_Gadget.Width;
-    fse_arr[i].p_height = icon_do->do_Gadget.Height;
-    fse_arr[i].width  = fse_arr[i].p_width;
-    fse_arr[i].height = fse_arr[i].p_height;
-
-    pm1 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
-                          im1, fse_arr[i].width, fse_arr[i].height, &colorstore1);
-    pm2 = image_to_pixmap(dpy, mainwin, gc, dri.dri_Pens[BACKGROUNDPEN], iconcolor, 7,
-                          im2, fse_arr[i].width, fse_arr[i].height, &colorstore2);
-
-    // icon mode
-    fse_arr[i].pm1 = XCreatePixmap(dpy, pm1, fse_arr[i].width+18, fse_arr[i].height+15, 24);
-    XFillRectangle(dpy,fse_arr[i].pm1, gc, 0,0,fse_arr[i].width+18, fse_arr[i].height+15);
-    XCopyArea(dpy, pm1, fse_arr[i].pm1, gc, -9, 0, fse_arr[i].width+18, fse_arr[i].height, 0, 0);
-
-    fse_arr[i].pm2 = XCreatePixmap(dpy, pm2, fse_arr[i].width+18, fse_arr[i].height+15, 24);
-    XFillRectangle(dpy,fse_arr[i].pm2, gc, 0,0,fse_arr[i].width+18, fse_arr[i].height+15);
-    XCopyArea(dpy, pm2, fse_arr[i].pm2, gc, -9, 0, fse_arr[i].width+18, fse_arr[i].height, 0, 0);
-
-    // list mode
-    fse_arr[i].pm3 = XCreatePixmap(dpy, fse_arr[i].iconwin, fse_arr[i].t_width, fse_arr[i].t_height, 24);
-    XFillRectangle(dpy,fse_arr[i].pm3, gc, 0,0,fse_arr[i].t_width, fse_arr[i].t_height);
-    //XCopyArea(dpy, pm1, fse_arr[i].pm3, gc, -9, 0, fse_arr[i].t_width, fse_arr[i].t_height, 0, 0);
-
-    fse_arr[i].pm4 = XCreatePixmap(dpy, fse_arr[i].iconwin, fse_arr[i].t_width, fse_arr[i].t_height, 24);
-    XFillRectangle(dpy,fse_arr[i].pm4, gc, 0,0,fse_arr[i].t_width, fse_arr[i].t_height);
-    //XCopyArea(dpy, pm1, fse_arr[i].pm4, gc, -9, 0, fse_arr[i].t_width, fse_arr[i].t_height, 0, 0);
-
-
-    if (strcmp(fse_arr[i].type,"directory")==0)
-    {
-      //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[FILLPEN]);
-      XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
-      //XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
-      //XSetForeground(dpy, gc, 0x372db0);
-      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, fse_arr[i].pm3, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-      XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
-      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, fse_arr[i].pm4, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-
-    }
-    else if (strcmp(fse_arr[i].type,"file")==0)
-    {
-      //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[SHADOWPEN]);
-      XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
-      XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      XDrawImageString(dpy, fse_arr[i].pm3, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-      XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
-      XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, fse_arr[i].pm4, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-    }
-
-
-    fse_arr[i].pmA = fse_arr[i].pm1; // set active pixmap 
-    XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-
-    //shorten long labels
-    if (strlen(fse_arr[i].name) > 10 )
-    {
-      char *str1=fse_arr[i].name;
-      char str2[i][13];
-      strncpy (str2[i],str1,10);
-      str2[i][10]='.';
-      str2[i][11]='.';
-      str2[i][12]='\0';
-      XmbDrawString(dpy, fse_arr[i].pm1, dri.dri_FontSet, gc, 0, fse_arr[i].height+10, str2[i], strlen(str2[i]));
-      XmbDrawString(dpy, fse_arr[i].pm2, dri.dri_FontSet, gc, 0, fse_arr[i].height+10, str2[i], strlen(str2[i]));
-    }
-    else
-    {
-      // get string length in pixels and calc offset
-      int my_offset = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
-      int new_offset = (fse_arr[i].width+18 - my_offset)/2;
-      XmbDrawString(dpy, fse_arr[i].pm1, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10, fse_arr[i].name, strlen(fse_arr[i].name));
-      XmbDrawString(dpy, fse_arr[i].pm2, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10, fse_arr[i].name, strlen(fse_arr[i].name));
-    }
-    if(icon_do != NULL){ FreeDiskObject(icon_do); }
-  */
 }
 
 void spawn_new_wb(const char *cmd, char *title)
@@ -780,8 +568,7 @@ void deselectOthers()  // clicked on the window. abort, clear all icon selection
 int main(int argc, char *argv[])
 {
   // initial allocation of arrays
-  fse_arr = calloc(alloc_ecount, sizeof(fs_entity));
-  fsi_arr = calloc(alloc_icount, sizeof(fs_entity));
+  fse_arr = calloc(alloc_ecount, sizeof(fs_entity)); 
   
   XWindowAttributes attr;
   static XSizeHints size_hints;
@@ -799,13 +586,12 @@ int main(int argc, char *argv[])
   // add final slash,  getenv("HOME") provides
   int pos = strlen(homedir);
 
-  char *newbuff = malloc(pos);
+  char *newbuff = alloca(pos);
 
   memcpy(newbuff,homedir,pos);  // sample: "/home/klaus/Downloads"
   newbuff[pos] = '/';
   newbuff[pos+1] = '\0';
-  strcpy(homedir,newbuff);
-  free(newbuff);
+  strcpy(homedir,newbuff); 
 
   printf("cleaned homedir path =%s\n",homedir);
 
@@ -847,7 +633,7 @@ int main(int argc, char *argv[])
   XSetClassHint(dpy,mainwin,myhint);
   
   read_entries(argv[1]);// todo: try to remove one of the two loop
-  getlabels(argv[1]);   // todo: try to remove one of the two loop
+  //getlabels(argv[1]);   // todo: try to remove one of the two loop
   build_icons();
   list_entries_icons();
   XMapSubwindows(dpy, mainwin);
@@ -909,7 +695,7 @@ void event_loop()
                     fse_arr[i].pmA = fse_arr[i].pm2;
                     if (strcmp(fse_arr[i].type,"file")==0)
                     {
-                      const char *cmd = "xdg-open";
+                      const char *cmd = "mimeopen";
                       const char *path = fse_arr[i].path;
                       const char *exec = fse_arr[i].name;
                       char *line=alloca(strlen(cmd) + strlen(fse_arr[i].path) + strlen(exec) +2);
