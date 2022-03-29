@@ -381,8 +381,8 @@ void make_icon( char *icondir, char *icon, int i)
     // get string length in pixels and calc offset
   int my_offset = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
   //printf("my_offset=%d  my_width=%d name=%s\n",my_offset,  fse_arr[i].width, fse_arr[i].name);
-  if (my_offset>65)
-    my_offset=65;
+  if (my_offset>58)
+    my_offset=58;
   
   int new_offset = (fse_arr[i].width+18 - my_offset)/2;
   XmbDrawString(dpy, fse_arr[i].pm1, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10, fse_arr[i].name, strlen(fse_arr[i].name));

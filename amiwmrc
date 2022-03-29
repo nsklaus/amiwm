@@ -55,8 +55,8 @@ Module "Launcher" "(workbench) (harddisk.info) (workbench)"
 Module "Keyboard" "\
   meta<m>:all:rotatescreens\
   Control<i>:window|frame:iconify\
-  meta<f>:window|frame:front\
-  meta<b>:window|frame:back"
+  meta<m>:window|frame:front\
+  Control<m>:window|frame:back"
 
 # force amiga icons on specific programs
 style { class "xterm" icon "shell.info" }
@@ -72,6 +72,7 @@ style { class "Konversation" icon "irc.info" }
 style { class "sublime_text" icon "texteditor.info" }
 style { class "gimp" icon "paint.info" }
 style { class "Viewer" icon "viewer.info" }
+style { class "Workbench" icon "files.info" }
 
 # create new menu entries
 ToolItem Separator
@@ -80,9 +81,9 @@ ToolItem "Network"
   ToolItem "Netsurf"  "netsurf"
   ToolItem "Chromium" "chromium"
   ToolItem "Konversation" "konversation"
-  ToolItem "vimb" "vimb"
-  ToolItem "hexchat"  "hexchat"
-  ToolItem "firefox" "firefox"
+  ToolItem "Vimb" "vimb"
+  ToolItem "Hexchat"  "hexchat"
+  ToolItem "Firefox" "firefox"
   }
 ToolItem "Multimedia"
   {
@@ -91,16 +92,22 @@ ToolItem "Multimedia"
   }
 ToolItem "Devel"
   {
-  ToolItem "kdevelop" "kdevelop"
+  ToolItem "Kdevelop" "kdevelop"
+  }
+ToolItem "GraphX"
+  {
+  ToolItem "Gimp" "gimp"
   }
 ToolItem "System"
   {
   ToolItem "Setup" "/usr/local/lib/amiwm/setup"
   ToolItem "Terminal" "xterm"
-  ToolItem "spectale"  "spectacle"
+  ToolItem "Screenshot"  "maim -d 5 ~/Desktop/screen1.png"
   ToolItem "Nedit"  "nedit"
-  ToolItem "sublime"  "subl"
+  ToolItem "Sublime"  "subl"
+  ToolItem "XCalc"  "xcalc"
   ToolItem "Slock"  "slock"
-  }
+
+}
 
 
