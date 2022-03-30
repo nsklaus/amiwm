@@ -68,9 +68,11 @@ style { class "nedit" icon "texteditor.info" }
 style { class "featherpad" icon "texteditor.info" }
 style { class "kdevelop" icon "idedevel.info" }
 style { class "chromium" icon "browser.info" }
-style { class "Konversation" icon "irc.info" }
+style { class "konversation" icon "irc.info" }
 style { class "sublime_text" icon "texteditor.info" }
 style { class "gimp" icon "paint.info" }
+style { class "Xephyr" icon "xephyr.info" }
+style { class "simplescreenrecorder" icon "screenrec.info" }
 style { class "Viewer" icon "viewer.info" }
 style { class "Workbench" icon "files.info" }
 

@@ -350,8 +350,10 @@ void createiconicon(Icon *i, XWMHints *wmhints)
     XLowerWindow(dpy, i->labelwin);
     XSelectInput(dpy, i->labelwin, ExposureMask);
   }
-  if(i->client)
+  if(i->client){
     newicontitle(i->client);
+    // icon without labels, why ..?
+  }
   if((win=i->innerwin)) {
     XAddToSaveSet(dpy, win);
     XReparentWindow(dpy, win, i->window, 4, 4);
@@ -389,6 +391,7 @@ Icon *createappicon(struct module *m, Window p, char *name,
   Window r, ws[3];
   XSetWindowAttributes attr;
 
+  
   if(x==NO_ICON_POSITION || y==NO_ICON_POSITION) {
     x=20; y=20; ap++; // icon position
   }
@@ -429,18 +432,22 @@ Icon *createappicon(struct module *m, Window p, char *name,
 			    CWOverrideRedirect|CWBackPixel, &attr);
   XSaveContext(dpy, i->labelwin, icon_context, (XPointer)i);
   XSelectInput(dpy, i->labelwin, ExposureMask);
+  
+
 
 #ifdef USE_FONTSETS
   if((i->label=malloc(strlen(name)+1))!=NULL) {
     strcpy(i->label, name);
     i->labelwidth=XmbTextEscapement(labelfontset, i->label,
 				    strlen(i->label));
+    
 #else
   if((i->label.value=malloc((i->label.nitems=strlen(name))+1))!=NULL) {
     strcpy((char *)i->label.value, name);
     i->labelwidth=XTextWidth(labelfont, (char *)i->label.value,
 			     i->label.nitems);
 #endif
+    
     if(i->labelwidth)
       XResizeWindow(dpy, i->labelwin, i->labelwidth, scr->lh);
     XMoveWindow(dpy, i->labelwin,
@@ -497,8 +504,10 @@ void rmicon(Icon *i)
     free(i->label);
 #else
   if(i->label.value)
+  {
     if(i->module)
       free(i->label.value);
+  }
     else
       XFree(i->label.value);
 #endif
@@ -569,72 +578,106 @@ void cleanupicons()
 void newicontitle(Client *c)
 {
   Icon *i=c->icon;
+  XTextProperty class_name;
+  
+  //use wm_class instead of wm_name for icon labels
+  wm_class = XInternAtom(dpy, "WM_CLASS", False);
+  if(!XGetTextProperty(dpy, c->window, &class_name, wm_class))
+    class_name.value=NULL;
+
+  if(class_name.value != NULL)
+  {
+    printf("\n name=%s\n\n",class_name.value );
+    #ifdef USE_FONTSETS
+    i->label = strdup(class_name.value);
+    i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
+    #else
+    i->label.value = (unsigned char*)strdup((const char *)class_name.value);
+    int length = strlen((const char *)class_name.value);
+    i->labelwidth = length;
+    #endif
+  }
+    
+  else 
+  {
+    printf("\n class_name.value=NULL\n\n");
+  }
+  
+  /*
 #ifdef USE_FONTSETS
-  XTextProperty prop, class_name;
-  if(i->label) {
+  XTextProperty prop;//, class_name;
+  if(i->label) 
+  {
+
     free(i->label);
     i->label = NULL;
   }
-  if(XGetWMIconName(dpy, c->window, &prop) && prop.value) {
+  if(XGetWMIconName(dpy, c->window, &prop) && prop.value) 
+  {
     char **list;
     int n;
+
     
-    //use wm_class instead of wm_name for icon labels
-    wm_class = XInternAtom(dpy, "WM_CLASS", False);
-    if(!XGetTextProperty(dpy, c->window, &class_name, wm_class))
-      class_name.value=NULL;
-    
-    if(XmbTextPropertyToTextList(dpy, &prop, &list, &n) >= Success) {
-      if(n > 0) {
-	if( prefs.shortlabelicons )
-	{
-	  if (strlen(list[0])>10){
-	    char *str1=list[0];
-	    char str2[11];
-	    strncpy (str2,str1,8);
-	    str2[8]='.';
-	    str2[9]='.';
-	    str2[10]='\0';
-	    i->label = strdup(class_name.value);//str2);  //use wm_class instead of wm_name
-	  } else {
-      i->label = strdup(class_name.value);//list[0]);
-	  }
-	} else {
-    i->label = strdup(class_name.value);//list[0]);
-	}
-	//i->labelwidth=XmbTextEscapement(labelfontset, i->label,strlen(i->label));
-  i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
+    if(XmbTextPropertyToTextList(dpy, &prop, &list, &n) >= Success) 
+    {
+      if(n > 0) 
+      {
+        if( prefs.shortlabelicons )
+        {
+          if (strlen(list[0])>10){
+            char *str1=list[0];
+            char str2[11];
+            strncpy (str2,str1,8);
+            str2[8]='.';
+            str2[9]='.';
+            str2[10]='\0';
+            i->label = strdup(class_name.value);//str2);  //use wm_class instead of wm_name
+          } 
+          else 
+          {
+            i->label = strdup(class_name.value);//list[0]);
+          }
+        } 
+        else 
+        {
+          i->label = strdup(class_name.value);//list[0]);
+        }
+        //i->labelwidth=XmbTextEscapement(labelfontset, i->label,strlen(i->label));
+        i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
       }
       XFreeStringList(list);
     }
     XFree(prop.value);
   }
-  if(!i->label){
-      i->labelwidth = 0;
-//      i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
-//      i->label=strdup(class_name.value);
-//     int length = strlen(class_name.value);
-//     i->labelwidth = length;
-      
-    }
-//     else {
-//       int length = strlen(class_name.value);
-//       i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
-//       i->labelwidth = length;
-//       i->label=strdup(class_name.value);
-//     }
+  if(!i->label)
+  {
+    i->labelwidth = 0;
+    // i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
+    // i->label=strdup(class_name.value);
+    // int length = strlen(class_name.value);
+    // i->labelwidth = length;
+  }
+//  else 
+//  {
+//  int length = strlen(class_name.value);
+//  i->labelwidth=XmbTextEscapement(labelfontset, class_name.value, strlen(class_name.value));
+//  i->labelwidth = length;
+//  i->label=strdup(class_name.value);
+//  }
 #else
 
 
   if(i->label.value)
     XFree(i->label.value);
-  if(!(XGetWMIconName(dpy, c->window, &i->label))) {
+  if(!(XGetWMIconName(dpy, c->window, &i->label))) 
+  {
     i->label.value=NULL;
     i->labelwidth=0;
-  } else
-      i->labelwidth=XTextWidth(labelfont, (char *)i->label.value, i->label.nitems);
-
-#endif
+  } 
+  else
+    i->labelwidth=XTextWidth(labelfont, (char *)i->label.value, i->label.nitems);
+*/
+//#endif
   if(i->labelwidth)
     XResizeWindow(dpy, i->labelwin, i->labelwidth, c->scr->lh);
   if(i->mapped && i->labelwidth>0)

@@ -41,7 +41,7 @@ typedef struct
   char *path;
   char *type;   // file or dir
   char *tiedWith;
-  Window iconwin;
+  Window iconwin,label;
   Pixmap pm1;   // unselected icon
   Pixmap pm2;   // selected icon
   Pixmap pm3;   // unselected label
@@ -75,7 +75,7 @@ char *current_dir="";
 char *parent_dir="";
 
 Window root, mainwin;//, myicon;
-int win_x=100, win_y=80, win_width=300, win_height=150;
+int win_x=100, win_y=80, win_width=350, win_height=200;
 GC gc;
 
 void build_icons();
@@ -234,6 +234,31 @@ void list_entries_icons()
   viewmode="icons";
  // printf("VIEWMODE now=%s\n",get_viewmode());
   //build_icons();
+  
+  
+  /*
+  int newline_x = 0;
+  int newline_y = 0;
+  for (int i=0;i<entries_count;i++)
+  {
+    //printf("values of iconwin=%lu\n",fse_arr[i].iconwin);
+    if(fse_arr[i].iconwin != 0)
+    {
+      if (newline_y ==0)
+      {
+        fse_arr[i].x = 10;
+        fse_arr[i].y = 10;
+      }
+      else 
+      {
+      fse_arr[i].y = fse_arr[i-1].y + fse_arr[i-1].height + 30;
+      }
+    }
+    */
+  
+  
+  
+  
   int newline_x = 0;
   int newline_y = 0;
 
@@ -243,20 +268,21 @@ void list_entries_icons()
      if(fse_arr[i].iconwin != 0)
      {
 
-      if(newline_x*80 < win_width)
+      if(newline_x*100 < win_width)
       {
-        fse_arr[i].x=10 + (newline_x*80);
-        fse_arr[i].y=10 + (newline_y*50);
+        fse_arr[i].x = 10 + (newline_x*80);
+        fse_arr[i].y = 10 + (newline_y*50);
         newline_x++;
       }
-      else if(newline_x*80*2 > win_width)
+      else if(newline_x*100*2 > win_width)
       {
         newline_x = 0;
         newline_y++;
-        fse_arr[i].x=10 + (newline_x*80);
-        fse_arr[i].y=10 + (newline_y*50);
+        fse_arr[i].x = 10 + (newline_x*80);
+        fse_arr[i].y = 10 + (newline_y*50);
         newline_x++;
       }
+      
       fse_arr[i].width  = fse_arr[i].p_width;
       fse_arr[i].height = fse_arr[i].p_height;
       XMoveWindow(dpy,fse_arr[i].iconwin,fse_arr[i].x,fse_arr[i].y);
@@ -665,15 +691,15 @@ void event_loop()
 //               }
             }
           }
-        break;
+          break;
 
         case LeaveNotify:
           //printf("leave event\n");
-        break;
+          break;
 
         case EnterNotify:
           //printf("enter event\n");
-        break;
+          break;
 
         case ButtonPress:
           //printf("buttonpress event\n");
@@ -751,7 +777,7 @@ void event_loop()
               }
             }
           }
-        break;
+          break;
 
         case ConfigureNotify: // resize or move event
           //printf("configurenotify event\n");
@@ -759,7 +785,7 @@ void event_loop()
           win_y=event.xconfigure.y;
           win_width=event.xconfigure.width;
           win_height=event.xconfigure.height;
-        break;
+          break;
 
         case MotionNotify:
           if(icon_temp.selected)
@@ -778,7 +804,7 @@ void event_loop()
             icon_temp.dragging=True;
             XMoveWindow(dpy,icon_temp.iconwin,event.xmotion.x_root-25, event.xmotion.y_root-25);
           }
-        break;
+          break;
 
         case ButtonRelease:
           if (icon_temp.selected && icon_temp.dragging)
@@ -796,7 +822,7 @@ void event_loop()
               XClearWindow(dpy, icon_temp.iconwin);
               XFlush(dpy);
           }
-        break;
+          break;
 
         case KeyPress:
           printf("keypress event=%d\n",event.type);
@@ -814,7 +840,14 @@ void event_loop()
 //             reset_view();
 //             list_entries_icons();
 //           }
-        break;
+          break;
+        case DestroyNotify:
+          if(event.xdestroywindow.window==mainwin)
+          {
+            printf("destroy mainwin\n");
+          }
+          printf("call to destroy\n");
+          break;
       }
     }
   }
