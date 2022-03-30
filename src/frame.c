@@ -367,7 +367,7 @@ void redraw(Client *c, Window w)
       XDrawLine(dpy, w, scr->gc, 18, 1, 18, scr->bh-1);    
     }
   } else if(w==c->drag) {
-    XSetForeground(dpy, scr->gc, scr->dri.dri_Pens[c->active?FILLTEXTPEN:TEXTPEN]);
+    XSetForeground(dpy, scr->gc, scr->dri.dri_Pens[c->active?SHINEPEN:TEXTPEN]);
     XSetBackground(dpy, scr->gc, scr->dri.dri_Pens[c->active?FILLPEN:BACKGROUNDPEN]);
 #ifdef USE_FONTSETS
     if(c->title)

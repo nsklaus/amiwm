@@ -73,6 +73,7 @@ style { class "sublime_text" icon "texteditor.info" }
 style { class "gimp" icon "paint.info" }
 style { class "Xephyr" icon "xephyr.info" }
 style { class "simplescreenrecorder" icon "screenrec.info" }
+style { class "ReqASL" icon "reqasl.info" }
 style { class "Viewer" icon "viewer.info" }
 style { class "Workbench" icon "files.info" }
 

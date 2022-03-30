@@ -62,6 +62,8 @@ struct DrawInfo dri;
 
 Window root, mainwin, IFdir, IFfile, List, input;
 int win_x=20, win_y=20, win_width=262, win_height=250;
+int list_width = 242;
+int list_height = 155;
 GC gc;
 
 /** width and height of input field borders */
@@ -271,13 +273,13 @@ void list_entries()
 {
   //viewmode="list";
   //printf("VIEWMODE now =%s\n",get_viewmode());
-  XClearWindow(dpy,List);
+  //XClearWindow(dpy,List);
   for (int i=0;i<fse_count;i++)
   {
     entries[i].width  = win_width-30;
     entries[i].height = win_height-100;
-    entries[i].x = 10;
-    entries[i].y = 15 + i*16;
+    entries[i].x = 0;
+    entries[i].y = 5 + i*16;
     entries[i].y += offset_y;
     XMoveWindow(dpy,entries[i].win,entries[i].x,entries[i].y );
   }
@@ -288,7 +290,7 @@ void build_entries()
   for (int i=0;i<fse_count;i++)
   {
 
-    int width = XmbTextEscapement(dri.dri_FontSet, entries[i].name, strlen(entries[i].name));
+    //int width = XmbTextEscapement(dri.dri_FontSet, entries[i].name, strlen(entries[i].name));
     entries[i].width  = win_width-40;
     entries[i].height = 15;
 
@@ -1027,7 +1029,8 @@ int main(int argc, char *argv[])
   mainwin=XCreateSimpleWindow(dpy, root, s_middle_x, s_middle_y, win_width, win_height, 0,
                               dri.dri_Pens[SHADOWPEN],
                               dri.dri_Pens[BACKGROUNDPEN]);
-  List=XCreateSimpleWindow(dpy, mainwin, 10, 10, win_width-20, win_height-95, 0,
+  //win_width-20, win_height-95
+  List=XCreateSimpleWindow(dpy, mainwin, 10, 10, list_width, list_height, 0,
                            dri.dri_Pens[SHADOWPEN],
                            dri.dri_Pens[BACKGROUNDPEN]);
 
@@ -1143,7 +1146,7 @@ int main(int argc, char *argv[])
   getlabels(homedir);
   build_entries();
   list_entries();
-  XMapSubwindows(dpy,List);
+  //XMapSubwindows(dpy,List);
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
@@ -1156,7 +1159,9 @@ int main(int argc, char *argv[])
       switch(event.type) {
         case Expose:
           if(!event.xexpose.count) {
-
+            if(event.xexpose.window == List) {
+              refresh_list();
+            }
             if(event.xexpose.window == IFdir) {
               input=IFdir;
               refresh_str_dir();
@@ -1164,9 +1169,6 @@ int main(int argc, char *argv[])
             if(event.xexpose.window == IFfile) {
               input=IFfile;
               refresh_str_file();
-            }
-            if(event.xexpose.window == List) {
-              refresh_list();
             }
             if(event.xexpose.window == b_ok) {
               refresh_button(b_ok, ok_txt, 1);
@@ -1197,45 +1199,47 @@ int main(int argc, char *argv[])
             }
             win_height=event.xconfigure.height;
             strgadw=win_width-70;
+            list_width = win_width-20;
+            list_height = win_height-95;
             XMoveWindow(dpy, IFdir, 60, win_height-73);
             XMoveWindow(dpy, IFfile, 60, win_height-50);
             XMoveWindow(dpy, b_ok, button_spread(0,4)+5, event.xconfigure.height - 25);       // 10
             XMoveWindow(dpy, b_vol, button_spread(1,4)+5, event.xconfigure.height - 25);      // 70
             XMoveWindow(dpy, b_par, button_spread(2,4)+5, event.xconfigure.height - 25);     // 130
             XMoveWindow(dpy, b_cancel,button_spread(3,4)+5 , event.xconfigure.height - 25); // 190
-            XResizeWindow(dpy,List,win_width-20, win_height-95);
+            XResizeWindow(dpy,List,list_width, list_height);
             XResizeWindow(dpy,IFdir,win_width-70, 20);
             XResizeWindow(dpy,IFfile,win_width-70, 20);
-            for(int i=0;i<fse_count;i++)
-            {
-              entries[i].width =  win_width;
-            }
+//             for(int i=0;i<fse_count;i++)
+//             {
+//               entries[i].width =  win_width;
+//             }
             //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
             //finish dynamic resize of file list
             refresh_list();
-            list_entries();
+            //list_entries();
             refresh_str_dir();
             refresh_str_file();
-            refresh_main();
+            //refresh_main();
           }
           break;
         case LeaveNotify:
           //printf("leavenotify=%d\n\n",c);
-          if(depressed &&
-            event.xcrossing.window==button[c]) {
-            depressed=0;
-          printf("leavenotify=%d  selected=%d\n\n",c, selected);
-          toggle(selected);
-            }
+//           if(depressed &&
+//             event.xcrossing.window==button[c]) {
+//             depressed=0;
+//           printf("leavenotify=%d  selected=%d\n\n",c, selected);
+//           toggle(selected);
+//             }
             break;
         case EnterNotify:
           //printf("enternotify=%d\n\n",c);
-          if((!depressed) && selected &&
-            event.xcrossing.window==button[selected]) {
-            depressed=1;
-          printf("enternotify=%d\n\n",selected);
-          toggle(selected);
-            }
+//           if((!depressed) && selected &&
+//             event.xcrossing.window==button[selected]) {
+//             depressed=1;
+//           printf("enternotify=%d\n\n",selected);
+//           toggle(selected);
+//             }
             break;
         case ButtonPress:
           if(event.xbutton.button==Button1) {
@@ -1266,15 +1270,29 @@ int main(int argc, char *argv[])
           if(event.xbutton.button==Button4)
           {
             //printf("going up y=%d\n",event.xconfigure.height);
+            
             offset_y+=5;
             list_entries();
+            if (offset_y > 0)
+            {
+              offset_y = 0;
+            }
+
+            //printf("win_y=%d win_height=%d fse_count=%d offset_y=%d\n",win_y,win_height,fse_count*16, offset_y);
 
           }
           if(event.xbutton.button==Button5)
           {
             //printf("going down y=%d\n",event.xconfigure.height);
+
             offset_y-=5;
             list_entries();
+            if (offset_y < -fse_count*16)
+            {
+              offset_y = -fse_count*16;
+            }
+
+            //printf("win_y=%d win_height=%d fse_count=%d offset_y=%d\n",win_y,win_height,fse_count*16, offset_y);
           }
 
           for(int i=0; i<fse_count;i++)

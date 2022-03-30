@@ -135,6 +135,7 @@ install : $(PROGS) $(MODULES) Xsession Xsession2 Xinitrc amiwm-init
 	$(INSTALL) -m 644 $(srcdir)./icons/files.info $(AMIWM_HOME)/icons/files.info
 	$(INSTALL) -m 644 $(srcdir)./icons/xephyr.info $(AMIWM_HOME)/icons/xephyr.info
 	$(INSTALL) -m 644 $(srcdir)./icons/screenrec.info $(AMIWM_HOME)/icons/screenrec.info
+	$(INSTALL) -m 644 $(srcdir)./icons/reqasl.info $(AMIWM_HOME)/icons/reqasl.info
 	$(INSTALL) -m 644 $(srcdir)/system.amiwmrc $(AMIWM_HOME)/system.amiwmrc
 	$(INSTALL) -m 644 $(srcdir)/system.map $(AMIWM_HOME)/system.map
 	$(INSTALL) -m 644 $(srcdir)/magicwb.map $(AMIWM_HOME)/magicwb.map
