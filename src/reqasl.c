@@ -130,8 +130,9 @@ void clean_reset()
       entries[i].win = None;
     }
   XDestroySubwindows(dpy,List);
-  XClearWindow(dpy,mainwin);
+  //XClearWindow(dpy,mainwin);
   XClearWindow(dpy,List);
+  
   fse_count=0;
   free(entries);
 }
@@ -206,66 +207,97 @@ void getlabels(char *path)
   }
   closedir(dirp);
 
-  char *buf="";
-  if(strcmp(entries[0].type, "file")==0)
+  if (entries[0].name == NULL)
   {
-    current_dir=entries[0].path;
-    buf=entries[0].path;  //sample: "/home/klaus/Downlads/icons/"
-    printf("(f) current path=%s\n",buf);
-    buf[strlen(buf)-1] ='\0'; //remove final slash
-
-    char * ptr;
-    int    ch = '/';
-    ptr = strrchr( buf, ch ); // find where next "last" slash is now
-    int pos = (ptr-buf);
-
-    if (ptr !=NULL)
-    {
-      char *newbuff = malloc(pos);
-      memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
-      newbuff[pos] = '/';
-      newbuff[pos+1] = '\0';
-      printf("(f) parent path=%s \n\n",newbuff);
-      parent_dir = newbuff;
-    }
-  }
-
-  else if(strcmp(entries[0].type, "directory")==0)
-  {
-    buf=entries[0].path;
-    //printf("DIR_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
+    // save current_dir now in case we enter an empty dir with 
+    // nothing to work on to set previous/current pathes
+    char *buf="";
+    buf=strdup(path);
     buf[strlen(buf)-1] ='\0';
-
+    
     char * ptr;
     int    ch = '/';
     ptr = strrchr( buf, ch ); // find where next "last" slash is now
     int pos = (ptr-buf);
     //printf("pos=%d\n",pos);
-
+    
     if (ptr !=NULL && pos !=0)
     {
-
+      
       char *newbuff = malloc(pos);
       memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
-      newbuff[pos] = '\0';
-      printf("(d) current path=%s\n",newbuff);
-      //printf("DIR_SEMI_FINAL: len_of_newbuff=%lu newbuff=%s \n",strlen(newbuff),newbuff);
+      newbuff[pos] = '/';
+      newbuff[pos+1]='\0';
+      printf("(E) current_path=%s\n",path);
+      printf("(E) parent path=%s\n",newbuff);
+      
 
-      char *nptr;
-      int ch = '/';
-      nptr = strrchr( newbuff, ch );
-      pos = (nptr-newbuff);
-      //printf("npos=%d\n",pos);
-      char *dirbuff = malloc(pos);
-      memcpy(dirbuff,newbuff,pos);
-      dirbuff[pos] = '/';
-      dirbuff[pos+1] = '\0';
+      current_dir=path;
+      parent_dir = newbuff;
+    }
+  }
+  if (entries[0].name != NULL)
+  {
+    char *buf="";
+    if(strcmp(entries[0].type, "file")==0)
+    {
+      current_dir=entries[0].path;
+      buf=entries[0].path;  //sample: "/home/klaus/Downlads/icons/"
+      printf("(f) current path=%s\n",buf);
+      buf[strlen(buf)-1] ='\0'; //remove final slash
 
-      printf("(d) parent path=%s \n\n",dirbuff);
-      parent_dir = dirbuff;
+      char * ptr;
+      int    ch = '/';
+      ptr = strrchr( buf, ch ); // find where next "last" slash is now
+      int pos = (ptr-buf);
 
+      if (ptr !=NULL)
+      {
+        char *newbuff = malloc(pos);
+        memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+        newbuff[pos] = '/';
+        newbuff[pos+1] = '\0';
+        printf("(f) parent path=%s \n\n",newbuff);
+        parent_dir = newbuff;
+      }
     }
 
+    else if(strcmp(entries[0].type, "directory")==0)
+    {
+      buf=entries[0].path;
+      //printf("DIR_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
+      buf[strlen(buf)-1] ='\0';
+
+      char * ptr;
+      int    ch = '/';
+      ptr = strrchr( buf, ch ); // find where next "last" slash is now
+      int pos = (ptr-buf);
+      //printf("pos=%d\n",pos);
+
+      if (ptr !=NULL && pos !=0)
+      {
+
+        char *newbuff = malloc(pos);
+        memcpy(newbuff,buf,pos);  // sample: "/home/klaus/Downloads"
+        newbuff[pos] = '\0';
+        printf("(d) current path=%s\n",newbuff);
+        //printf("DIR_SEMI_FINAL: len_of_newbuff=%lu newbuff=%s \n",strlen(newbuff),newbuff);
+
+        char *nptr;
+        int ch = '/';
+        nptr = strrchr( newbuff, ch );
+        pos = (nptr-newbuff);
+        //printf("npos=%d\n",pos);
+        char *dirbuff = malloc(pos);
+        memcpy(dirbuff,newbuff,pos);
+        dirbuff[pos] = '/';
+        dirbuff[pos+1] = '\0';
+
+        printf("(d) parent path=%s \n\n",dirbuff);
+        parent_dir = dirbuff;
+
+      }
+    }
   }
 }
 
@@ -844,6 +876,8 @@ void abortchoice()
 
 void got_path(char *path)
 {
+  
+  //TODO: check if selection is file(s) then if yes mimeopen them 
   printf("received path from input filed=%s\n", path);
   if( access( path, F_OK ) == 0 ) { // check if path exists
     int length = strlen(path);
@@ -858,7 +892,7 @@ void got_path(char *path)
       memcpy(path,buf,length+1);
       //printf("overwrote, path is now=%s\n",buf);
     }
-
+        
   clean_reset();
   read_entries(path);
   getlabels(path);
@@ -1271,28 +1305,34 @@ int main(int argc, char *argv[])
           {
             //printf("going up y=%d\n",event.xconfigure.height);
             
-            offset_y+=5;
-            list_entries();
-            if (offset_y > 0)
+            if (!(offset_y > -5))
             {
-              offset_y = 0;
+              offset_y+=5;
+              list_entries();
+            }
+            if (offset_y > -5)
+            {
+              offset_y = -5;
             }
 
-            //printf("win_y=%d win_height=%d fse_count=%d offset_y=%d\n",win_y,win_height,fse_count*16, offset_y);
+            //printf("win_y=%d win_height=%d fse_count=%d offset_y=%d list_height=%d\n",win_y,win_height,fse_count*16-list_height, offset_y,list_height);
 
           }
           if(event.xbutton.button==Button5)
           {
             //printf("going down y=%d\n",event.xconfigure.height);
 
-            offset_y-=5;
-            list_entries();
-            if (offset_y < -fse_count*16)
+            if (fse_count*16 > list_height)
             {
-              offset_y = -fse_count*16;
+              offset_y-=5;
+              list_entries();
+            }
+            if (offset_y < -(fse_count*16 - list_height) )
+            {
+              offset_y = -(fse_count*16 - list_height);
             }
 
-            //printf("win_y=%d win_height=%d fse_count=%d offset_y=%d\n",win_y,win_height,fse_count*16, offset_y);
+            //printf("win_y=%d win_height=%d fse_count=%d offset_y=%d list_height=%d\n",win_y,win_height,fse_count*16-list_height, offset_y,list_height);
           }
 
           for(int i=0; i<fse_count;i++)
@@ -1302,10 +1342,14 @@ int main(int argc, char *argv[])
               printf("selected: %s\n",entries[i].name);
               if (entries[i].pmA == entries[i].pm1) { entries[i].pmA = entries[i].pm2; }
               else if (entries[i].pmA == entries[i].pm2) { entries[i].pmA = entries[i].pm1; }
-
+              
               XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
               XClearWindow(dpy,entries[i].win);
               XFlush(dpy);
+              if(strcmp(entries[i].type,"directory")==0)
+              {
+                got_path(entries[i].path);
+              }
             }
           }
 
