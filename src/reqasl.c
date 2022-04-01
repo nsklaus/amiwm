@@ -87,9 +87,6 @@ int butw;
 /** keep scroll offset, cleared when entering a new path */
 int offset_y=0;
 
-/**  count max number of FS entries per visited dir */
-int fse_count;
-
 /** store screen resolution */
 int screen_width=0;
 int screen_height=0;
@@ -119,76 +116,71 @@ typedef struct
   Pixmap pmA;
   Bool selected;
   Bool dragging;
-} fs_obj;
-fs_obj *entries;  // entries = calloc(fse_count, sizeof(fs_obj));
+} fs_entity;
 
+fs_entity *fse_arr; // array for normal files 
+int alloc_ecount = 20; // array size 
+int entries_count; // total amount of entries per dir 
 
 void clean_reset()
 {
-    for (int i=0;i<fse_count;i++)
+  
+  for (int i=0;i<entries_count;i++)
     {
-      entries[i].name = None;
-      entries[i].path = None;
-      entries[i].type = None;
-      entries[i].pm1 = None;
-      entries[i].pm2 = None;
-      entries[i].pmA = None;
-      entries[i].win = None;
+      fse_arr[i].name = None;
+      fse_arr[i].path = None;
+      fse_arr[i].type = None;
+      fse_arr[i].pm1 = None;
+      fse_arr[i].pm2 = None;
+      fse_arr[i].pmA = None;
+      fse_arr[i].win = None;
     }
   XDestroySubwindows(dpy,List); 
   XClearWindow(dpy,List);
   
-  fse_count=0;
-  free(entries);
-}
-
-void read_entries(char *path) {
-  // differentiate between files and directories,
-  // get max number of instances of wbicon
-  DIR *dirp;
-  struct dirent *dp;
-
-  dirp = opendir(path);
-  while ((dp = readdir(dirp)) != NULL)
-  {
-    if (dp->d_type & DT_DIR || (dp->d_type & DT_REG))
-    {
-      // exclude common system entries and (semi)hidden names
-      if (dp->d_name[0] != '.'){
-        fse_count++;
-      }
-    }
-  }
-  // get max number of instances of wbicon to allocate
-  entries = calloc(fse_count, sizeof(fs_obj));
-  closedir(dirp);
-  offset_y = 0; // clear scroll offset upon loading a new directory
+  entries_count=0; 
+  offset_y = 0; // clear scroll offset
+  free(fse_arr);
+  
+  //  restart fresh allocation of arrays
+  fse_arr = calloc(alloc_ecount, sizeof(fs_entity)); 
 }
 
 void getlabels(char *path)
-{
-  // same loop, but for getting filenames this time
+{ 
   DIR *dirp;
   struct dirent *dp;
-  int count=0;
-  dirp = opendir(path);
+  int file_count=0; 
+
+  if((dirp = opendir(path)) == NULL) 
+  {
+    fprintf(stderr,"cannot open directory: %s\n", path);
+    return;
+  }
   while ((dp = readdir(dirp)) != NULL)
   {
+    if (entries_count==alloc_ecount)
+    {
+      alloc_ecount+=(alloc_ecount/2);
+      fse_arr = realloc(fse_arr,alloc_ecount * sizeof(fs_entity));
+      printf("new alloc_ecount=%d\n",alloc_ecount);
+    }
     if (dp->d_type & DT_DIR)
     {
       if (dp->d_name[0] != '.')
       {
-        entries[count].name =  malloc(strlen(dp->d_name)+1);
-        strcpy(entries[count].name, dp->d_name);
-        int pathsize = strlen(path) + strlen(entries[count].name) +2;
+        fse_arr[entries_count].name =  malloc(strlen(dp->d_name)+1);
+        strcpy(fse_arr[entries_count].name, dp->d_name);
+        int pathsize = strlen(path) + strlen(fse_arr[entries_count].name) +2;
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
-        strcat(tempo,entries[count].name);
+        strcat(tempo,fse_arr[entries_count].name);
         strcat(tempo,"/");
-        entries[count].path = tempo;
+        fse_arr[entries_count].path = tempo;
         //printf("directory, path=%s name=%s\n",entries[count].path,entries[count].name);
-        entries[count].type = "directory";
-        count++;
+        fse_arr[entries_count].type = "directory";
+        entries_count++;
+        file_count++;
       }
     }
 
@@ -198,21 +190,23 @@ void getlabels(char *path)
       {
         //printf ("FILE: %s\n", dp->d_name);
         //wbicon_data(count, dp->d_name, path, "file" );
-        entries[count].name =  malloc(strlen(dp->d_name)+1);
-        strcpy(entries[count].name, dp->d_name);
+        fse_arr[entries_count].name =  malloc(strlen(dp->d_name)+1);
+        strcpy(fse_arr[entries_count].name, dp->d_name);
         int pathsize = strlen(path) +2;
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
-        entries[count].path = tempo;
+        fse_arr[entries_count].path = tempo;
         //printf("file, path=%s name=%s\n",entries[count].path,entries[count].name);
-        entries[count].type = "file";
-        count++;
+        fse_arr[entries_count].type = "file";
+        entries_count++;
+        file_count++;
       }
     }
   }
   closedir(dirp);
+  printf("file_count=%d\n",file_count);
 
-  if (entries[0].name == NULL)
+  if (fse_arr[0].name == NULL)
   {
     // save current_dir now in case we enter an empty dir with 
     // nothing to work on to set previous/current pathes
@@ -241,13 +235,13 @@ void getlabels(char *path)
       parent_dir = newbuff;
     }
   }
-  if (entries[0].name != NULL)
+  if (fse_arr[0].name != NULL)
   {
     char *buf="";
-    if(strcmp(entries[0].type, "file")==0)
+    if(strcmp(fse_arr[0].type, "file")==0)
     {
-      current_dir=entries[0].path;
-      buf=entries[0].path;  //sample: "/home/klaus/Downlads/icons/"
+      current_dir=fse_arr[0].path;
+      buf=fse_arr[0].path;  //sample: "/home/klaus/Downlads/icons/"
       printf("(f) current path=%s\n",buf);
       buf[strlen(buf)-1] ='\0'; //remove final slash
 
@@ -267,9 +261,9 @@ void getlabels(char *path)
       }
     }
 
-    else if(strcmp(entries[0].type, "directory")==0)
+    else if(strcmp(fse_arr[0].type, "directory")==0)
     {
-      buf=entries[0].path;
+      buf=fse_arr[0].path;
       //printf("DIR_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
       buf[strlen(buf)-1] ='\0';
 
@@ -311,72 +305,73 @@ void list_entries()
   //viewmode="list";
   //printf("VIEWMODE now =%s\n",get_viewmode());
   //XClearWindow(dpy,List);
-  for (int i=0;i<fse_count;i++)
+  for (int i=0;i<entries_count;i++)
   {
-    entries[i].width  = list_width;
-    entries[i].height = win_height-100;
-    entries[i].x = 0;
-    entries[i].y = 5 + i*16;
-    entries[i].y += offset_y;
-    XMoveWindow(dpy,entries[i].win,entries[i].x,entries[i].y );
+    //printf("list_entries count i=%d\n",i);
+    fse_arr[i].width  = list_width;
+    fse_arr[i].height = win_height-100;
+    fse_arr[i].x = 0;
+    fse_arr[i].y = 5 + i*16;
+    fse_arr[i].y += offset_y;
+    XMoveWindow(dpy,fse_arr[i].win,fse_arr[i].x,fse_arr[i].y );
   }
 }
 
 void build_entries()
 {
-  for (int i=0;i<fse_count;i++)
+  for (int i=0;i<entries_count;i++)
   {
 
     //int width = XmbTextEscapement(dri.dri_FontSet, entries[i].name, strlen(entries[i].name));
-    entries[i].width  = list_width;
-    entries[i].height = 15;
+    fse_arr[i].width  = list_width;
+    fse_arr[i].height = 15;
 
-    entries[i].win=XCreateSimpleWindow(dpy, List, entries[i].x, entries[i].y, 
-                                       entries[i].width, entries[i].height, 0,
+    fse_arr[i].win=XCreateSimpleWindow(dpy, List, fse_arr[i].x, fse_arr[i].y, 
+                                       fse_arr[i].width, fse_arr[i].height, 0,
                                        dri.dri_Pens[SHADOWPEN],
                                        dri.dri_Pens[BACKGROUNDPEN]);
 
-    entries[i].pm1 = XCreatePixmap(dpy, entries[i].win, entries[i].width, entries[i].height, 24);
-    entries[i].pm2 = XCreatePixmap(dpy, entries[i].win, entries[i].width, entries[i].height, 24);
+    fse_arr[i].pm1 = XCreatePixmap(dpy, fse_arr[i].win, fse_arr[i].width, fse_arr[i].height, 24);
+    fse_arr[i].pm2 = XCreatePixmap(dpy, fse_arr[i].win, fse_arr[i].width, fse_arr[i].height, 24);
 
     XSetForeground(dpy, gc, 0xaaaaaa);
-    XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
+    XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
 
-    if (strcmp(entries[i].type,"directory")==0)
+    if (strcmp(fse_arr[i].type,"directory")==0)
     {
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
-      XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
+      XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, entries[i].pm1, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
-      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, fse_arr[i].pm1, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
       XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
-      XFillRectangle(dpy, entries[i].pm2, gc, 0, 0, entries[i].width, entries[i].height);
+      XFillRectangle(dpy, fse_arr[i].pm2, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-      XDrawImageString(dpy, entries[i].pm2, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
-      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, fse_arr[i].pm2, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
     }
-    else if (strcmp(entries[i].type,"file")==0)
+    else if (strcmp(fse_arr[i].type,"file")==0)
     {
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
-      XFillRectangle(dpy, entries[i].pm1, gc, 0, 0, entries[i].width, entries[i].height);
+      XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      XDrawImageString(dpy, entries[i].pm1, gc, win_width-65, 12, "---", strlen("---"));
-      XDrawImageString(dpy, entries[i].pm1, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, fse_arr[i].pm1, gc, win_width-65, 12, "---", strlen("---"));
+      XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
       XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
-      XFillRectangle(dpy, entries[i].pm2, gc, 0, 0, entries[i].width, entries[i].height);
+      XFillRectangle(dpy, fse_arr[i].pm2, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-      XDrawImageString(dpy, entries[i].pm2, gc, win_width-65, 12, "---", strlen("---"));
-      XDrawImageString(dpy, entries[i].pm2, gc, 5, 12, entries[i].name, strlen(entries[i].name));
+      XDrawImageString(dpy, fse_arr[i].pm2, gc, win_width-65, 12, "---", strlen("---"));
+      XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
     }
     XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
-    entries[i].pmA = entries[i].pm1; // set active pixmap
-    XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
+    fse_arr[i].pmA = fse_arr[i].pm1; // set active pixmap
+    XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
 
-    XSelectInput(dpy, entries[i].win, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask|ShiftMask);
+    XSelectInput(dpy, fse_arr[i].win, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask|ShiftMask);
   }
   XMapSubwindows(dpy,List);
 }
@@ -776,7 +771,6 @@ void got_path(char *path)
     }
     
   clean_reset();
-  read_entries(path);
   getlabels(path);
   build_entries();
   list_entries();
@@ -839,16 +833,10 @@ int button_spread(int pos, int div)
   }
 }
 
-void force_first_refresh()
-{
-  refresh_str_text_dir();
-//   XEvent event;
-//   XNextEvent(dpy,&event);
-}
-
 
 int main(int argc, char *argv[])
 {
+  
   XWindowAttributes attr;
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
@@ -1011,15 +999,8 @@ int main(int argc, char *argv[])
   XSetClassHint(dpy,mainwin,myhint);
   
   current_dir = homedir;
-  got_path(homedir);
-  got_path(homedir);
-//   read_entries(homedir);
-//   getlabels(homedir);
-//   build_entries();
-//   list_entries(); 
-//   refresh_str_text_dir();
-//   refresh_str_text_file();
-  force_first_refresh();
+  got_path(homedir); // build files listing
+
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
@@ -1145,41 +1126,41 @@ int main(int argc, char *argv[])
           }
           if(event.xbutton.button==Button5)
           {
-            if (fse_count*16 > list_height)
+            if (entries_count*16 > list_height)
             {
               offset_y-=5;
               list_entries();
             }
-            if (offset_y < -(fse_count*16 - list_height) )
+            if (offset_y < -(entries_count*16 - list_height) )
             {
-              offset_y = -(fse_count*16 - list_height);
+              offset_y = -(entries_count*16 - list_height);
             }
           }
 
-          for(int i=0; i<fse_count;i++)
+          for(int i=0; i<entries_count;i++)
           {
-            if(event.xbutton.window == entries[i].win && event.xbutton.button==Button1)
+            if(event.xbutton.window == fse_arr[i].win && event.xbutton.button==Button1)
             {
-              printf("selected: path=%s file=%s\n",entries[i].path, entries[i].name);
-              if (entries[i].pmA == entries[i].pm1) 
+              printf("selected: path=%s file=%s\n",fse_arr[i].path, fse_arr[i].name);
+              if (fse_arr[i].pmA == fse_arr[i].pm1) 
               { 
-                entries[i].pmA = entries[i].pm2; 
+                fse_arr[i].pmA = fse_arr[i].pm2; 
               }
-              else if (entries[i].pmA == entries[i].pm2) 
+              else if (fse_arr[i].pmA == fse_arr[i].pm2) 
               { 
-                entries[i].pmA = entries[i].pm1; 
+                fse_arr[i].pmA = fse_arr[i].pm1; 
               }
               
-              XSetWindowBackgroundPixmap(dpy, entries[i].win, entries[i].pmA);
-              XClearWindow(dpy,entries[i].win);
+              XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
+              XClearWindow(dpy,fse_arr[i].win);
               
-              if(strcmp(entries[i].type,"directory")==0)
+              if(strcmp(fse_arr[i].type,"directory")==0)
               {
-                got_path(entries[i].path);
+                got_path(fse_arr[i].path);
               }
-              else if(strcmp(entries[i].type,"file")==0)
+              else if(strcmp(fse_arr[i].type,"file")==0)
               {
-                got_file(entries[i].path,entries[i].name);
+                got_file(fse_arr[i].path,fse_arr[i].name);
               }
             }
           }
