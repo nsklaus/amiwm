@@ -114,8 +114,7 @@ extern void menu_on(void);
 extern void menu_off(void);
 extern void menubar_enter(Window);
 extern void menubar_leave(Window);
-extern void *getitembyhotkey(KeySym);
-extern void menuaction(void *);
+extern void menuactionbyhotkey(KeySym);
 extern void screentoback();
 extern void openscreen(char *, Window);
 extern void realizescreens(void);
@@ -816,13 +815,12 @@ void internal_broker(XEvent *e)
     lookup_keysyms(dpy, &meta_mask, &switch_mask);
     break;
   case KeyPress:
-    if(e->xkey.state & meta_mask) {
+    if(e->xkey.state & meta_mask) 
+    {
       KeySym ks=XLookupKeysym(&e->xkey,
 			      ((e->xkey.state & ShiftMask)?1:0)+
 			      ((e->xkey.state & switch_mask)?2:0));
-      void *item;
-      if((item=getitembyhotkey(ks)))
-	menuaction(item);
+      menuactionbyhotkey(ks);
     }
     break;
   }

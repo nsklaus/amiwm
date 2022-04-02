@@ -2,6 +2,7 @@
 #define SCREEN_H
 
 #include "icon.h"
+#include "menu.h"
 
 typedef struct _Scrn {
   struct _Scrn *behind, *upfront;
@@ -17,10 +18,10 @@ typedef struct _Scrn {
   struct IconPixmaps default_tool_pms;
   Pixmap disabled_stipple;
   unsigned int default_tool_pm_w, default_tool_pm_h, lh;
-  Window menubar, menubarparent, menubardepth;
-  int hotkeyspace, checkmarkspace, subspace, menuleft;
+  MenuBar menu, *dynamic_menu;
+  Window menubar, menubardepth;
+  int hotkeyspace, checkmarkspace, subspace;
   struct _Icon *icons, *firstselected;
-  struct Menu *firstmenu;
   int number, realized, iconcolorsallocated;
   unsigned long iconcolor[256];
 } Scrn;

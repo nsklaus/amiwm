@@ -201,6 +201,9 @@ ppmtoinfo : ppmtoinfo.o
 localetest : localetest.o $(LIBAMI)
 	$(CC) -o localetest localetest.o $(LIBS)
 
+menutest : menutest.o $(LIBAMI)
+	$(CC) -o menutest menutest.o $(LIBS)
+
 clean :
 	$(RM) core $(PROGS) $(LIBAMI) Keyboard Launcher *.o libami/*.o
 	$(RM) lex.yy.c lex.c y.tab.c y.tab.h gram.h gram.c

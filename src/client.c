@@ -261,14 +261,29 @@ void rmclient(Client *c)
     else
       if((cc = clients))
 	for (; cc->next; cc = cc->next)
-	  if (cc->next == c) {
-            cc->next = cc->next->next;
+  {
+	  if (cc->next == c) 
+    {
+      cc->next = cc->next->next;
 	    break;
 	  }
-
-    if(c->active) {
-      if(!menuactive)
-	setfocus(None);
+  }
+	  if(c->menu) 
+    {
+      if (scr->dynamic_menu == c->menu) 
+      {
+        menu_off();
+        scr->dynamic_menu = &scr->menu;
+      }
+      free_menus(c->menu);
+      free(c->menu);
+    }
+    if(c->active) 
+    {
+      if(!menuactive) 
+      {
+        setfocus(None);
+      }
       c->active=False;
       activeclient = NULL;
       XInstallColormap(dpy, scr->cmap);

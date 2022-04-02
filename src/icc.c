@@ -2,10 +2,12 @@
 #include "screen.h"
 #include "icc.h"
 #include "icon.h"
+#include "menu.h"
 #include "style.h"
 #include "prefs.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef AMIGAOS
 #include <pragmas/xlib_pragmas.h>
@@ -16,7 +18,7 @@ extern void redraw(Client *, Window);
 
 Atom wm_state, wm_change_state, wm_protocols, wm_delete, wm_take_focus;
 Atom wm_colormaps, wm_name, wm_normal_hints, wm_hints, wm_icon_name, wm_class;
-Atom amiwm_screen, swm_vroot, amiwm_wflags, amiwm_appiconmsg, amiwm_appwindowmsg;
+Atom amiwm_screen, swm_vroot, amiwm_wflags, amiwm_menu, amiwm_appiconmsg, amiwm_appwindowmsg;
 
 extern Display *dpy;
 
@@ -36,6 +38,7 @@ void init_atoms()
   amiwm_screen = XInternAtom(dpy, "AMIWM_SCREEN", False);
   swm_vroot = XInternAtom(dpy, "__SWM_VROOT", False);
   amiwm_wflags = XInternAtom(dpy, "AMIWM_WFLAGS", False);
+  amiwm_menu = XInternAtom(dpy, "AMIWM_MENU", False);
   amiwm_appiconmsg = XInternAtom(dpy, "AMIWM_APPICONMSG", False);
   amiwm_appwindowmsg = XInternAtom(dpy, "AMIWM_APPWINDOWMSG", False);
 }
@@ -85,6 +88,93 @@ long _getprop(Window w, Atom a, Atom type, long len, char **p)
   if (n == 0)
     XFree((void*) *p);
   return n;
+}
+
+static long make_client_menu(char *p, long n, struct Menu *m)
+{
+  long o = 0;
+  while (o < n) 
+  {
+    if (p[o] == 'E')
+    return o+1;
+    else if ((p[o] == 'I' && o+2 <= n) ||
+            ((p[o] == 'K' || p[o] == 'S') && o+3 <= n)) 
+    {
+      char *pp;
+      char t = p[o++];
+      char f = p[o++] & 7;
+      char sf = (t == 'S'? p[o++]&7 : 0);
+      char k = (t == 'K'? p[o++] : 0);
+      struct Item *i = add_item(m, p+o, k, f);
+      if (!i)
+        return n;
+      pp = (o < n? memchr(p+o, 0, n-o) : NULL);
+      if (pp)
+        o = pp - p + 1;
+      else
+        o = n;
+      if (t == 'S') 
+      {
+        struct Menu *m2 = sub_menu(i, sf);
+        if (m2)
+          o += make_client_menu(p+o, n-o, m2);
+        else
+          return n;
+      }
+    } 
+    else
+      break;
+  }
+  return o;
+}
+        
+void getmenu(Client *c)
+{
+  char *p;
+  long n;
+          
+  if (c->menu) 
+  {
+    if (scr->dynamic_menu == c->menu) 
+    {
+      menu_off();
+      scr->dynamic_menu = &scr->menu;
+    }
+    free_menus(c->menu);
+    free(c->menu);
+    c->menu = NULL;
+  }
+              
+  if ((n = _getprop(c->window, amiwm_menu, amiwm_menu, 999L, (char**)&p)) <= 0)
+    return;
+              
+  MenuBar *mb = calloc(1, sizeof(MenuBar));
+  if (mb) 
+  {
+    menu_initbar(mb);
+    mb->client = c;
+    mb->xprop = p;
+    c->menu = mb;
+    long o = 0;
+    while (o+2 <= n && p[o] == 'M') 
+    {
+      char *pp;
+      struct Menu *m = add_menu(mb, p+o+2, p[o+1]&0xf);
+      if (!m)
+        break;
+      pp = (o+2 < n? memchr(p+o+2, 0, n-o-2) : NULL);
+      if (!pp) 
+      {
+        menu_layout(m);
+        break;
+      }
+      o = pp - p + 1;
+      o += make_client_menu(p+o, n-o, m);
+      menu_layout(m);
+    }
+  } 
+  else
+    XFree(p);
 }
 
 void getwflags(Client *c)

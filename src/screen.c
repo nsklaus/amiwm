@@ -163,8 +163,8 @@ void closescreen(void)
 
   XDeleteContext(dpy,scr->menubardepth,screen_context);
   XDestroyWindow(dpy,scr->menubardepth);
-  XDeleteContext(dpy,scr->menubarparent,screen_context);
-  XDestroyWindow(dpy,scr->menubarparent);
+  XDeleteContext(dpy,scr->menu.menubarparent,screen_context);
+  XDestroyWindow(dpy,scr->menu.menubarparent);
   XDeleteContext(dpy,scr->menubar,screen_context);
   XDestroyWindow(dpy,scr->menubar);
   if(scr->inputbox != None) {

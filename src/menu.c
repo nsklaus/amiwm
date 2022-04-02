@@ -13,6 +13,7 @@
 #include "screen.h"
 #include "client.h"
 #include "icon.h"
+#include "icc.h"
 #include "version.h"
 
 #define ABOUT_STRING(LF) \
@@ -32,10 +33,6 @@ extern struct Library *XLibBase;
 #define BIN_PREFIX AMIWM_HOME"/"
 #endif
 
-#define CHECKIT 1
-#define CHECKED 2
-#define DISABLED 4
-
 extern Display *dpy;
 extern Cursor wm_curs;
 extern XContext screen_context, client_context;
@@ -53,7 +50,6 @@ static struct ToolItem {
   const char *name, *cmd;
   char hotkey;
   int level;
-  struct Menu *submenu;
 } *firsttoolitem=NULL, *lasttoolitem=NULL;
 
 static struct Item {
@@ -142,7 +138,7 @@ void add_toolitem(const char *n, const char *c, const char *k, int l)
   }
 }
 
-static void menu_layout(struct Menu *menu)
+void menu_layout(struct Menu *menu)
 {
   XSetWindowAttributes attr;
   XWindowAttributes attr2;
@@ -199,11 +195,13 @@ static void menu_layout(struct Menu *menu)
     w+=h;
     XSelectInput(dpy, item->win, ExposureMask|ButtonReleaseMask|
 		 EnterWindowMask|LeaveWindowMask);
+    if (item->sub)
+      menu_layout(item->sub);
   }
   XMapSubwindows(dpy, menu->parent);
 }
 
-static struct Menu *add_menu(const char *name, char flags)
+struct Menu *add_menu(MenuBar *mb, const char *name, char flags)
 {
   struct Menu *menu=calloc(1, sizeof(struct Menu));
   XSetWindowAttributes attr;
@@ -217,25 +215,24 @@ static struct Menu *add_menu(const char *name, char flags)
 #else
     w=XTextWidth(scr->dri.dri_Font, name, menu->titlelen=strlen(name))+8;
 #endif
-    menu->win=XCreateWindow(dpy, scr->menubarparent, scr->menuleft, 0, w, scr->bh-1, 0,
+    menu->win=XCreateWindow(dpy, mb->menubarparent, mb->menuleft, 0, w, scr->bh-1, 0,
 			    CopyFromParent, InputOutput, CopyFromParent,
 			    CWOverrideRedirect|CWBackPixel, &attr);
     XSaveContext(dpy, menu->win, screen_context, (XPointer)scr);
     XMapWindow(dpy, menu->win);
     XSelectInput(dpy, menu->win, ExposureMask|EnterWindowMask|LeaveWindowMask);
-    scr->menuleft+=w+6;
+    mb->menuleft+=w+6;
     menu->flags=flags;
     menu->title=name;
     menu->item=NULL;
     menu->firstitem=menu->lastitem=NULL;
-    menu->next=scr->firstmenu;
-    scr->firstmenu=menu;
+    menu->next=mb->firstmenu;
+    mb->firstmenu=menu;
   }
   return menu;
 }
 
-static struct Item *add_item(struct Menu *m, const char *name, char key,
-			     char flags)
+struct Item *add_item(struct Menu *m, const char *name, char key, char flags)
 {
   struct Item *item=calloc(1, sizeof(struct Item));
 
@@ -258,7 +255,7 @@ static struct Item *add_item(struct Menu *m, const char *name, char key,
   return item;  
 }
 
-static struct Menu *sub_menu(struct Item *i, char flags)
+struct Menu *sub_menu(struct Item *i, char flags)
 {
   struct Menu *menu=calloc(1, sizeof(struct Menu));
 
@@ -357,14 +354,29 @@ void redraw_item(struct Item *i, Window w)
   }
 }
 
+void menu_initbar(MenuBar *mb)
+{
+  XSetWindowAttributes attr;
+  attr.override_redirect=True;
+  attr.background_pixel=scr->dri.dri_Pens[BARBLOCKPEN];
+  mb->menubarparent=XCreateWindow(dpy, scr->menubar, 0, 0, scr->width,
+                                  scr->bh-1, 0, CopyFromParent,
+                                  InputOutput, CopyFromParent,
+                                  CWOverrideRedirect|CWBackPixel, &attr);
+  mb->menuleft=4;
+  mb->firstmenu=NULL;
+  mb->xprop=NULL;
+  mb->client=NULL;
+}
+
 void createmenubar()
 {
   XSetWindowAttributes attr;
-  struct Menu *m, *sm1, *sm2, *sm3;
+  struct Menu *m, *sm;
   struct ToolItem *ti;
   GC gc;
 
-  scr->firstmenu = NULL;
+  scr->menu.firstmenu = NULL;
   attr.override_redirect=True;
   attr.background_pixel=scr->dri.dri_Pens[BARBLOCKPEN];
   scr->menubar=XCreateWindow(dpy, scr->back, 0, 0, scr->width, scr->bh, 0,
@@ -373,11 +385,10 @@ void createmenubar()
 			     CWOverrideRedirect|CWBackPixel,
 			     &attr);
   XSaveContext(dpy, scr->menubar, screen_context, (XPointer)scr);
-  scr->menubarparent=XCreateWindow(dpy, scr->menubar, 0, 0, scr->width,
-				   scr->bh-1, 0,
-				   CopyFromParent, InputOutput, CopyFromParent,
-				   CWOverrideRedirect|CWBackPixel, &attr);
-  XSaveContext(dpy, scr->menubarparent, screen_context, (XPointer)scr);
+
+  scr->dynamic_menu = &scr->menu;
+  menu_initbar(&scr->menu);
+  XSaveContext(dpy, scr->menu.menubarparent, screen_context, (XPointer)scr);
   attr.background_pixel=scr->dri.dri_Pens[BACKGROUNDPEN];
   scr->menubardepth=XCreateWindow(dpy, scr->menubar, scr->width-23,
 				  0, 23, scr->bh, 0,
@@ -406,8 +417,7 @@ void createmenubar()
     scr->dri.dri_Ascent;
   scr->checkmarkspace=4+scr->dri.dri_Ascent;
   scr->subspace=scr->hotkeyspace-scr->dri.dri_Ascent;
-  scr->menuleft=4;
-  m=add_menu("Workbench", 0);
+  m=add_menu(&scr->menu, "Workbench", 0);
   add_item(m,"Backdrop",'B',CHECKIT|CHECKED|DISABLED);
   add_item(m,"Execute Command...",'E',0);
   add_item(m,"Redraw All",0,0);
@@ -416,29 +426,27 @@ void createmenubar()
   add_item(m,"About...",'?',0);
   add_item(m,"Quit...",'Q',0);
   menu_layout(m);
-  m=add_menu("Window", 0);
+  m=add_menu(&scr->menu, "Window", 0);
   add_item(m,"New Drawer",'N',DISABLED);
   add_item(m,"Open Parent",0,DISABLED);
   add_item(m,"Close",'K',DISABLED);
   add_item(m,"Update",0,DISABLED);
   add_item(m,"Select Contents",'A',0);
   add_item(m,"Clean Up",'.',0);
-  sm1=sub_menu(add_item(m,"Snapshot",0,DISABLED),0);
-  add_item(sm1, "Window",0,DISABLED);
-  add_item(sm1, "All",0,DISABLED);
-  sm2=sub_menu(add_item(m,"Show",0,DISABLED),0);
-  add_item(sm2, "Only Icons",0,CHECKIT|CHECKED|DISABLED);
-  add_item(sm2, "All Files",'V',CHECKIT|DISABLED);
-  sm3=sub_menu(add_item(m,"View By",0,DISABLED),0);
-  add_item(sm3, "Icon",0,CHECKIT|CHECKED|DISABLED);
-  add_item(sm3, "Name",0,CHECKIT|DISABLED);
-  add_item(sm3, "Date",0,CHECKIT|DISABLED);
-  add_item(sm3, "Size",0,CHECKIT|DISABLED);
+  sm=sub_menu(add_item(m,"Snapshot",0,DISABLED),0);
+  add_item(sm, "Window",0,DISABLED);
+  add_item(sm, "All",0,DISABLED);
+  sm=sub_menu(add_item(m,"Show",0,DISABLED),0);
+  add_item(sm, "Only Icons",0,CHECKIT|CHECKED|DISABLED);
+  add_item(sm, "All Files",'V',CHECKIT|DISABLED);
+  sm=sub_menu(add_item(m,"View By",0,DISABLED),0);
+  add_item(sm, "Icon",0,CHECKIT|CHECKED|DISABLED);
+  add_item(sm, "Name",0,CHECKIT|DISABLED);
+  add_item(sm, "Date",0,CHECKIT|DISABLED);
+  add_item(sm, "Size",0,CHECKIT|DISABLED);
+  
   menu_layout(m);
-  menu_layout(sm1);
-  menu_layout(sm2);
-  menu_layout(sm3);
-  m=add_menu("Icons", DISABLED);
+  m=add_menu(&scr->menu, "Icons", DISABLED);
 
   //meh
   //add_item(m,"Open",'O',DISABLED);
@@ -456,7 +464,7 @@ void createmenubar()
   add_item(m,"Format Disk...",0,DISABLED);
   add_item(m,"Empty Trash",0,DISABLED);
   menu_layout(m);
-  m=add_menu("Tools", 0);
+  m=add_menu(&scr->menu, "Tools", 0);
 #ifdef AMIGAOS
   add_item(m,"ResetWB",0,DISABLED);
 #else
@@ -465,19 +473,13 @@ void createmenubar()
 
   for(ti=firsttoolitem; ti; ti=ti->next)
     if(ti->level<0)
-      ti->submenu=sm1=sub_menu(add_item(m,ti->name,ti->hotkey,0),0);
-    else {
-      ti->submenu=NULL;
-      add_item((ti->level? sm1:m), ti->name,ti->hotkey,(ti->cmd? 0:DISABLED));
-    }
+      sm=sub_menu(add_item(m,ti->name,ti->hotkey,0),0);
+    else
+    add_item((ti->level? sm:m), ti->name,ti->hotkey,(ti->cmd? 0:DISABLED));
   menu_layout(m);
-  for(ti=firsttoolitem; ti; ti=ti->next)
-    if(ti->submenu) {
-      menu_layout(ti->submenu);
-      ti->submenu=NULL;
-    }
+
   if(prefs.screenmenu) {
-    m=add_menu("Screens",0);
+    m=add_menu(&scr->menu, "Screens",0);
     add_item(m,"New Screen",0,0);
     add_item(m,"Delete Screen",0,0);
     menu_layout(m);
@@ -526,8 +528,11 @@ void redrawmenubar(Window w)
 			1+scr->dri.dri_Ascent, clockbuf, strlen(clockbuf));
 #endif
     }    
-  } else if(w==scr->menubardepth) {
-    if(!mbdclick) {
+  } 
+  else if(w==scr->menubardepth) 
+  {
+    if(!mbdclick) 
+    {
       XSetForeground(dpy, scr->menubargc, scr->dri.dri_Pens[SHADOWPEN]);
       XDrawRectangle(dpy, w, scr->menubargc, 4, scr->h2, 10, scr->h6-scr->h2);
     }
@@ -543,30 +548,36 @@ void redrawmenubar(Window w)
     XSetForeground(dpy, scr->menubargc, scr->dri.dri_Pens[mbdclick?SHINEPEN:SHADOWPEN]);
     XDrawLine(dpy, w, scr->menubargc, 0, scr->bh-1, 22, scr->bh-1);
     XDrawLine(dpy, w, scr->menubargc, 22, 0, 22, scr->bh-1);
-  } else {
-    for(m=scr->firstmenu; m; m=m->next)
-      if(m->win==w)
-	redraw_menu(m, w);
-    if(activemenu) {
+  } 
+  else if (scr->dynamic_menu) 
+  {
+    for(m=scr->dynamic_menu->firstmenu; m; m=m->next)
+    if(m->win==w)
+      redraw_menu(m, w);
+    if(activemenu) 
+    {
       for(item=activemenu->firstitem; item; item=item->next)
-	if(item->win==w)
-	  redraw_item(item, w);
-      if(w==activemenu->parent) {
-	XSetForeground(dpy, scr->menubargc, scr->dri.dri_Pens[BARDETAILPEN]);
-	XDrawLine(dpy, w, scr->menubargc, 0, 0, 0, activemenu->height-1);
-	XDrawLine(dpy, w, scr->menubargc, activemenu->width-1, 0,
-		  activemenu->width-1, activemenu->height-1);
+        if(item->win==w)
+          redraw_item(item, w);
+      if(w==activemenu->parent) 
+      {
+        XSetForeground(dpy, scr->menubargc, scr->dri.dri_Pens[BARDETAILPEN]);
+        XDrawLine(dpy, w, scr->menubargc, 0, 0, 0, activemenu->height-1);
+        XDrawLine(dpy, w, scr->menubargc, activemenu->width-1, 0,
+        activemenu->width-1, activemenu->height-1);
       }
     }
-    if(activesubmenu) {
+    if(activesubmenu) 
+    {
       for(item=activesubmenu->firstitem; item; item=item->next)
-	if(item->win==w)
-	  redraw_item(item, w);
-      if(w==activesubmenu->parent) {
-	XSetForeground(dpy, scr->menubargc, scr->dri.dri_Pens[BARDETAILPEN]);
-	XDrawLine(dpy, w, scr->menubargc, 0, 0, 0, activesubmenu->height-1);
-	XDrawLine(dpy, w, scr->menubargc, activesubmenu->width-1, 0,
-		  activesubmenu->width-1, activesubmenu->height-1);
+        if(item->win==w)
+          redraw_item(item, w);
+      if(w==activesubmenu->parent) 
+      {
+        XSetForeground(dpy, scr->menubargc, scr->dri.dri_Pens[BARDETAILPEN]);
+        XDrawLine(dpy, w, scr->menubargc, 0, 0, 0, activesubmenu->height-1);
+        XDrawLine(dpy, w, scr->menubargc, activesubmenu->width-1, 0,
+        activesubmenu->width-1, activesubmenu->height-1);
       }      
     }
   }
@@ -643,7 +654,7 @@ void menubar_enter(Window w)
   struct Menu *m;
   struct Item *i;
 
-  for(m=scr->firstmenu; m; m=m->next)
+  for(m=(scr->dynamic_menu? scr->dynamic_menu->firstmenu : NULL); m; m=m->next)
     if(m->win==w) {
       enter_menu(m, w);
       return;
@@ -676,14 +687,16 @@ void menu_on()
   int rx, ry, x, y;
   unsigned int m;
 
-  if(scr->menubarparent) {
-    XMapRaised(dpy, scr->menubarparent);
+  scr->dynamic_menu = (activeclient && activeclient->menu?activeclient->menu : &scr->menu);
+  if(scr->dynamic_menu && scr->dynamic_menu->menubarparent) 
+  {
+    XMapRaised(dpy, scr->dynamic_menu->menubarparent);
     XRaiseWindow(dpy, scr->menubar);
     XGrabPointer(dpy, scr->back, True, ButtonPressMask|ButtonReleaseMask|
 		EnterWindowMask|LeaveWindowMask, GrabModeAsync, GrabModeAsync,
 		scr->back, wm_curs, CurrentTime);
     XSetInputFocus(dpy, scr->menubar, RevertToParent, CurrentTime);
-    if(XQueryPointer(dpy, scr->menubarparent, &r, &c, &rx, &ry, &x, &y, &m))
+    if(XQueryPointer(dpy, scr->dynamic_menu->menubarparent, &r, &c, &rx, &ry, &x, &y, &m))
       menubar_enter(c);
   }
 }
@@ -712,7 +725,14 @@ void menuaction(struct Item *i, struct Item *si)
     mod_menuselect(mi->owner, menu, item, sub);
     return;
   }
-  switch(menu) {
+  if(!scr->dynamic_menu)
+    return;
+  if(scr->dynamic_menu != &scr->menu) 
+  {
+    Client *c = scr->dynamic_menu->client;
+    if (c != NULL)
+      sendcmessage(c->window, amiwm_menu, (menu&0x1f)|((item&0x3f)<<5)|((sub&0x1f)<<11));
+    } else switch(menu) {
   case 0: /* Workbench */
     switch(item) {
     case 1:
@@ -826,13 +846,14 @@ void menu_off()
   struct Menu *oa;
   struct Item *oi, *osi;
 
-  if(scr->menubarparent) {
+  if(scr->dynamic_menu != NULL) {
     Window r,p,*children;
     unsigned int nchildren;
     XUngrabPointer(dpy, CurrentTime);
     setfocus((activeclient && activeclient->state==NormalState?
 	      activeclient->window:None));
-    XUnmapWindow(dpy, scr->menubarparent);
+    if (scr->dynamic_menu->menubarparent)
+      XUnmapWindow(dpy, scr->dynamic_menu->menubarparent);
     if(XQueryTree(dpy, scr->back, &r, &p, &children, &nchildren)) {
       int n;
       Client *c2;
@@ -872,20 +893,27 @@ void menu_off()
   }
 }
 
-struct Item *getitembyhotkey(KeySym key)
+void menuactionbyhotkey(KeySym key)
 {
   struct Menu *m;
   struct Item *i;
 
-  if(key) {
+  if(key && scr->dynamic_menu) 
+  {
     if(key>='a' && key<='z')
       key-=0x20;
-    for(m=scr->firstmenu; m; m=m->next)
+    for(m=scr->dynamic_menu->firstmenu; m; m=m->next)
       for(i=m->firstitem; i; i=i->next)
 	if(i->hotkey==key)
-	  return i;
+    menuaction(i, NULL);
+    else if (i->sub) 
+    {
+      struct Item *i2;
+      for(i2=i->sub->firstitem; i2; i2=i2->next)
+        if(i2->hotkey==key)
+          menuaction(i, i2);
+    }
   }
-  return NULL;
 }
 
 static struct Item *own_item(struct module *m, struct Item *i, struct Item *c)
@@ -923,7 +951,7 @@ struct Item *own_items(struct module *m, Scrn *s,
   if(menu<0) {
     m0 = 0; m1 = 65535;
   } else m0 = m1 = menu;
-  for(mn=0, mm=s->firstmenu; mm && mn <= m1; mm=mm->next, mn++)
+  for(mn=0, mm=s->menu.firstmenu; mm && mn <= m1; mm=mm->next, mn++)
     if(mn>=m0) {
       int i0, i1, in;
       struct Item *ii;
@@ -956,4 +984,39 @@ struct Item *own_items(struct module *m, Scrn *s,
   if(endlink)
     endlink->next = c;
   return chain;
+}
+
+static void free_menu(struct Menu *m)
+{
+  struct Item *i;
+  while((i = m->firstitem) != NULL) 
+  {
+    m->firstitem = i->next;
+    if (i->sub)
+      free_menu(i->sub);
+    free(i);
+  }
+  if (m->parent != None)
+    XDestroyWindow(dpy, m->parent);
+  free(m);
+}
+
+void free_menus(MenuBar *mb)
+{
+  struct Menu *m;
+  while ((m = mb->firstmenu) != NULL) 
+  {
+    mb->firstmenu = m->next;
+    free_menu(m);
+  }
+  if (mb->xprop) 
+  {
+    XFree(mb->xprop);
+    mb->xprop = NULL;
+  }
+  if (mb->menubarparent != None) 
+  {
+    XDestroyWindow(dpy, mb->menubarparent);
+    mb->menubarparent = None;
+  }
 }

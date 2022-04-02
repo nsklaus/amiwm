@@ -220,6 +220,7 @@ void reparent(Client *c)
     return;
   getproto(c);
   getwflags(c);
+  getmenu(c);
   XAddToSaveSet(dpy, c->window);
   XGetWindowAttributes(dpy, c->window, &attr);
   c->colormap = attr.colormap;

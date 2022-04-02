@@ -81,6 +81,49 @@ GC gc;
 void build_icons();
 void event_loop();
 
+// not used yet
+void clean_reset()
+{
+  for (int i=0;i<entries_count;i++)
+  {
+    fse_arr[i].name = None;
+    fse_arr[i].path = None;
+    fse_arr[i].type = None;
+    fse_arr[i].tiedWith = None;
+    fse_arr[i].iconwin = None;
+    fse_arr[i].label = None;
+    fse_arr[i].pm1 = None;
+    fse_arr[i].pm2 = None;
+    fse_arr[i].pm3 = None;
+    fse_arr[i].pm4 = None;
+    fse_arr[i].pmA = None;
+    fse_arr[i].p_width = None;
+    fse_arr[i].p_height = None;
+    fse_arr[i].t_width = None;
+    fse_arr[i].t_height = None;
+    fse_arr[i].x = None;
+    fse_arr[i].y = None;
+    fse_arr[i].width = None;
+    fse_arr[i].height = None;
+    fse_arr[i].Icon = None;
+    fse_arr[i].associated = None;
+    fse_arr[i].selected = None;
+    fse_arr[i].dragging = None;
+    
+  }
+  XDestroySubwindows(dpy,mainwin); 
+  XClearWindow(dpy,mainwin);
+  
+  entries_count = 0; // clear count of files
+  alloc_ecount = 0;  // clear struct allocation count
+  //offset_y = 0;      // clear scroll offset
+  free(fse_arr);
+  
+  // restart fresh allocation of struct in array
+  alloc_ecount = 20;
+  fse_arr = calloc(alloc_ecount, sizeof(fs_entity)); 
+}
+
 void read_entries(char *path) {
   // differentiate between files and directories,
   // get max number of instances of wbicon
@@ -310,10 +353,10 @@ void make_icon( char *icondir, char *icon, int i)
   
   fse_arr[i].iconwin = XCreateWindow( dpy,mainwin, fse_arr[i].x, fse_arr[i].y, fse_arr[i].width+18, fse_arr[i].height+15, 1, 24, InputOutput, CopyFromParent, CWBackPixel|CWOverrideRedirect, &xswa);
   
-  XMapWindow(dpy, fse_arr[i].iconwin);
+  
   
   XSetWindowBackgroundPixmap(dpy, fse_arr[i].iconwin, fse_arr[i].pmA);
-  XSelectInput(dpy, fse_arr[i].iconwin, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
+
   
   int label_width = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
   fse_arr[i].t_width  = label_width+10;
@@ -414,6 +457,9 @@ void make_icon( char *icondir, char *icon, int i)
   XmbDrawString(dpy, fse_arr[i].pm1, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10, fse_arr[i].name, strlen(fse_arr[i].name));
   XmbDrawString(dpy, fse_arr[i].pm2, dri.dri_FontSet, gc, new_offset, fse_arr[i].height+10,fse_arr[i].name, strlen(fse_arr[i].name));
 //  }
+  
+  XMapWindow(dpy, fse_arr[i].iconwin);
+  XSelectInput(dpy, fse_arr[i].iconwin, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask);
   if(icon_do != NULL){ FreeDiskObject(icon_do); }
 }
 

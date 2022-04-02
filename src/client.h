@@ -10,6 +10,7 @@ typedef struct _Client {
   struct _Client *next;
   struct _Scrn *scr;
   struct _Icon *icon;
+  struct _MenuBar *menu;
   struct module *module;
   int wflags;
   Window window, parent;

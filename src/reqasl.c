@@ -69,6 +69,8 @@ int IFfile_width=0, IFfile_height=20;     // input field for files
 
 GC gc;
 
+Atom amiwm_menu = None, wm_protocols = None, wm_delete = None;
+
 /** width and height of input field borders */
 int strgadw, strgadh;
 
@@ -124,27 +126,50 @@ int entries_count; // total amount of entries per dir
 
 void clean_reset()
 {
-  
   for (int i=0;i<entries_count;i++)
-    {
-      fse_arr[i].name = None;
-      fse_arr[i].path = None;
-      fse_arr[i].type = None;
-      fse_arr[i].pm1 = None;
-      fse_arr[i].pm2 = None;
-      fse_arr[i].pmA = None;
-      fse_arr[i].win = None;
-    }
+  {
+    fse_arr[i].name = None;
+    fse_arr[i].path = None;
+    fse_arr[i].type = None;
+    fse_arr[i].pm1 = None;
+    fse_arr[i].pm2 = None;
+    fse_arr[i].pmA = None;
+    fse_arr[i].win = None;
+  }
   XDestroySubwindows(dpy,List); 
   XClearWindow(dpy,List);
   
-  entries_count=0; 
-  offset_y = 0; // clear scroll offset
+  entries_count = 0; // clear count of files
+  alloc_ecount = 0;  // clear struct allocation count
+  offset_y = 0;      // clear scroll offset
   free(fse_arr);
   
-  //  restart fresh allocation of arrays
+  // restart fresh allocation of struct in array
+  alloc_ecount = 20;
   fse_arr = calloc(alloc_ecount, sizeof(fs_entity)); 
 }
+
+static void SetMenu(Window w)
+{
+  if (amiwm_menu == None)
+    amiwm_menu = XInternAtom(dpy, "AMIWM_MENU", False);
+  XChangeProperty(dpy, w, amiwm_menu, amiwm_menu, 8, PropModeReplace,
+                  "M0Main\0S00Color\0K0RRed\0K0GGreen\0K0BBlue\0EK0XExit\0"
+                  "M0Help\0I0About", 65);
+}
+
+static void SetProtocols(Window w)
+{
+  if (wm_protocols == None)
+    wm_protocols = XInternAtom(dpy, "WM_PROTOCOLS", False);
+  if (wm_delete == None)
+    wm_delete = XInternAtom(dpy, "WM_DELETE_WINDOW", False);
+  XChangeProperty(dpy, w, wm_protocols, XA_ATOM, 32, PropModeReplace,
+                  (char *)&wm_delete, 1);
+}
+
+
+
 
 void getlabels(char *path)
 { 
@@ -303,12 +328,11 @@ void getlabels(char *path)
 void list_entries()
 {
   //viewmode="list";
-  //printf("VIEWMODE now =%s\n",get_viewmode());
-  //XClearWindow(dpy,List);
+  //printf("VIEWMODE now =%s\n",get_viewmode()); 
   for (int i=0;i<entries_count;i++)
   {
     //printf("list_entries count i=%d\n",i);
-    fse_arr[i].width  = list_width;
+    fse_arr[i].width  = win_width-50; //list_width;
     fse_arr[i].height = win_height-100;
     fse_arr[i].x = 0;
     fse_arr[i].y = 5 + i*16;
@@ -319,17 +343,19 @@ void list_entries()
 
 void build_entries()
 {
+  XSetWindowAttributes xswa;
   for (int i=0;i<entries_count;i++)
-  {
-
+  { 
     //int width = XmbTextEscapement(dri.dri_FontSet, entries[i].name, strlen(entries[i].name));
     fse_arr[i].width  = list_width;
     fse_arr[i].height = 15;
 
-    fse_arr[i].win=XCreateSimpleWindow(dpy, List, fse_arr[i].x, fse_arr[i].y, 
-                                       fse_arr[i].width, fse_arr[i].height, 0,
-                                       dri.dri_Pens[SHADOWPEN],
-                                       dri.dri_Pens[BACKGROUNDPEN]);
+//     fse_arr[i].win=XCreateSimpleWindow(dpy, List, fse_arr[i].x, fse_arr[i].y, 
+//                                        fse_arr[i].width, fse_arr[i].height, 0,
+//                                        dri.dri_Pens[SHADOWPEN],
+//                                        dri.dri_Pens[BACKGROUNDPEN]);
+    
+    fse_arr[i].win = XCreateWindow( dpy,List, fse_arr[i].x, fse_arr[i].y, fse_arr[i].width, fse_arr[i].height, 0, 24, InputOutput, CopyFromParent, CWBackPixel, &xswa);
 
     fse_arr[i].pm1 = XCreatePixmap(dpy, fse_arr[i].win, fse_arr[i].width, fse_arr[i].height, 24);
     fse_arr[i].pm2 = XCreatePixmap(dpy, fse_arr[i].win, fse_arr[i].width, fse_arr[i].height, 24);
@@ -371,9 +397,9 @@ void build_entries()
     fse_arr[i].pmA = fse_arr[i].pm1; // set active pixmap
     XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
 
+    XMapWindow(dpy,fse_arr[i].win);
     XSelectInput(dpy, fse_arr[i].win, ExposureMask|CWOverrideRedirect|KeyPressMask|ButtonPressMask|ButtonReleaseMask|Button1MotionMask|ShiftMask);
   }
-  XMapSubwindows(dpy,List);
 }
 
 /** get button number/id */
@@ -428,10 +454,9 @@ void refresh_main(void)
 extern size_t mbrlen(); // define proto mbrlen() to silence ccompile warning
 void refresh_str_text_dir()
 {
-  //printf("refreshing ifdir string: current_path=%s\n", current_dir);
-  
-  //dir_path=current_dir;
+
   int string_length=XmbTextEscapement(dri.dri_FontSet, current_dir, strlen(current_dir)); 
+  int offset_x = string_length - IFdir_width;
   
   //clean
   XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
@@ -441,9 +466,9 @@ void refresh_str_text_dir()
   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
   if(string_length>IFdir_width)
   {
-    int offset_x = string_length - IFdir_width;
+    
     XmbDrawImageString(dpy, IFdir, dri.dri_FontSet,
-                      gc, -(offset_x +8 ), 3+dri.dri_Ascent,
+                      gc, -(offset_x +20 ), 3+dri.dri_Ascent,
                        current_dir, strlen(current_dir));
   } 
   else 
@@ -451,9 +476,17 @@ void refresh_str_text_dir()
     XmbDrawImageString(dpy, IFdir, dri.dri_FontSet,
                         gc, 6, 3+dri.dri_Ascent,
                         current_dir, strlen(current_dir)); 
+
   }
   
+  // if input field active show carret
+  if (stractive_dir)
+  {
+    XSetForeground(dpy, gc, ~0);
+    XFillRectangle(dpy, IFdir, gc, cur_pos_dir, 3, 8, fh);
+  }
   refresh_IFborders(IFdir);
+  
   /*
   XSetForeground(dpy, gc, ~0);
   XFillRectangle(dpy, input, gc, string_length, 3,
@@ -507,40 +540,6 @@ void refresh_str_text_dir()
 */
 }
 
-void refresh_str_text_file()
-{
-  
-  refresh_IFborders(IFfile);
-}
-
-void refresh_list()
-{
-  XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-  XDrawLine(dpy, mainwin, gc, 9, 9, win_width-10, 9);
-  XDrawLine(dpy, mainwin, gc, 9, 9, 9, win_height-85);
-  XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-  XDrawLine(dpy, mainwin, gc, 9, win_height-85, win_width-10,win_height-85);
-  XDrawLine(dpy, mainwin, gc, win_width-10, win_height-85, win_width-10, 9);
-}
-
-/** refresh drawing of text field borders */
-void refresh_IFborders(Window win)
-{
-  XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-  XDrawLine(dpy, win, gc, 0, strgadh-1, 0, 0);
-  XDrawLine(dpy, win, gc, 0, 0, strgadw-2, 0);
-  XDrawLine(dpy, win, gc, 3, strgadh-2, strgadw-4, strgadh-2);
-  XDrawLine(dpy, win, gc, strgadw-4, strgadh-2, strgadw-4, 2);
-  XDrawLine(dpy, win, gc, 1, 1, 1, strgadh-2);
-  XDrawLine(dpy, win, gc, strgadw-3, 1, strgadw-3, strgadh-2);
-  XSetForeground(dpy, gc, dri.dri_Pens[SHADOWPEN]);
-  XDrawLine(dpy, win, gc, 1, strgadh-1, strgadw-1, strgadh-1);
-  XDrawLine(dpy, win, gc, strgadw-1, strgadh-1, strgadw-1, 0);
-  XDrawLine(dpy, win, gc, 3, strgadh-3, 3, 1);
-  XDrawLine(dpy, win, gc, 3, 1, strgadw-4, 1);
-  XDrawLine(dpy, win, gc, 2, 1, 2, strgadh-2);
-  XDrawLine(dpy, win, gc, strgadw-2, 1, strgadw-2, strgadh-2);
-}
 
 /** work with text string entered */
 void strkey_dir(XKeyEvent *e)
@@ -548,6 +547,40 @@ void strkey_dir(XKeyEvent *e)
   void endchoice(void);
   Status stat;
   KeySym ks;
+  char *buf_dir=current_dir;
+
+  
+  int x, i, n;
+  
+  n=XmbLookupString(xic, e, buf_dir, sizeof(buf_dir), &ks, &stat);
+  if(stat == XLookupKeySym || stat == XLookupBoth)
+    
+    switch(ks) 
+    {
+      case XK_Return:
+      case XK_Linefeed:
+        selected=1;
+        endchoice();
+        break;
+      case XK_Left:
+        
+        break;
+      case XK_Right:
+        if(cur_pos_dir<buf_len_dir) 
+        {
+          int l=mbrlen(dir_path+cur_pos_dir, buf_len_dir-cur_pos_dir, NULL);
+          if(l>0)
+            cur_pos_dir+=l;
+        }
+        break;
+      default:
+        if(stat == XLookupBoth)
+          stat = XLookupChars;
+    }
+//   int string_length=XmbTextEscapement(dri.dri_FontSet, buf_dir, strlen(buf_dir)); 
+//   XSetForeground(dpy, gc, ~0);
+//   XFillRectangle(dpy, IFdir, gc, string_length, 3, 4, fh);
+  refresh_str_text_dir();
   
   /*
   printf("cur_x=%d  cur_pos_dir%d\n",cur_x, cur_pos_dir);
@@ -676,40 +709,74 @@ void strkey_dir(XKeyEvent *e)
   */
 }
 
-/** work with text string entered */
-void strkey_file(XKeyEvent *e)
-{
-
-}
-
 /** click on input field (stractive) */
 void strbutton_dir(XButtonEvent *e)
 {
+  printf("entering strbutton_dir\n");
   stractive_dir=1;
-
-  int w, l=1;
-  //stractive=1;
-  cur_pos_dir=left_pos_dir;
-  cur_x=6;
-  while(cur_x<e->x && cur_pos_dir<buf_len_dir) {
-
-    l=mbrlen(dir_path+cur_pos_dir, buf_len_dir-cur_pos_dir, NULL);
-    if(l<=0)
-      break;
-    w=XmbTextEscapement(dri.dri_FontSet, dir_path+cur_pos_dir, l);
-
-    if(cur_x+w>e->x)
-      break;
-    cur_x+=w;
-    cur_pos_dir+=l;
-  }
-  //printf("");
-  refresh_str_text_dir();
+  
+  printf("e.x=%d\n",e->x);
+  refresh_str_text_dir(); 
 }
+
+void refresh_str_text_file() { refresh_IFborders(IFfile); }
+/** work with text string entered */
+void strkey_file(XKeyEvent *e) { }
+
+void refresh_list()
+{
+  XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+  XDrawLine(dpy, mainwin, gc, 9, 9, win_width-10, 9);
+  XDrawLine(dpy, mainwin, gc, 9, 9, 9, win_height-85);
+  XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+  XDrawLine(dpy, mainwin, gc, 9, win_height-85, win_width-10,win_height-85);
+  XDrawLine(dpy, mainwin, gc, win_width-10, win_height-85, win_width-10, 9);
+}
+
+/** refresh drawing of text field borders */
+void refresh_IFborders(Window win)
+{
+  XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+  XDrawLine(dpy, win, gc, 0, strgadh-1, 0, 0);
+  XDrawLine(dpy, win, gc, 0, 0, strgadw-2, 0);
+  XDrawLine(dpy, win, gc, 3, strgadh-2, strgadw-4, strgadh-2);
+  XDrawLine(dpy, win, gc, strgadw-4, strgadh-2, strgadw-4, 2);
+  XDrawLine(dpy, win, gc, 1, 1, 1, strgadh-2);
+  XDrawLine(dpy, win, gc, strgadw-3, 1, strgadw-3, strgadh-2);
+  XSetForeground(dpy, gc, dri.dri_Pens[SHADOWPEN]);
+  XDrawLine(dpy, win, gc, 1, strgadh-1, strgadw-1, strgadh-1);
+  XDrawLine(dpy, win, gc, strgadw-1, strgadh-1, strgadw-1, 0);
+  XDrawLine(dpy, win, gc, 3, strgadh-3, 3, 1);
+  XDrawLine(dpy, win, gc, 3, 1, strgadw-4, 1);
+  XDrawLine(dpy, win, gc, 2, 1, 2, strgadh-2);
+  XDrawLine(dpy, win, gc, strgadw-2, 1, strgadw-2, strgadh-2);
+}
+
 
 /** click on input field (stractive) */
 void strbutton_file(XButtonEvent *e)
 {
+}
+
+void set_cursor_pos(int x_pos)
+{
+  if (x_pos == -1) {
+    // initial position
+    int string_length=XmbTextEscapement(dri.dri_FontSet, current_dir, strlen(current_dir)); 
+    if(string_length>IFdir_width)
+    {
+      cur_pos_dir = (IFdir_width-20);
+    }
+    else 
+    {
+      cur_pos_dir = (string_length+8);
+    }
+  } 
+  // position choosen with mouse or keyboard
+  else 
+  {
+    cur_pos_dir = x_pos;
+  }
 }
 
 void toggle(int c)
@@ -775,6 +842,7 @@ void got_path(char *path)
   build_entries();
   list_entries();
   current_dir=path;
+  set_cursor_pos(-1); // set cursor to inital position
   refresh_str_text_dir();
   refresh_str_text_file();
   }
@@ -959,6 +1027,10 @@ int main(int argc, char *argv[])
   if (!xic)
     exit(1);
 
+  
+  SetProtocols(mainwin);
+  SetMenu(mainwin);
+  
   size_hints.flags = PMinSize|PMaxSize; //PResizeInc;
   //hints->flags = PMinSize|PMaxSize;
   size_hints.min_width = 255;
@@ -1000,7 +1072,8 @@ int main(int argc, char *argv[])
   
   current_dir = homedir;
   got_path(homedir); // build files listing
-
+  //got_path(homedir); // two time's the charm
+  
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
 
@@ -1014,8 +1087,8 @@ int main(int argc, char *argv[])
       switch(event.type) 
       {
         case Expose:
-          if(!event.xexpose.count) 
-          {
+//           if(!event.xexpose.count) 
+//           {
             if(event.xexpose.window == List) 
             {
               refresh_list();
@@ -1050,7 +1123,7 @@ int main(int argc, char *argv[])
             {
               refresh_main();
             }
-          }
+          //}
         case ConfigureNotify:
           if(event.xconfigure.window == mainwin) 
           {
@@ -1099,6 +1172,12 @@ int main(int argc, char *argv[])
         case ButtonPress:
           if(event.xbutton.button==Button1) 
           {
+            // deactivate IFdir by clicking anywhere else
+            if(stractive_dir && event.xbutton.window!=IFdir) 
+            {
+              stractive_dir=0;
+              refresh_str_text_dir();
+            }
             if((c=getchoice(event.xbutton.window))) 
             {
               abortchoice();
@@ -1193,7 +1272,54 @@ int main(int argc, char *argv[])
         case KeyRelease:
           printf("key got released\n");
           break;
+        case ClientMessage:
+          if (event.xclient.message_type == amiwm_menu &&
+            event.xclient.format == 32) 
+          {
+            unsigned int menunum = event.xclient.data.l[0];
+            unsigned menu = menunum & 0x1f;
+            unsigned item = (menunum >> 5) & 0x3f;
+            unsigned subitem = (menunum >> 11) & 0x1f;
+            switch (menu) 
+            {
+              case 0:
+                switch (item) 
+                {
+                  case 0:
+                    printf("case 0\n");
+                    break;
+                  case 1:
+                    printf("quitting\n");
+                    term_dri(&dri, dpy, attr.colormap);
+                    exit(0);
+                    break;
+                }
+                break;
+              case 1:
+                switch (item) 
+                {
+                  case 0:
+                    #ifdef AMIGAOS
+                    system("RUN <>NIL: requestchoice menutest  ABOUT_STRING  Ok");
+                    #else
+                    (void)! system("requestchoice >/dev/null menutest ABOUT_STRING Ok &");
+                    #endif
+                    break;
+                }
+                break;
+            }
+          } 
+          else if (event.xclient.message_type == wm_protocols &&
+            event.xclient.format == 32 &&
+            event.xclient.data.l[0] == wm_delete) 
+          {
+            printf("quitting\n");
+            term_dri(&dri, dpy, attr.colormap);
+            exit(0);
+          }
+          break;
+
       }
     }
-  //}
+//}
 }

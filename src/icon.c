@@ -536,6 +536,7 @@ static void placeicons(Icon **p, int n, int x, int w)
 
 void cleanupicons()
 {
+  
   Icon *i, **icons;
   int nicons=0, maxicons=16;
 
@@ -573,6 +574,7 @@ void cleanupicons()
     }
     free(icons);
   }
+  
 }
 
 void newicontitle(Client *c)

@@ -103,6 +103,7 @@ ToolItem "GraphX"
   }
 ToolItem "System"
   {
+  ToolItem "Open" "reqasl"
   ToolItem "Setup" "/usr/local/lib/amiwm/setup"
   ToolItem "Terminal" "xterm"
   ToolItem "Screenshot"  "maim -d 5 ~/Desktop/screen1.png"
