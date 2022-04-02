@@ -103,7 +103,7 @@ static XIC xic = (XIC) NULL;
 void refresh_IFborders(Window win);
 
 
-typedef struct
+struct fs_entity
 {
   char *name;
   char *path;
@@ -118,7 +118,7 @@ typedef struct
   Pixmap pmA;
   Bool selected;
   Bool dragging;
-} fs_entity;
+}; typedef struct fs_entity fs_entity;
 
 fs_entity *fse_arr; // array for normal files 
 int alloc_ecount = 20; // array size 
@@ -168,7 +168,17 @@ static void SetProtocols(Window w)
                   (char *)&wm_delete, 1);
 }
 
+int function_name(const void *arg1, const void *arg2)
+{
+  const fs_entity *entity1 = arg1; const fs_entity *entity2 = arg2;
+  if(strcmp(entity1->type,entity2->type)==0)
+    return strcmp(entity1->name, entity2->name );
 
+  if(strcmp(entity1->type,"directory")==0)
+    return -1;
+  else // if(strcmp(entity2->type,"directory")==0)
+    return 1;
+}
 
 
 void getlabels(char *path)
@@ -323,6 +333,7 @@ void getlabels(char *path)
       }
     }
   }
+  qsort(fse_arr, entries_count, sizeof(fs_entity), function_name);
 }
 
 void list_entries()
@@ -1091,6 +1102,7 @@ int main(int argc, char *argv[])
 //           {
             if(event.xexpose.window == List) 
             {
+              refresh_str_text_dir(); // inputfield was covered, refresh it
               refresh_list();
             }
             if(event.xexpose.window == IFdir) 
