@@ -4,32 +4,21 @@
 #include <X11/keysym.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
+#include <string.h> 
+#include <fcntl.h> 
 
-#include <errno.h>
-#ifdef USE_FONTSETS
+#include <errno.h> 
 #include <locale.h>
-#include <wchar.h>
-#endif
+#include <wchar.h> 
 
-#include "drawinfo.h"
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <libami.h>
+#include "drawinfo.h"
 
 #define MAX_CMD_CHARS 256
 #define VISIBLE_CMD_CHARS 35
-
-#define BOT_SPACE 4
-#define TEXT_SIDE 8
-#define BUT_SIDE 12
-#define TOP_SPACE 4
-#define INT_SPACE 7
-#define BUT_VSPACE 2
-#define BUT_HSPACE 8
 
 static const char ok_txt[]="Ok", vol_txt[]="Volumes", par_txt[]="Parent", cancel_txt[]="Cancel";
 static const char drawer_txt[]="Drawer";
@@ -37,7 +26,9 @@ static const char file_txt[]="File";
 
 XContext client_context, screen_context, icon_context;
 
-static Window button[8];
+
+gadget_button *buttons[6];
+gadget_button b_ok, b_vol, b_par, b_cancel;
 static const char *buttxt[]={ NULL, ok_txt, vol_txt, par_txt, cancel_txt };
 
 // handle button choice and selection
@@ -416,48 +407,67 @@ void build_entries()
 /** get button number/id */
 int getchoice(Window w)
 {
-  int i;
-  int totalbuttons = (int)(sizeof button / sizeof button[0]);
-  for(i=1; i<totalbuttons; i++)
-  {
-    if(button[i]==w)
-    {
-      printf("button id=%d\n",i);
-      return i;
-    }
-  }
-  return 0;
+  
+  if (b_ok.w == w)
+    return 1;
+  else if (b_vol.w == w)
+    return 2;
+  else if (b_par.w == w)
+    return 3;
+  else if (b_cancel.w == w)
+    return 4;
+  else
+    return 0;
+//   int i;
+//   int totalbuttons = (int)(sizeof button / sizeof button[0]);
+//   for(i=1; i<totalbuttons; i++)
+//   {
+//     if(button[i]==w)
+//     {
+//       printf("button id=%d\n",i);
+//       return i;
+//     }
+//   }
+//   return 0;
+  
+//   int i;
+//   for (i=1; i<3; i++) 
+//   {
+//     if (buttons[i]->w == w)
+//       return i;
+//   }
+     //return 0;
 }
 
-/** refresh buttons in window */
-void refresh_button(Window w, const char *txt, int idx)
-{
-  //printf("refresh_button \n");
-  int h=fh+2*BUT_VSPACE;
-  int l=strlen(txt);
-  int tw=XmbTextEscapement(dri.dri_FontSet, txt, l);
-  XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-  XDrawString(dpy, w, gc, (butw-tw)>>1, dri.dri_Ascent+BUT_VSPACE, txt, l);
-  XSetForeground(dpy, gc, dri.dri_Pens[(selected==idx && depressed)? SHADOWPEN:SHINEPEN]);
-  XDrawLine(dpy, w, gc, 0, 0, butw-2, 0);
-  XDrawLine(dpy, w, gc, 0, 0, 0, h-2);
-  XSetForeground(dpy, gc, dri.dri_Pens[(selected==idx && depressed)? SHINEPEN:SHADOWPEN]);
-  XDrawLine(dpy, w, gc, 1, h-1, butw-1, h-1);
-  XDrawLine(dpy, w, gc, butw-1, 1, butw-1, h-1);
-  XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
-  XDrawPoint(dpy, w, gc, butw-1, 0);
-  XDrawPoint(dpy, w, gc, 0, h-1);
-  //printf("refresh_idx=%d\n",idx);
-}
+// refresh buttons in window 
+// void refresh_button(Window w, const char *txt, int idx)
+// {
+//   printf("refresh_button \n");
+//   int h=25;
+//   int l=strlen(txt);
+//   int tw=XmbTextEscapement(dri.dri_FontSet, txt, l);
+//   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
+//   XDrawString(dpy, w, gc, (butw-tw)>>1, dri.dri_Ascent+BUT_VSPACE, txt, l);
+//   XSetForeground(dpy, gc, dri.dri_Pens[(selected==idx && depressed)? SHADOWPEN:SHINEPEN]);
+//   XDrawLine(dpy, w, gc, 0, 0, butw-2, 0);
+//   XDrawLine(dpy, w, gc, 0, 0, 0, h-2);
+//   XSetForeground(dpy, gc, dri.dri_Pens[(selected==idx && depressed)? SHINEPEN:SHADOWPEN]);
+//   XDrawLine(dpy, w, gc, 1, h-1, butw-1, h-1);
+//   XDrawLine(dpy, w, gc, butw-1, 1, butw-1, h-1);
+//   XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
+//   XDrawPoint(dpy, w, gc, butw-1, 0);
+//   XDrawPoint(dpy, w, gc, 0, h-1);
+//   printf("refresh_idx=%d\n",idx);
+// }
 
 /** refresh window background */
-void refresh_main(void)
+static void refresh_main(void)
 {
   int w;
+  XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
   w=XmbTextEscapement(dri.dri_FontSet, drawer_txt, strlen(drawer_txt));
   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 10, win_height-60, drawer_txt, strlen(drawer_txt));
   XmbDrawString(dpy, mainwin, dri.dri_FontSet, gc, 20, win_height-36, file_txt, strlen(file_txt));
-
 }
 
 
@@ -555,7 +565,7 @@ void refresh_str_text_dir()
 /** work with text string entered */
 void strkey_dir(XKeyEvent *e)
 {
-  void endchoice(void);
+  //void endchoice(void);
   Status stat;
   KeySym ks;
   char *buf_dir=current_dir;
@@ -571,7 +581,7 @@ void strkey_dir(XKeyEvent *e)
       case XK_Return:
       case XK_Linefeed:
         selected=1;
-        endchoice();
+        //endchoice();
         break;
       case XK_Left:
         
@@ -790,32 +800,43 @@ void set_cursor_pos(int x_pos)
   }
 }
 
-void toggle(int c)
+static void toggle(int c)
 {
-  XSetWindowBackground(dpy, button[c],
-                       dri.dri_Pens[(depressed&&c==selected)?
-                       FILLPEN:BACKGROUNDPEN]);
-  XClearWindow(dpy, button[c]);
-  refresh_button(button[c], buttxt[c], c);
+//   XSetWindowBackground(dpy, button[c],
+//                        dri.dri_Pens[(depressed&&c==selected)?
+//                        FILLPEN:BACKGROUNDPEN]);
+//   XClearWindow(dpy, button[c]);
+//   refresh_button(button[c], buttxt[c], c);
   //printf("toggle = %d\n\n",c);
+  if (c == 0)
+    return;
+  //gadget_button_toggle(buttons[c]);
 }
 
-void toggle_choice(int c)
-{
-  XSetWindowBackground(dpy, button[c],
-                       dri.dri_Pens[(depressed&&c==selected)?
-                       FILLPEN:BACKGROUNDPEN]);
-  XClearWindow(dpy, button[c]);
-  refresh_button(button[c], buttxt[c], c);
-}
+//void toggle_choice(int c)
+//{
+//   XSetWindowBackground(dpy, button[c],
+//                        dri.dri_Pens[(depressed&&c==selected)?
+//                        FILLPEN:BACKGROUNDPEN]);
+//   XClearWindow(dpy, button[c]);
+//   refresh_button(button[c], buttxt[c], c);
+//}
 
-void abortchoice()
+static void abortchoice()
 {
+//   if(depressed) {
+//     depressed=0;
+//     toggle(selected);
+//   }
+//   selected=0;
   if(depressed) {
-    depressed=0;
-    toggle(selected);
+    b_ok.depressed=0;
+    if (selected > 0) {
+      //gadget_button_set_depressed(buttons[selected], 0);
+    }
+    button_toggle(&b_ok);
   }
-  selected=0;
+  selected = 0;
 }
 
 void got_file(char *path, char *name)
@@ -860,10 +881,10 @@ void got_path(char *path)
   else {printf("input path do not exists\n\n");}
 }
 
-void endchoice()
+void endchoice(int c)
 {
-  int c=selected;
-  abortchoice();
+//   int c=selected;
+//   abortchoice();
 
   if(c==1){
     //     printf("ss_cmdline=%s\n", cmdline);
@@ -920,7 +941,7 @@ int main(int argc, char *argv[])
   static XSizeHints size_hints;
   static XTextProperty txtprop1, txtprop2;
   // clickable buttons
-  Window b_ok, b_vol, b_par, b_cancel;
+  //Window b_ok, b_vol, b_par, b_cancel;
   int w2, c;
   char *p;
   //setlocale(LC_CTYPE, "");
@@ -938,29 +959,11 @@ int main(int argc, char *argv[])
   XGetWindowAttributes(dpy, root, &attr);
   init_dri(&dri, dpy, root, attr.colormap, False);
 
-  // width and height of input field borders
-  strgadw=win_width-70;
-  strgadh=(fh=dri.dri_Ascent+dri.dri_Descent)+6;
-
-  butw=XmbTextEscapement(dri.dri_FontSet, ok_txt, strlen(ok_txt))+2*BUT_HSPACE;
-  w2=XmbTextEscapement(dri.dri_FontSet, cancel_txt, strlen(cancel_txt))+2*BUT_HSPACE;
-  if(w2>butw)
-    butw=w2;
-
-  mainw=2*(BUT_SIDE+butw)+BUT_SIDE;
-  w2=XmbTextEscapement(dri.dri_FontSet, drawer_txt, strlen(drawer_txt))+2*TEXT_SIDE;
-  if(w2>mainw)
-    mainw=w2;
-
-  w2=strgadw+XmbTextEscapement(dri.dri_FontSet, file_txt, strlen(file_txt))+
-  2*TEXT_SIDE+2*BUT_SIDE+butw;
-  if(w2>mainw)
-    mainw=w2;
-
-  mainh=3*fh+TOP_SPACE+BOT_SPACE+2*INT_SPACE+2*BUT_VSPACE;
-
   int s_middle_x = (screen_width/2) - win_width/2;
   int s_middle_y = (screen_height/2) - win_height;
+  
+  strgadw=win_width-70;
+  strgadh=(fh=dri.dri_Ascent+dri.dri_Descent)+6;
 
   mainwin=XCreateSimpleWindow(dpy, root, s_middle_x, s_middle_y, win_width, win_height, 0,
                               dri.dri_Pens[SHADOWPEN],
@@ -978,34 +981,30 @@ int main(int argc, char *argv[])
                              dri.dri_Pens[SHADOWPEN],
                              dri.dri_Pens[BACKGROUNDPEN]);
 
-  b_ok=XCreateSimpleWindow(dpy, mainwin,BUT_SIDE,
-                           mainh-BOT_SPACE-2*BUT_VSPACE-fh,
-                           butw, fh+2*BUT_VSPACE, 0,
-                           dri.dri_Pens[SHADOWPEN],
-                           dri.dri_Pens[BACKGROUNDPEN]);
+  
 
-  b_vol=XCreateSimpleWindow(dpy, mainwin, BUT_SIDE,
-                            mainh-BOT_SPACE-2*BUT_VSPACE-fh,
-                            butw, fh+2*BUT_VSPACE, 0,
-                            dri.dri_Pens[SHADOWPEN],
-                            dri.dri_Pens[BACKGROUNDPEN]);
-
-  b_par=XCreateSimpleWindow(dpy, mainwin, BUT_SIDE,
-                            mainh-BOT_SPACE-2*BUT_VSPACE-fh,
-                            butw, fh+2*BUT_VSPACE, 0,
-                            dri.dri_Pens[SHADOWPEN],
-                            dri.dri_Pens[BACKGROUNDPEN]);
-
-  b_cancel=XCreateSimpleWindow(dpy, mainwin, BUT_SIDE,
-                               mainh-BOT_SPACE-2*BUT_VSPACE-fh,
-                               butw, fh+2*BUT_VSPACE, 0,
-                               dri.dri_Pens[SHADOWPEN],
-                               dri.dri_Pens[BACKGROUNDPEN]);
-  button[0]=None;
-  button[1]=b_ok;
-  button[2]=b_vol;
-  button[3]=b_par;
-  button[4]=b_cancel;
+  
+//   b_ok=XCreateSimpleWindow(dpy, mainwin,0, win_height-25, 50, 25, 0,
+//                            dri.dri_Pens[SHADOWPEN],
+//                            dri.dri_Pens[BACKGROUNDPEN]);
+// 
+//   b_vol=XCreateSimpleWindow(dpy, mainwin, 50, win_height-30, 50, 25, 0,
+//                             dri.dri_Pens[SHADOWPEN],
+//                             dri.dri_Pens[BACKGROUNDPEN]);
+// 
+//   b_par=XCreateSimpleWindow(dpy, mainwin, 100, win_height-30, 50, 25, 0,
+//                             dri.dri_Pens[SHADOWPEN],
+//                             dri.dri_Pens[BACKGROUNDPEN]);
+// 
+//   b_cancel=XCreateSimpleWindow(dpy, mainwin, 150, win_height-25, 50, 25, 0,
+//                                dri.dri_Pens[SHADOWPEN],
+//                                dri.dri_Pens[BACKGROUNDPEN]);
+  
+//   buttons[0]=None;
+//   buttons[1]=b_ok;
+//   buttons[2]=b_vol;
+//   buttons[3]=b_par;
+//   buttons[4]=b_cancel;
 
   //totalbuttons = sizeof button / sizeof button[0];
   //printf("totalbuttonlength=%d\n",(int)(sizeof button / sizeof button[0]));
@@ -1013,15 +1012,32 @@ int main(int argc, char *argv[])
   XSelectInput(dpy, List, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, IFdir, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, IFfile, ExposureMask|StructureNotifyMask|ButtonPressMask);
-  XSelectInput(dpy, b_ok, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
-  XSelectInput(dpy, b_vol, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
-  XSelectInput(dpy, b_par, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
-  XSelectInput(dpy, b_cancel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  //XSelectInput(dpy, b_ok, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  //XSelectInput(dpy, b_vol, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  //XSelectInput(dpy, b_par, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
+  //XSelectInput(dpy, b_cancel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
+  
+  
+  b_ok = *button_create(dpy, &dri, gc, mainwin, 0, win_height-35 ); 
+  button_set_text(&b_ok, ok_txt);
+  
+  b_vol = *button_create(dpy, &dri, gc, mainwin, 80, win_height-35 ); 
+  button_set_text(&b_vol, vol_txt);
+  
+  b_par = *button_create(dpy, &dri, gc, mainwin, 160, win_height-35 ); 
+  button_set_text(&b_par, par_txt);
+  
+  b_cancel = *button_create(dpy, &dri, gc, mainwin, 240, win_height-35 ); 
+  button_set_text(&b_cancel, cancel_txt);
+  
+  
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
-
-
+  XMapSubwindows(dpy, mainwin);
+  XMapRaised(dpy, mainwin);
+  
+/*
   if ((p = XSetLocaleModifiers("@im=none")) != NULL && *p)
     xim = XOpenIM(dpy, NULL, NULL, NULL);
   if (!xim)
@@ -1037,7 +1053,7 @@ int main(int argc, char *argv[])
   }
   if (!xic)
     exit(1);
-
+*/
   
   SetProtocols(mainwin);
   SetMenu(mainwin);
@@ -1061,8 +1077,6 @@ int main(int argc, char *argv[])
                    &txtprop2, argv, argc,
                    &size_hints, NULL, NULL);
 
-  input=IFdir;
-
   char homedir[50];
   snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
 
@@ -1085,8 +1099,7 @@ int main(int argc, char *argv[])
   got_path(homedir); // build files listing
   //got_path(homedir); // two time's the charm
   
-  XMapSubwindows(dpy, mainwin);
-  XMapRaised(dpy, mainwin);
+
 
   for(;;) {
     XEvent event;
@@ -1100,238 +1113,293 @@ int main(int argc, char *argv[])
         case Expose:
 //           if(!event.xexpose.count) 
 //           {
-            if(event.xexpose.window == List) 
-            {
-              refresh_str_text_dir(); // inputfield was covered, refresh it
-              refresh_list();
-            }
-            if(event.xexpose.window == IFdir) 
-            {
-              input=IFdir;
-              refresh_IFborders(IFdir);
-            }
-            if(event.xexpose.window == IFfile) 
-            {
-              input=IFfile;
-              refresh_IFborders(IFfile);
-            }
-            if(event.xexpose.window == b_ok) 
-            {
-              refresh_button(b_ok, ok_txt, 1);
-            }
-            if(event.xexpose.window == b_vol) 
-            {
-              refresh_button(b_vol, vol_txt, 2);
-            }
-            if(event.xexpose.window == b_par) 
-            {
-              refresh_button(b_par, par_txt, 3);
-            }
-            if(event.xexpose.window == b_cancel) 
-            {
-              refresh_button(b_cancel, cancel_txt, 4);
-            }
-            if(event.xexpose.window == mainwin) 
-            {
-              refresh_main();
-            }
-          //}
-        case ConfigureNotify:
-          if(event.xconfigure.window == mainwin) 
+          if(event.xexpose.window == mainwin) 
           {
-            // make save and cancel button to stay at bottom of window when it gets resized
-            win_x=event.xconfigure.x;
-            win_y=event.xconfigure.y;
-            if (event.xconfigure.width < 255) 
-            {
-              win_width=255;
-            }
-            else 
-            {
-              win_width=event.xconfigure.width;
-            }
-            win_height=event.xconfigure.height;
-            strgadw=win_width-70;
-            list_width = win_width-20;
-            list_height = win_height-95;
-            IFdir_width = win_width-70;
-            IFfile_width = win_width-70;
-            XMoveWindow(dpy, IFdir, 60, win_height-73);
-            XMoveWindow(dpy, IFfile, 60, win_height-50);
-            XMoveWindow(dpy, b_ok, button_spread(0,4)+5, event.xconfigure.height - 25);       // 10
-            XMoveWindow(dpy, b_vol, button_spread(1,4)+5, event.xconfigure.height - 25);      // 70
-            XMoveWindow(dpy, b_par, button_spread(2,4)+5, event.xconfigure.height - 25);     // 130
-            XMoveWindow(dpy, b_cancel,button_spread(3,4)+5 , event.xconfigure.height - 25); // 190
-            XResizeWindow(dpy,List,list_width, list_height);
-            XResizeWindow(dpy,IFdir,IFdir_width, IFdir_height);
-            XResizeWindow(dpy,IFfile,IFfile_width, IFfile_height);
+            refresh_main();
+          }
+          if(event.xexpose.window == List) 
+          {
+            refresh_str_text_dir(); // inputfield was covered, refresh it
+            refresh_list();
+          }
+          if(event.xexpose.window == IFdir) 
+          {
+            input=IFdir;
+            refresh_IFborders(IFdir);
+          }
+          if(event.xexpose.window == IFfile) 
+          {
+            input=IFfile;
+            refresh_IFborders(IFfile);
+          }
+          if(event.xexpose.window == b_ok.w) 
+          {
+            button_refresh(&b_ok);
+          }
+          if(event.xexpose.window == b_vol.w) 
+          {
+            //refresh_button(b_vol, vol_txt, 2);
+            button_refresh(&b_vol);
+          }
+          if(event.xexpose.window == b_par.w) 
+          {
+            //refresh_button(b_par, par_txt, 3);
+            button_refresh(&b_par);
+          }
+          if(event.xexpose.window == b_cancel.w) 
+          {
+            //refresh_button(b_cancel, cancel_txt, 4);
+            button_refresh(&b_cancel);
+          }
+
+        //}
+      case ConfigureNotify:
+        if(event.xconfigure.window == mainwin) 
+        {
+          // make save and cancel button to stay at bottom of window when it gets resized
+          win_x=event.xconfigure.x;
+          win_y=event.xconfigure.y;
+          if (event.xconfigure.width < 255) 
+          {
+            win_width=255;
+          }
+          else 
+          {
+            win_width=event.xconfigure.width;
+          }
+          win_height=event.xconfigure.height;
+          strgadw=win_width-70;
+          list_width = win_width-20;
+          list_height = win_height-95;
+          IFdir_width = win_width-70;
+          IFfile_width = win_width-70;
+          XMoveWindow(dpy, IFdir, 60, win_height-73);
+          XMoveWindow(dpy, IFfile, 60, win_height-50);
+          XMoveWindow(dpy, b_ok.w, button_spread(0,4)+5, event.xconfigure.height - 22);       // 10
+          XMoveWindow(dpy, b_vol.w, button_spread(1,4)+5, event.xconfigure.height - 22);      // 70
+          XMoveWindow(dpy, b_par.w, button_spread(2,4)+5, event.xconfigure.height - 22);     // 130
+          XMoveWindow(dpy, b_cancel.w,button_spread(3,4)+5 , event.xconfigure.height - 22); // 190
+          XResizeWindow(dpy,List,list_width, list_height);
+          XResizeWindow(dpy,IFdir,IFdir_width, IFdir_height);
+          XResizeWindow(dpy,IFfile,IFfile_width, IFfile_height);
 //             for(int i=0;i<fse_count;i++)
 //             {
 //               entries[i].width =  win_width;
 //             }
-            //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
-            //finish dynamic resize of file list
-            refresh_list();
-            //list_entries();
+          //printf("ww=%d ww/4=%d wh=%d\n",win_width, win_width/4, win_height);
+          //finish dynamic resize of file list
+          refresh_list();
+          //list_entries();
+          refresh_str_text_dir();
+          //refresh_main();
+        }
+        break;
+      case LeaveNotify:
+          break;
+      case EnterNotify:
+          break;
+      case ButtonPress:
+        if(event.xbutton.button==Button1) 
+        {
+          // deactivate IFdir by clicking anywhere else
+          if(stractive_dir && event.xbutton.window!=IFdir) 
+          {
+            stractive_dir=0;
             refresh_str_text_dir();
-            //refresh_main();
           }
-          break;
-        case LeaveNotify:
-            break;
-        case EnterNotify:
-            break;
-        case ButtonPress:
-          if(event.xbutton.button==Button1) 
+          if(event.xbutton.window == b_ok.w) 
           {
-            // deactivate IFdir by clicking anywhere else
-            if(stractive_dir && event.xbutton.window!=IFdir) 
-            {
-              stractive_dir=0;
-              refresh_str_text_dir();
-            }
-            if((c=getchoice(event.xbutton.window))) 
-            {
-              abortchoice();
-              depressed=1;
-              printf("buttonpress_getchoice=%d\n\n",c);
-              toggle(selected=c);
-              //printf("selected=%d\n",c);
-            }
-            if(event.xbutton.window==IFdir)
-            {
-              strbutton_dir(&event.xbutton);
-            }
+            //abortchoice();
+            printf("buttonpress: OK \n");
+            button_set_depressed(&b_ok, 1);
+            button_toggle(&b_ok);
+            //depressed=1;
+            //printf("buttonpress_getchoice=%d\n\n",c);
+            ///toggle(selected=c);
+            //printf("selected=%d\n",c);
           }
-          if(event.xbutton.button==Button4)
-          {
-            if (!(offset_y > -5))
-            {
-              offset_y+=5;
-              list_entries();
-            }
-            if (offset_y > -5)
-            {
-              offset_y = -5;
-            }
-          }
-          if(event.xbutton.button==Button5)
-          {
-            if (entries_count*16 > list_height)
-            {
-              offset_y-=5;
-              list_entries();
-            }
-            if (offset_y < -(entries_count*16 - list_height) )
-            {
-              offset_y = -(entries_count*16 - list_height);
-            }
-          }
-
-          for(int i=0; i<entries_count;i++)
-          {
-            if(event.xbutton.window == fse_arr[i].win && event.xbutton.button==Button1)
-            {
-              printf("selected: path=%s file=%s\n",fse_arr[i].path, fse_arr[i].name);
-              if (fse_arr[i].pmA == fse_arr[i].pm1) 
-              { 
-                fse_arr[i].pmA = fse_arr[i].pm2; 
-              }
-              else if (fse_arr[i].pmA == fse_arr[i].pm2) 
-              { 
-                fse_arr[i].pmA = fse_arr[i].pm1; 
-              }
-              
-              XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
-              XClearWindow(dpy,fse_arr[i].win);
-              
-              if(strcmp(fse_arr[i].type,"directory")==0)
-              {
-                got_path(fse_arr[i].path);
-              }
-              else if(strcmp(fse_arr[i].type,"file")==0)
-              {
-                got_file(fse_arr[i].path,fse_arr[i].name);
-              }
-            }
-          }
-
-          break;
-        case ButtonRelease:
-          if(event.xbutton.button==Button1 && selected) 
-          {
-            if(depressed) 
-            {
-              endchoice();
-            }
-            else 
-            {
-              abortchoice();
-            }
-          }
-          break;
-        case KeyPress:
-          if(stractive_dir) 
+          if(event.xbutton.window == b_vol.w) 
           { 
-            strkey_dir(&event.xkey);
+            printf("buttonpress: VOL \n");
+            button_set_depressed(&b_vol, 1);
+            button_toggle(&b_vol);
           }
-          if(stractive_file) 
+          if(event.xbutton.window == b_par.w) 
           { 
-            strkey_file(&event.xkey); 
+            printf("buttonpress: PAR \n");
+            button_set_depressed(&b_par, 1);
+            button_toggle(&b_par);
           }
-          //if(event.xkey.keycode){}
-          break;
-        case KeyRelease:
-          printf("key got released\n");
-          break;
-        case ClientMessage:
-          if (event.xclient.message_type == amiwm_menu &&
-            event.xclient.format == 32) 
-          {
-            unsigned int menunum = event.xclient.data.l[0];
-            unsigned menu = menunum & 0x1f;
-            unsigned item = (menunum >> 5) & 0x3f;
-            unsigned subitem = (menunum >> 11) & 0x1f;
-            switch (menu) 
-            {
-              case 0:
-                switch (item) 
-                {
-                  case 0:
-                    printf("case 0\n");
-                    break;
-                  case 1:
-                    printf("quitting\n");
-                    term_dri(&dri, dpy, attr.colormap);
-                    exit(0);
-                    break;
-                }
-                break;
-              case 1:
-                switch (item) 
-                {
-                  case 0:
-                    #ifdef AMIGAOS
-                    system("RUN <>NIL: requestchoice menutest  ABOUT_STRING  Ok");
-                    #else
-                    (void)! system("requestchoice >/dev/null menutest ABOUT_STRING Ok &");
-                    #endif
-                    break;
-                }
-                break;
-            }
-          } 
-          else if (event.xclient.message_type == wm_protocols &&
-            event.xclient.format == 32 &&
-            event.xclient.data.l[0] == wm_delete) 
-          {
-            printf("quitting\n");
-            term_dri(&dri, dpy, attr.colormap);
-            exit(0);
+          if(event.xbutton.window == b_cancel.w) 
+          { 
+            printf("buttonpress: CANCEL \n");
+            button_set_depressed(&b_cancel, 1);
+            button_toggle(&b_cancel);
           }
-          break;
+          
+          if(event.xbutton.window==IFdir)
+          {
+            strbutton_dir(&event.xbutton);
+          }
+        }
+        if(event.xbutton.button==Button4)
+        {
+          if (!(offset_y > -5))
+          {
+            offset_y+=5;
+            list_entries();
+          }
+          if (offset_y > -5)
+          {
+            offset_y = -5;
+          }
+        }
+        if(event.xbutton.button==Button5)
+        {
+          if (entries_count*16 > list_height)
+          {
+            offset_y-=5;
+            list_entries();
+          }
+          if (offset_y < -(entries_count*16 - list_height) )
+          {
+            offset_y = -(entries_count*16 - list_height);
+          }
+        }
 
-      }
+        for(int i=0; i<entries_count;i++)
+        {
+          if(event.xbutton.window == fse_arr[i].win && event.xbutton.button==Button1)
+          {
+            printf("selected: path=%s file=%s\n",fse_arr[i].path, fse_arr[i].name);
+            if (fse_arr[i].pmA == fse_arr[i].pm1) 
+            { 
+              fse_arr[i].pmA = fse_arr[i].pm2; 
+            }
+            else if (fse_arr[i].pmA == fse_arr[i].pm2) 
+            { 
+              fse_arr[i].pmA = fse_arr[i].pm1; 
+            }
+            
+            XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
+            XClearWindow(dpy,fse_arr[i].win);
+            
+            if(strcmp(fse_arr[i].type,"directory")==0)
+            {
+              got_path(fse_arr[i].path);
+            }
+            else if(strcmp(fse_arr[i].type,"file")==0)
+            {
+              got_file(fse_arr[i].path,fse_arr[i].name);
+            }
+          }
+        }
+
+        break;
+      case ButtonRelease:
+        
+
+          
+        if(event.xbutton.button==Button1) 
+        {
+          if(event.xbutton.window == b_ok.w) 
+          {
+            button_set_depressed(&b_ok, 0);
+            button_toggle(&b_ok);
+            endchoice(1);
+          }
+          
+          if(event.xbutton.window == b_vol.w) 
+          {
+            button_set_depressed(&b_vol, 0);
+            button_toggle(&b_vol);
+            endchoice(2);
+          }
+          
+          if(event.xbutton.window == b_par.w) 
+          {
+            button_set_depressed(&b_par, 0);
+            button_toggle(&b_par);
+            endchoice(3);
+          }
+          if(event.xbutton.window == b_cancel.w) 
+          {
+            button_set_depressed(&b_cancel, 0);
+            button_toggle(&b_cancel);
+            endchoice(4);
+          }
+//           if(depressed) 
+//           {
+//             endchoice();
+//           }
+//           else 
+//           {
+//             abortchoice();
+//           }
+        }
+        break;
+      case KeyPress:
+        if(stractive_dir) 
+        { 
+          strkey_dir(&event.xkey);
+        }
+        if(stractive_file) 
+        { 
+          strkey_file(&event.xkey); 
+        }
+        //if(event.xkey.keycode){}
+        break;
+      case KeyRelease:
+        printf("key got released\n");
+        break;
+      case ClientMessage:
+        if (event.xclient.message_type == amiwm_menu &&
+          event.xclient.format == 32) 
+        {
+          unsigned int menunum = event.xclient.data.l[0];
+          unsigned menu = menunum & 0x1f;
+          unsigned item = (menunum >> 5) & 0x3f;
+          unsigned subitem = (menunum >> 11) & 0x1f;
+          switch (menu) 
+          {
+            case 0:
+              switch (item) 
+              {
+                case 0:
+                  printf("case 0\n");
+                  break;
+                case 1:
+                  printf("quitting\n");
+                  term_dri(&dri, dpy, attr.colormap);
+                  exit(0);
+                  break;
+              }
+              break;
+            case 1:
+              switch (item) 
+              {
+                case 0:
+                  #ifdef AMIGAOS
+                  system("RUN <>NIL: requestchoice menutest  ABOUT_STRING  Ok");
+                  #else
+                  (void)! system("requestchoice >/dev/null menutest ABOUT_STRING Ok &");
+                  #endif
+                  break;
+              }
+              break;
+          }
+        } 
+        else if (event.xclient.message_type == wm_protocols &&
+          event.xclient.format == 32 &&
+          event.xclient.data.l[0] == wm_delete) 
+        {
+          printf("quitting\n");
+          term_dri(&dri, dpy, attr.colormap);
+          exit(0);
+        }
+        break;
+
     }
+  }
 //}
 }

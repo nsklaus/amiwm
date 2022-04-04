@@ -37,7 +37,7 @@ struct DrawInfo
 #else
     CARD32      dri_Reserved[2];        /* avoid recompilation ;^)      */
 #endif
-};
+}; typedef struct DrawInfo DrawInfo;
 
 #define DETAILPEN        (0x0000)     /* compatible Intuition rendering pens */
 #define BLOCKPEN         (0x0001)     /* compatible Intuition rendering pens */

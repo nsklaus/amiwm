@@ -20,12 +20,12 @@ LN_S = ln -s
 OBJS  = drawinfo.o module.o broker.o eventdispatcher.o mdscreen.o \
 	mdicon.o mdwindow.o kbdsupport.o hotkey.o \
 	lists.o readargs.o iconlib.o iconutil.o error.o strutil.o \
-	iffparse.o
+	iffparse.o gadget_button.o
 
 SRCS = drawinfo.c module.c broker.c eventdispatcher.c mdscreen.c \
 	mdicon.c mdwindow.c kbdsupport.c hotkey.c \
 	lists.c readargs.c iconlib.c iconutil.c error.c strutil.c \
-	iffparse.c
+	iffparse.c gadget_button.c
 
 all : libami.a
 

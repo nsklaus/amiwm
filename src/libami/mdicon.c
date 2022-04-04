@@ -3,8 +3,8 @@
 #include <string.h>
 
 #include "libami.h"
-#include "module.h"
-#include "alloc.h"
+#include "../module.h"
+#include "../alloc.h"
 
 Window md_create_appicon(Window p, int x, int y, char *name,
 			 Pixmap pm1, Pixmap pm2, Pixmap pmm)
