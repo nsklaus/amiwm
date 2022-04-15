@@ -39,13 +39,16 @@ static int stractive_dir=0, selected_dir=0, depressed_dir=0;
 static int selected_file=0, stractive_file=0, depressed_file=0;
 // char dir_path[MAX_CMD_CHARS+1];
 // char file_path[MAX_CMD_CHARS+1];
-char *dir_path; // path displayed in directory input field
+//char *dir_path; // path displayed in directory input field
+char dir_path[MAX_CMD_CHARS+1];
 int buf_len_dir=0;
 int buf_len_file=0;
 int cur_pos_dir=0;
+int cur_char_dir=0;
 int cur_pos_file=0;
 int left_pos_dir=0;
 int left_pos_file=0;
+int cur_width=0;
 int cur_x=6;
 
 char *progname;
@@ -91,8 +94,32 @@ char *parent_dir="";
 static XIM xim = (XIM) NULL;
 static XIC xic = (XIC) NULL;
 
+// prototypes forward declarations
 void refresh_IFborders(Window win);
+void build_path(char *path);
 
+struct fs_path
+{
+  char elem;    // actual char
+  int posx;     // x start coordinate in pixel of char
+  int pwidth;   // width in pixel
+  int arrpos;
+}; typedef struct fs_path fs_path;
+
+fs_path *fsp_arr;       // pathname array 
+int alloc_pcount = 20;  // inital array size (20 chars)
+int pchar_count;        // total amount of chars in path string 
+
+struct fs_file
+{
+  char *elem;   // actual char
+  int posx;     // x start coordinate in pixel of char
+  int pwidth;   // width in pixel
+}; typedef struct fs_file fs_file;
+
+fs_file *fsf_arr;       // filename array
+int alloc_fcount = 20;  // inital array size (20 chars)
+int fchar_count;        // total amount of chars in file string 
 
 struct fs_entity
 {
@@ -112,7 +139,7 @@ struct fs_entity
 }; typedef struct fs_entity fs_entity;
 
 fs_entity *fse_arr; // array for normal files 
-int alloc_ecount = 20; // array size 
+int alloc_ecount = 20; // entity count for array size allocation
 int entries_count; // total amount of entries per dir 
 
 void clean_reset()
@@ -135,9 +162,16 @@ void clean_reset()
   offset_y = 0;      // clear scroll offset
   free(fse_arr);
   
+  pchar_count=0;
+  alloc_pcount=0;
+  free(fsp_arr);
+  
   // restart fresh allocation of struct in array
   alloc_ecount = 20;
   fse_arr = calloc(alloc_ecount, sizeof(fs_entity)); 
+  
+  alloc_pcount=20;
+  fsp_arr = calloc(alloc_pcount, sizeof(fs_path)); 
 }
 
 static void SetMenu(Window w)
@@ -159,8 +193,9 @@ static void SetProtocols(Window w)
                   (char *)&wm_delete, 1);
 }
 
-int function_name(const void *arg1, const void *arg2)
+int reorderqsort(const void *arg1, const void *arg2)
 {
+  // reorder array alphabetically and put directories first
   const fs_entity *entity1 = arg1; const fs_entity *entity2 = arg2;
   if(strcmp(entity1->type,entity2->type)==0)
     return strcmp(entity1->name, entity2->name );
@@ -324,7 +359,27 @@ void getlabels(char *path)
       }
     }
   }
-  qsort(fse_arr, entries_count, sizeof(fs_entity), function_name);
+  qsort(fse_arr, entries_count, sizeof(fs_entity), reorderqsort);
+}
+
+void build_path(char *path) // sample: "/home/klaus/"
+{
+  printf("build_path: path=%s\n",path);
+  for (int i =0;i<strlen(path);i++)
+  {
+    if (pchar_count==alloc_pcount)
+    {
+      alloc_pcount+=(alloc_pcount/2);
+      fsp_arr = realloc(fsp_arr,alloc_pcount * sizeof(fs_path));
+      printf("new alloc_pcount=%d\n",alloc_pcount);
+    }
+    fsp_arr[i].elem = path[i];
+    fsp_arr[i].pwidth=XmbTextEscapement(dri.dri_FontSet, &path[i], 1); 
+    fsp_arr[i].posx=XmbTextEscapement(dri.dri_FontSet, path, i);
+    printf("fsp_arr[%d].elem=%c  pwidth=%d posx=%d\n",i,fsp_arr[i].elem, fsp_arr[i].pwidth,fsp_arr[i].posx);
+    fsp_arr[i].arrpos = pchar_count;
+    pchar_count++;
+  }
 }
 
 void list_entries()
@@ -370,6 +425,8 @@ void build_entries()
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
+      // test transparency
+      //XSetForeground(dpy, gc,  0x10101010);
       XDrawImageString(dpy, fse_arr[i].pm1, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
       XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
@@ -418,47 +475,8 @@ int getchoice(Window w)
     return 4;
   else
     return 0;
-//   int i;
-//   int totalbuttons = (int)(sizeof button / sizeof button[0]);
-//   for(i=1; i<totalbuttons; i++)
-//   {
-//     if(button[i]==w)
-//     {
-//       printf("button id=%d\n",i);
-//       return i;
-//     }
-//   }
-//   return 0;
-  
-//   int i;
-//   for (i=1; i<3; i++) 
-//   {
-//     if (buttons[i]->w == w)
-//       return i;
-//   }
-     //return 0;
 }
 
-// refresh buttons in window 
-// void refresh_button(Window w, const char *txt, int idx)
-// {
-//   printf("refresh_button \n");
-//   int h=25;
-//   int l=strlen(txt);
-//   int tw=XmbTextEscapement(dri.dri_FontSet, txt, l);
-//   XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
-//   XDrawString(dpy, w, gc, (butw-tw)>>1, dri.dri_Ascent+BUT_VSPACE, txt, l);
-//   XSetForeground(dpy, gc, dri.dri_Pens[(selected==idx && depressed)? SHADOWPEN:SHINEPEN]);
-//   XDrawLine(dpy, w, gc, 0, 0, butw-2, 0);
-//   XDrawLine(dpy, w, gc, 0, 0, 0, h-2);
-//   XSetForeground(dpy, gc, dri.dri_Pens[(selected==idx && depressed)? SHINEPEN:SHADOWPEN]);
-//   XDrawLine(dpy, w, gc, 1, h-1, butw-1, h-1);
-//   XDrawLine(dpy, w, gc, butw-1, 1, butw-1, h-1);
-//   XSetForeground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
-//   XDrawPoint(dpy, w, gc, butw-1, 0);
-//   XDrawPoint(dpy, w, gc, 0, h-1);
-//   printf("refresh_idx=%d\n",idx);
-// }
 
 /** refresh window background */
 static void refresh_main(void)
@@ -504,7 +522,8 @@ void refresh_str_text_dir()
   if (stractive_dir)
   {
     XSetForeground(dpy, gc, ~0);
-    XFillRectangle(dpy, IFdir, gc, cur_pos_dir, 3, 8, fh);
+    XFillRectangle(dpy, IFdir, gc, cur_pos_dir+6, 3, cur_width, fh);
+    printf("cur_pos_dir=%d cur_width=%d\n",cur_pos_dir,cur_width);
   }
   refresh_IFborders(IFdir);
   
@@ -561,21 +580,41 @@ void refresh_str_text_dir()
 */
 }
 
-
+int n=1;
 /** work with text string entered */
 void strkey_dir(XKeyEvent *e)
 {
-  //void endchoice(void);
+/*  
+  void endchoice(void);
+  Status status = 0;
+  KeySym ks;
+  char *buf_dir = strdup(current_dir);
+  char buf[256] = {};
+  char *tempo=malloc(256);
+  
+  Xutf8LookupString(xic, e, tempo, sizeof(tempo) - 1, &ks, &status);
+
+  if(status == XLookupBoth)
+  {
+    switch(ks) 
+    {
+    case XK_BackSpace:
+
+      break;
+    }
+      current_dir=tempo;
+    
+  }
+  refresh_str_text_dir();*/
   Status stat;
   KeySym ks;
-  char *buf_dir=current_dir;
+  char buf_dir[256];
+  char temp_char;
 
-  
+  //printf("buf_dir=%s current_dir=%s\n",buf_dir,current_dir);
   int x, i, n;
-  
   n=XmbLookupString(xic, e, buf_dir, sizeof(buf_dir), &ks, &stat);
   if(stat == XLookupKeySym || stat == XLookupBoth)
-    
     switch(ks) 
     {
       case XK_Return:
@@ -584,159 +623,124 @@ void strkey_dir(XKeyEvent *e)
         //endchoice();
         break;
       case XK_Left:
-        
+
         break;
       case XK_Right:
-        if(cur_pos_dir<buf_len_dir) 
-        {
-          int l=mbrlen(dir_path+cur_pos_dir, buf_len_dir-cur_pos_dir, NULL);
-          if(l>0)
-            cur_pos_dir+=l;
-        }
-        break;
-      default:
-        if(stat == XLookupBoth)
-          stat = XLookupChars;
-    }
-//   int string_length=XmbTextEscapement(dri.dri_FontSet, buf_dir, strlen(buf_dir)); 
-//   XSetForeground(dpy, gc, ~0);
-//   XFillRectangle(dpy, IFdir, gc, string_length, 3, 4, fh);
-  refresh_str_text_dir();
-  
-  /*
-  printf("cur_x=%d  cur_pos_dir%d\n",cur_x, cur_pos_dir);
-  void endchoice(void);
-  Status stat;
-  KeySym ks;
 
-  //char buf[256];
-
-  char buf_dir[256];
-  for(int i=0;i<strlen(current_dir);i++)
-  {
-    buf_dir[i] = current_dir[i];
-    
-  }  
-  printf("buf_dir=%s current_dir=%s\n",buf_dir,current_dir);
-
-  int x, i, n;
-  n=XmbLookupString(xic, e, buf_dir, sizeof(buf_dir), &ks, &stat);
-  if(stat == XLookupKeySym || stat == XLookupBoth)
-
-    switch(ks) {
-      case XK_Return:
-      case XK_Linefeed:
-        selected=1;
-        endchoice();
         break;
-      case XK_Left:
-        if(cur_pos_dir) {
-          int p=cur_pos_dir;
-          while(p>0) {
-            --p;
-            if(((int)mbrlen(dir_path+p, cur_pos_dir-p, NULL))>0) {
-              cur_pos_dir=p;
-              break;
-            }
-          }
-        }
+      case XK_Begin: 
         break;
-      case XK_Right:
-        if(cur_pos_dir<buf_len_dir) {
-          int l=mbrlen(dir_path+cur_pos_dir, buf_len_dir-cur_pos_dir, NULL);
-          if(l>0)
-            cur_pos_dir+=l;
-        }
-        break;
-      case XK_Begin:
-        cur_pos_dir=0;
-        break;
-      case XK_End:
-        cur_pos_dir=buf_len_dir;
+      case XK_End: 
         break;
       case XK_Delete:
-        if(cur_pos_dir<buf_len_dir) {
-          int l=1;
-          l=mbrlen(dir_path+cur_pos_dir, buf_len_dir-cur_pos_dir, NULL);
-          if(l<=0)
-            break;
-          buf_len_dir-=l;
-          for(x=cur_pos_dir; x<buf_len_dir; x++){
-            dir_path[x]=dir_path[x+l];
+        
+        for(int i =0; i<pchar_count;i++ )
+        {
+          if (cur_pos_dir==fsp_arr[i].posx)
+          {
+            printf("char at pos=%c posx=%d pwidth=%d arrpos=%d\n",fsp_arr[i].elem, fsp_arr[i].posx, fsp_arr[i].pwidth, fsp_arr[i].arrpos);
           }
-          dir_path[x] = 0;
         }
-        else {
-          XBell(dpy, 100);
-        }
+        
         break;
       case XK_BackSpace:
-        if(cur_pos_dir>0) {
-          int l=1;
-          int p=cur_pos_dir;
-          while(p>0) {
-            --p;
-            if(((int)mbrlen(dir_path+p, cur_pos_dir-p, NULL))>0) {
-              l=cur_pos_dir-p;
-              break;
-            }
-          }
-          buf_len_dir-=l;
-          for(x=(cur_pos_dir-=l); x<buf_len_dir; x++) {
-            dir_path[x]=dir_path[x+l];
-          }
-          dir_path[x] = 0;
+        if(cur_char_dir>-1)
+        {
+          char *tempo = alloca(cur_char_dir);
+          memcpy(tempo, current_dir,cur_char_dir);
+          tempo[cur_char_dir]='\0';
+          printf("tempo=%s\n",tempo);
         }
-        else {
-          XBell(dpy, 100);
-        }
+
         break;
       default:
         if(stat == XLookupBoth)
           stat = XLookupChars;
     }
-  if(stat == XLookupChars) {
-    for(i=0; i<n && buf_len_dir<MAX_CMD_CHARS; i++) {
-      for(x=buf_len_dir; x>cur_pos_dir; --x)
-        dir_path[x]=dir_path[x-1];
-      dir_path[cur_pos_dir++]=buf_dir[i];
-      buf_len_dir++;
-    }
-    if(i<n)
-      XBell(dpy, 100);
-  }
-  if(cur_pos_dir<left_pos_dir)
-    left_pos_dir=cur_pos_dir;
-  cur_x=6;
-
-  if(cur_pos_dir>left_pos_dir)
-    cur_x+=XmbTextEscapement(dri.dri_FontSet, dir_path+left_pos_dir, cur_pos_dir-left_pos_dir);
-  if(cur_pos_dir<buf_len_dir) {
-    int l=mbrlen(dir_path+cur_pos_dir, buf_len_dir-cur_pos_dir, NULL);
-    x=XmbTextEscapement(dri.dri_FontSet, dir_path+cur_pos_dir, l);
-  } else
-    x=XExtentsOfFontSet(dri.dri_FontSet)->max_logical_extent.width;
-
-  if((x+=cur_x-(strgadw-6))>0) {
-    cur_x-=x;
-    while(x>0) {
-      int l=mbrlen(dir_path+left_pos_dir, buf_len_dir-left_pos_dir, NULL);
-      x-=XmbTextEscapement(dri.dri_FontSet, dir_path+left_pos_dir, l);
-      left_pos_dir += l;
-    }
-    cur_x+=x;
+    
+  if(stat == XLookupChars) 
+  {
+    strcat(dir_path, buf_dir);
+    printf("Got chars: (%s)\n", dir_path);
   }
   refresh_str_text_dir();
-  */
 }
 
 /** click on input field (stractive) */
 void strbutton_dir(XButtonEvent *e)
 {
+  int currentw, totalw, l=1;
   printf("entering strbutton_dir\n");
   stractive_dir=1;
+
+  int temp=0;
+  int char_width=0;
+//   cur_pos_dir=strlen(current_dir);
+  int string_length=strlen(current_dir);
+  totalw=XmbTextEscapement(dri.dri_FontSet, current_dir, string_length);
   
-  printf("e.x=%d\n",e->x);
+//   cur_pos_dir=w;
+  for(int i=0;current_dir[i];i++)
+  {
+    currentw=XmbTextEscapement(dri.dri_FontSet, current_dir, i);
+    char_width=mbrlen(&current_dir[i], currentw, NULL);
+    cur_width=XmbTextEscapement(dri.dri_FontSet, &current_dir[i], char_width);
+    printf("char[%d]=%c currentw=%d cur_pos_dir=%d cur_width=%d char_width=%d\n",
+                  i,current_dir[i],currentw, cur_pos_dir, cur_width, char_width);
+  }
+  printf("\n\n");
+  
+  for(int i=0;current_dir[i];i++)
+  {
+
+    currentw=XmbTextEscapement(dri.dri_FontSet, current_dir, i);
+    char_width=mbrlen(&current_dir[i], currentw, NULL);
+    
+    if(totalw>IFdir_width) // string is longer than inputfield
+    {   
+
+      //printf("offset'd current char=%c  cur_width%d\n",current_dir[i],cur_width);
+      if (currentw>=e->x+(totalw-IFdir_width)+14)
+      {
+
+        cur_pos_dir=e->x-10;
+        char_width=mbrlen(&current_dir[i], currentw, NULL);
+        cur_width=XmbTextEscapement(dri.dri_FontSet, &current_dir[i], char_width);
+        cur_char_dir=i;
+        
+        printf("offset'd current char=%c  cur_width%d currentw=%d e->x=%d tw-IFdir_width=%d\n",current_dir[i],cur_width,currentw,e->x,(totalw-IFdir_width)+14);        
+        break;
+      }
+      if (e->x +(totalw-IFdir_width)+14 > totalw) 
+      {
+        cur_pos_dir=IFdir_width-24;
+      }
+
+    }
+    else if(! (totalw>IFdir_width) ) // string is _not_ longer than inputfield
+    {
+      if (currentw>=e->x)
+      {
+        cur_pos_dir=XmbTextEscapement(dri.dri_FontSet, current_dir, i-2);
+        char_width=mbrlen(&current_dir[i-2], currentw, NULL);
+        cur_width=XmbTextEscapement(dri.dri_FontSet, &current_dir[i-2], char_width);
+        cur_char_dir=i-2;
+        
+        printf("case current char=%c  cur_width%d currentw=%d\n",current_dir[i-2],cur_width, currentw);
+        break;
+      }
+      if (e->x>totalw) 
+      {
+        cur_pos_dir=totalw;
+      }
+    }
+
+    temp=currentw;
+    
+  }
+  //temp=0;
+  printf("e.x=%d cur_pos_dir=%d\n",e->x,cur_pos_dir);
+  printf("totalw=%d IFdir_width=%d\n",totalw, IFdir_width);
   refresh_str_text_dir(); 
 }
 
@@ -800,27 +804,6 @@ void set_cursor_pos(int x_pos)
   }
 }
 
-static void toggle(int c)
-{
-//   XSetWindowBackground(dpy, button[c],
-//                        dri.dri_Pens[(depressed&&c==selected)?
-//                        FILLPEN:BACKGROUNDPEN]);
-//   XClearWindow(dpy, button[c]);
-//   refresh_button(button[c], buttxt[c], c);
-  //printf("toggle = %d\n\n",c);
-  if (c == 0)
-    return;
-  //gadget_button_toggle(buttons[c]);
-}
-
-//void toggle_choice(int c)
-//{
-//   XSetWindowBackground(dpy, button[c],
-//                        dri.dri_Pens[(depressed&&c==selected)?
-//                        FILLPEN:BACKGROUNDPEN]);
-//   XClearWindow(dpy, button[c]);
-//   refresh_button(button[c], buttxt[c], c);
-//}
 
 static void abortchoice()
 {
@@ -870,11 +853,13 @@ void got_path(char *path)
     }
     
   clean_reset();
+  build_path(path);
   getlabels(path);
   build_entries();
   list_entries();
   current_dir=path;
   set_cursor_pos(-1); // set cursor to inital position
+  
   refresh_str_text_dir();
   refresh_str_text_file();
   }
@@ -921,16 +906,13 @@ void endchoice(int c)
   }
 }
 
-int button_spread(int pos, int div)
+int button_spread()
 {
-  int result;
-  if (pos*(win_width/div) > pos*60){
-    result = pos*(win_width/div);
-    return result;
-  }
-  else {
-    return pos*60;
-  }
+  int sum_button_width = 55*4;  
+  int total_width_remaining = win_width - sum_button_width;
+  int spacing_witdth = total_width_remaining/3;
+
+  return spacing_witdth;
 }
 
 
@@ -981,33 +963,6 @@ int main(int argc, char *argv[])
                              dri.dri_Pens[SHADOWPEN],
                              dri.dri_Pens[BACKGROUNDPEN]);
 
-  
-
-  
-//   b_ok=XCreateSimpleWindow(dpy, mainwin,0, win_height-25, 50, 25, 0,
-//                            dri.dri_Pens[SHADOWPEN],
-//                            dri.dri_Pens[BACKGROUNDPEN]);
-// 
-//   b_vol=XCreateSimpleWindow(dpy, mainwin, 50, win_height-30, 50, 25, 0,
-//                             dri.dri_Pens[SHADOWPEN],
-//                             dri.dri_Pens[BACKGROUNDPEN]);
-// 
-//   b_par=XCreateSimpleWindow(dpy, mainwin, 100, win_height-30, 50, 25, 0,
-//                             dri.dri_Pens[SHADOWPEN],
-//                             dri.dri_Pens[BACKGROUNDPEN]);
-// 
-//   b_cancel=XCreateSimpleWindow(dpy, mainwin, 150, win_height-25, 50, 25, 0,
-//                                dri.dri_Pens[SHADOWPEN],
-//                                dri.dri_Pens[BACKGROUNDPEN]);
-  
-//   buttons[0]=None;
-//   buttons[1]=b_ok;
-//   buttons[2]=b_vol;
-//   buttons[3]=b_par;
-//   buttons[4]=b_cancel;
-
-  //totalbuttons = sizeof button / sizeof button[0];
-  //printf("totalbuttonlength=%d\n",(int)(sizeof button / sizeof button[0]));
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   XSelectInput(dpy, List, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, IFdir, ExposureMask|StructureNotifyMask|ButtonPressMask);
@@ -1017,7 +972,6 @@ int main(int argc, char *argv[])
   //XSelectInput(dpy, b_par, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   //XSelectInput(dpy, b_cancel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
-  
   
   b_ok = *button_create(dpy, &dri, gc, mainwin, 0, win_height-35 ); 
   button_set_text(&b_ok, ok_txt);
@@ -1031,13 +985,12 @@ int main(int argc, char *argv[])
   b_cancel = *button_create(dpy, &dri, gc, mainwin, 240, win_height-35 ); 
   button_set_text(&b_cancel, cancel_txt);
   
-  
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
 
   XMapSubwindows(dpy, mainwin);
   XMapRaised(dpy, mainwin);
   
-/*
+
   if ((p = XSetLocaleModifiers("@im=none")) != NULL && *p)
     xim = XOpenIM(dpy, NULL, NULL, NULL);
   if (!xim)
@@ -1053,7 +1006,7 @@ int main(int argc, char *argv[])
   }
   if (!xic)
     exit(1);
-*/
+
   
   SetProtocols(mainwin);
   SetMenu(mainwin);
@@ -1099,8 +1052,6 @@ int main(int argc, char *argv[])
   got_path(homedir); // build files listing
   //got_path(homedir); // two time's the charm
   
-
-
   for(;;) {
     XEvent event;
     XNextEvent(dpy, &event);
@@ -1173,12 +1124,20 @@ int main(int argc, char *argv[])
           list_height = win_height-95;
           IFdir_width = win_width-70;
           IFfile_width = win_width-70;
+          //b_vol.x += button_spread();
+          //b_par.x += button_spread();
           XMoveWindow(dpy, IFdir, 60, win_height-73);
           XMoveWindow(dpy, IFfile, 60, win_height-50);
-          XMoveWindow(dpy, b_ok.w, button_spread(0,4)+5, event.xconfigure.height - 22);       // 10
-          XMoveWindow(dpy, b_vol.w, button_spread(1,4)+5, event.xconfigure.height - 22);      // 70
-          XMoveWindow(dpy, b_par.w, button_spread(2,4)+5, event.xconfigure.height - 22);     // 130
-          XMoveWindow(dpy, b_cancel.w,button_spread(3,4)+5 , event.xconfigure.height - 22); // 190
+          
+          XMoveWindow(dpy, b_ok.w, 5, event.xconfigure.height - 22);       // 10
+          
+          XMoveWindow(dpy, b_vol.w, 57+button_spread(), event.xconfigure.height - 22); // 70
+          
+          XMoveWindow(dpy, b_par.w, (55*2)+button_spread()*2, event.xconfigure.height - 22);     // 130
+          printf("b_vol.x=%d b_par=%d\n",b_vol.x, b_par.x);
+          XMoveWindow(dpy, b_cancel.w,win_width-60 , event.xconfigure.height - 22); // 190
+          
+          
           XResizeWindow(dpy,List,list_width, list_height);
           XResizeWindow(dpy,IFdir,IFdir_width, IFdir_height);
           XResizeWindow(dpy,IFfile,IFfile_width, IFfile_height);
@@ -1297,9 +1256,6 @@ int main(int argc, char *argv[])
 
         break;
       case ButtonRelease:
-        
-
-          
         if(event.xbutton.button==Button1) 
         {
           if(event.xbutton.window == b_ok.w) 

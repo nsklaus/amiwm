@@ -36,11 +36,11 @@ gadget_button *button_create(Display *dpy, struct DrawInfo *dri, GC gc, Window m
   b->x = x;
   b->y = y;
   b->butw = 55;
-  b->buth = 20;
+  b->buth = 17;
   b->label = strdup("");
   b->gc = gc;
   
-  b->w = XCreateSimpleWindow(dpy, mainwin, x, y, 55,  20,  0, 
+  b->w = XCreateSimpleWindow(dpy, mainwin, x, y, 55,  17,  0, 
                              dri->dri_Pens[SHADOWPEN],
                              dri->dri_Pens[BACKGROUNDPEN]);
   
@@ -55,11 +55,11 @@ void button_set_text(gadget_button *b, const char *label)
   if (b->label != NULL)
     free(b->label);
   b->label = strdup(label);
-  int l=strlen(b->label); 
-  int tw = XmbTextEscapement(b->dri->dri_FontSet, b->label, l);
-  printf("tw=%d\n",tw);
-  b->butw=tw+10;
-  XResizeWindow(b->dpy,b->w,b->butw,17);
+//   int l=strlen(b->label); 
+//   int tw = XmbTextEscapement(b->dri->dri_FontSet, b->label, l);
+//   printf("tw=%d\n",tw);
+//   b->butw=tw+10;
+//   XResizeWindow(b->dpy,b->w,b->butw,17);
 
 }
 
@@ -73,7 +73,7 @@ void button_refresh(gadget_button *b)
   XSetForeground(b->dpy, b->gc, b->dri->dri_Pens[TEXTPEN]);
   
   XmbDrawString(b->dpy, b->w, b->dri->dri_FontSet, b->gc,
-               (5), b->dri->dri_Ascent+BUT_VSPACE, b->label, l);
+                (b->butw-tw)>>1, b->dri->dri_Ascent+BUT_VSPACE, b->label, l);
 
   // top line
   XSetForeground(b->dpy, b->gc, b->dri->dri_Pens[b->depressed ? SHADOWPEN:SHINEPEN]);

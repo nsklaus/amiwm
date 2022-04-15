@@ -3,6 +3,7 @@
 
 #include "client.h"
 #include "libami.h"
+#include "module.h"
 
 struct _Scrn;
 typedef struct _Icon {

@@ -770,8 +770,9 @@ void event_loop()
                       const char *cmd = "mimeopen";
                       const char *path = fse_arr[i].path;
                       const char *exec = fse_arr[i].name;
-                      char *line=alloca(strlen(cmd) + strlen(fse_arr[i].path) + strlen(exec) +2);
-                      sprintf(line, "%s %s%s &", cmd, path, exec);
+                      char *line=alloca(strlen(cmd) + strlen(fse_arr[i].path) + strlen(exec) +4);
+                      sprintf(line, "%s %s%s%s%s &", cmd, "\"", path, exec, "\"");
+                      printf("line=%s \n", line);
                       system(line);
                     }
                     else if (strcmp(fse_arr[i].type,"directory")==0)

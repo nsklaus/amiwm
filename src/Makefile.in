@@ -9,7 +9,7 @@ YFLAGS = -d
 DEFS = @DEFS@
 ALL_CFLAGS = -I. -I@srcdir@ -I@srcdir@/libami $(DEFS) $(CFLAGS) @X_CFLAGS@
 LIBS = @X_LIBS@ @X_PRE_LIBS@ -Llibami -lami @XT_LIB_KLUDGE@ -lXext -lXmu \
-	-lX11 @X_EXTRA_LIBS@ @LIBS@
+	-lX11 -lXrender @X_EXTRA_LIBS@ @LIBS@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
@@ -136,6 +136,8 @@ install : $(PROGS) $(MODULES) Xsession Xsession2 Xinitrc amiwm-init
 	$(INSTALL) -m 644 $(srcdir)./icons/xephyr.info $(AMIWM_HOME)/icons/xephyr.info
 	$(INSTALL) -m 644 $(srcdir)./icons/screenrec.info $(AMIWM_HOME)/icons/screenrec.info
 	$(INSTALL) -m 644 $(srcdir)./icons/reqasl.info $(AMIWM_HOME)/icons/reqasl.info
+	$(INSTALL) -m 644 $(srcdir)./icons/mupdf.info $(AMIWM_HOME)/icons/mupdf.info
+	$(INSTALL) -m 644 $(srcdir)./icons/xcalc.info $(AMIWM_HOME)/icons/xcalc.info
 	$(INSTALL) -m 644 $(srcdir)/system.amiwmrc $(AMIWM_HOME)/system.amiwmrc
 	$(INSTALL) -m 644 $(srcdir)/system.map $(AMIWM_HOME)/system.map
 	$(INSTALL) -m 644 $(srcdir)/magicwb.map $(AMIWM_HOME)/magicwb.map

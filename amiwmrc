@@ -45,7 +45,7 @@ opaqueresize yes
 Module "Background" "/home/klaus/Pictures/tilebg.jpg"
 
 # configure Launcher module (add icons on desktop)
-Module "Launcher" "(Computer) (harddisk.info) (dolphin)"
+Module "Launcher" "(Computer) (harddisk.info) (pcmanfm-qt)"
 Module "Launcher" "(workbench) (harddisk.info) (workbench)"
 
 # april fool "jokefs" (only interesting for devs as example)
@@ -76,6 +76,8 @@ style { class "simplescreenrecorder" icon "screenrec.info" }
 style { class "ReqASL" icon "reqasl.info" }
 style { class "Viewer" icon "viewer.info" }
 style { class "Workbench" icon "files.info" }
+style { class "mupdf" icon "mupdf.info" }
+style { class "xcalc" icon "xcalc.info" }
 
 # create new menu entries
 ToolItem Separator
@@ -96,6 +98,7 @@ ToolItem "Multimedia"
 ToolItem "Devel"
   {
   ToolItem "Kdevelop" "kdevelop"
+  ToolItem "Xephyr" "Xephyr -br -ac -reset -no-host-grab -screen 800x600 :1"
   }
 ToolItem "GraphX"
   {
