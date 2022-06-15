@@ -121,11 +121,15 @@ fs_file *fsf_arr;       // filename array
 int alloc_fcount = 20;  // inital array size (20 chars)
 int fchar_count;        // total amount of chars in file string 
 
+
+enum fs_type {fst_none=0, fst_directory, fst_file};
+
 struct fs_entity
 {
   char *name;
   char *path;
-  char *type;   // file or dir
+  //char *type;   // file or dir
+  enum fs_type fstype; 
   int x;
   int y;
   int width;    // active dimensions
@@ -148,7 +152,7 @@ void clean_reset()
   {
     fse_arr[i].name = None;
     fse_arr[i].path = None;
-    fse_arr[i].type = None;
+    //fse_arr[i].type = None;
     fse_arr[i].pm1 = None;
     fse_arr[i].pm2 = None;
     fse_arr[i].pmA = None;
@@ -197,10 +201,12 @@ int reorderqsort(const void *arg1, const void *arg2)
 {
   // reorder array alphabetically and put directories first
   const fs_entity *entity1 = arg1; const fs_entity *entity2 = arg2;
-  if(strcmp(entity1->type,entity2->type)==0)
+  //if(strcmp(entity1->type,entity2->type)==0)
+  if (entity1->fstype == entity2->fstype)   
     return strcmp(entity1->name, entity2->name );
 
-  if(strcmp(entity1->type,"directory")==0)
+  //if(strcmp(entity1->type,"directory")==0)
+  if (entity1->fstype == fst_directory)
     return -1;
   else // if(strcmp(entity2->type,"directory")==0)
     return 1;
@@ -239,7 +245,8 @@ void getlabels(char *path)
         strcat(tempo,"/");
         fse_arr[entries_count].path = tempo;
         //printf("directory, path=%s name=%s\n",entries[count].path,entries[count].name);
-        fse_arr[entries_count].type = "directory";
+        //fse_arr[entries_count].type = "directory";
+        fse_arr[entries_count].fstype = fst_directory;
         entries_count++;
         file_count++;
       }
@@ -258,7 +265,8 @@ void getlabels(char *path)
         strcpy(tempo,path);
         fse_arr[entries_count].path = tempo;
         //printf("file, path=%s name=%s\n",entries[count].path,entries[count].name);
-        fse_arr[entries_count].type = "file";
+        //fse_arr[entries_count].type = "file";
+        fse_arr[entries_count].fstype = fst_file;
         entries_count++;
         file_count++;
       }
@@ -299,7 +307,8 @@ void getlabels(char *path)
   if (fse_arr[0].name != NULL)
   {
     char *buf="";
-    if(strcmp(fse_arr[0].type, "file")==0)
+    //if(strcmp(fse_arr[0].type, "file")==0)
+    if (fse_arr[0].fstype == fst_file)
     {
       current_dir=fse_arr[0].path;
       buf=fse_arr[0].path;  //sample: "/home/klaus/Downlads/icons/"
@@ -322,7 +331,8 @@ void getlabels(char *path)
       }
     }
 
-    else if(strcmp(fse_arr[0].type, "directory")==0)
+    //else if(strcmp(fse_arr[0].type, "directory")==0)
+    else if (fse_arr[0].fstype == fst_directory)  
     {
       buf=fse_arr[0].path;
       //printf("DIR_ORIG: buf_len=%lu buf=%s\n",strlen(buf),buf);
@@ -376,7 +386,7 @@ void build_path(char *path) // sample: "/home/klaus/"
     fsp_arr[i].elem = path[i];
     fsp_arr[i].pwidth=XmbTextEscapement(dri.dri_FontSet, &path[i], 1); 
     fsp_arr[i].posx=XmbTextEscapement(dri.dri_FontSet, path, i);
-    printf("fsp_arr[%d].elem=%c  pwidth=%d posx=%d\n",i,fsp_arr[i].elem, fsp_arr[i].pwidth,fsp_arr[i].posx);
+    //printf("fsp_arr[%d].elem=%c  pwidth=%d posx=%d\n",i,fsp_arr[i].elem, fsp_arr[i].pwidth,fsp_arr[i].posx);
     fsp_arr[i].arrpos = pchar_count;
     pchar_count++;
   }
@@ -420,7 +430,8 @@ void build_entries()
     XSetForeground(dpy, gc, 0xaaaaaa);
     XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
 
-    if (strcmp(fse_arr[i].type,"directory")==0)
+    //if (strcmp(fse_arr[i].type,"directory")==0)
+    if (fse_arr[i].fstype == fst_directory)
     {
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
@@ -437,7 +448,8 @@ void build_entries()
       XDrawImageString(dpy, fse_arr[i].pm2, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
       XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
     }
-    else if (strcmp(fse_arr[i].type,"file")==0)
+    //else if (strcmp(fse_arr[i].type,"file")==0)
+    else if (fse_arr[i].fstype == fst_file)  
     {
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
@@ -866,21 +878,32 @@ void got_path(char *path)
   else {printf("input path do not exists\n\n");}
 }
 
+void open_path(char *path)
+{
+  // if no file selected and press button "ok" 
+  // then open current path in workbench window
+  printf("path = %s\n", path);
+  const char *cmd = "workbench";
+  char *line=alloca(strlen(cmd) + strlen(path) +1);
+  sprintf(line, "%s %s &", cmd, path);
+  system(line);
+}
+
 void endchoice(int c)
 {
-//   int c=selected;
-//   abortchoice();
 
   if(c==1){
-    //     printf("ss_cmdline=%s\n", cmdline);
-    //     system(cmdline);
-
-    if (input == IFdir)
+    // pressing "ok" button
+    if (input == IFdir) {
       got_path(dir_path);
+      printf("ever getting there ? \n");
+      
 //     else if(input == IFfile)
 //       got_path(file_path);
   }
+  }
   if(c==2){
+    // pressing "volume" button
     printf("volumes\n");
     current_dir="/";
     parent_dir="/";
@@ -889,6 +912,7 @@ void endchoice(int c)
     got_path("/");
   }
   if(c==3){
+    // pressing "parent" button
     printf("parent\n");
     if(parent_dir != NULL)
     {
@@ -900,6 +924,7 @@ void endchoice(int c)
     }
   }
   if (c==4){
+    // pressing "cancel" button
     printf("gracefully end\n");
     XCloseDisplay(dpy);
     exit(0);
@@ -962,7 +987,10 @@ int main(int argc, char *argv[])
   IFfile=XCreateSimpleWindow(dpy, mainwin, 70, win_height-50, win_width-70, 20, 0,
                              dri.dri_Pens[SHADOWPEN],
                              dri.dri_Pens[BACKGROUNDPEN]);
-
+//   b_ok = create_button(mainwin, 0, win_height-35 ); 
+//   b_vol = 
+//   b_par = 
+//   b_cancel = 
   XSelectInput(dpy, mainwin, ExposureMask|StructureNotifyMask|KeyPressMask|ButtonPressMask);
   XSelectInput(dpy, List, ExposureMask|StructureNotifyMask|ButtonPressMask);
   XSelectInput(dpy, IFdir, ExposureMask|StructureNotifyMask|ButtonPressMask);
@@ -973,16 +1001,16 @@ int main(int argc, char *argv[])
   //XSelectInput(dpy, b_cancel, ExposureMask|ButtonPressMask|ButtonReleaseMask|EnterWindowMask|LeaveWindowMask);
   gc=XCreateGC(dpy, mainwin, 0, NULL);
   
-  b_ok = *button_create(dpy, &dri, gc, mainwin, 0, win_height-35 ); 
+  b_ok = *create_button(dpy, &dri, gc, mainwin, 0, win_height-35 ); 
   button_set_text(&b_ok, ok_txt);
   
-  b_vol = *button_create(dpy, &dri, gc, mainwin, 80, win_height-35 ); 
+  b_vol = *create_button(dpy, &dri, gc, mainwin, 80, win_height-35 ); 
   button_set_text(&b_vol, vol_txt);
   
-  b_par = *button_create(dpy, &dri, gc, mainwin, 160, win_height-35 ); 
+  b_par = *create_button(dpy, &dri, gc, mainwin, 160, win_height-35 ); 
   button_set_text(&b_par, par_txt);
   
-  b_cancel = *button_create(dpy, &dri, gc, mainwin, 240, win_height-35 ); 
+  b_cancel = *create_button(dpy, &dri, gc, mainwin, 240, win_height-35 ); 
   button_set_text(&b_cancel, cancel_txt);
   
   XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
@@ -1134,7 +1162,7 @@ int main(int argc, char *argv[])
           XMoveWindow(dpy, b_vol.w, 57+button_spread(), event.xconfigure.height - 22); // 70
           
           XMoveWindow(dpy, b_par.w, (55*2)+button_spread()*2, event.xconfigure.height - 22);     // 130
-          printf("b_vol.x=%d b_par=%d\n",b_vol.x, b_par.x);
+          //printf("b_vol.x=%d b_par=%d\n",b_vol.x, b_par.x);
           XMoveWindow(dpy, b_cancel.w,win_width-60 , event.xconfigure.height - 22); // 190
           
           
@@ -1243,11 +1271,13 @@ int main(int argc, char *argv[])
             XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
             XClearWindow(dpy,fse_arr[i].win);
             
-            if(strcmp(fse_arr[i].type,"directory")==0)
+            //if(strcmp(fse_arr[i].type,"directory")==0)
+            if (fse_arr[i].fstype == fst_directory)
             {
               got_path(fse_arr[i].path);
             }
-            else if(strcmp(fse_arr[i].type,"file")==0)
+            //else if(strcmp(fse_arr[i].type,"file")==0)
+            else if (fse_arr[i].fstype == fst_file)  
             {
               got_file(fse_arr[i].path,fse_arr[i].name);
             }
@@ -1335,11 +1365,7 @@ int main(int argc, char *argv[])
               switch (item) 
               {
                 case 0:
-                  #ifdef AMIGAOS
-                  system("RUN <>NIL: requestchoice menutest  ABOUT_STRING  Ok");
-                  #else
                   (void)! system("requestchoice >/dev/null menutest ABOUT_STRING Ok &");
-                  #endif
                   break;
               }
               break;
