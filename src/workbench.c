@@ -251,62 +251,19 @@ void list_entries()
       fse_arr[i].pmA = fse_arr[i].pm3;
       XSetWindowBackgroundPixmap(dpy, fse_arr[i].iconwin, fse_arr[i].pm3);
       XResizeWindow(dpy,fse_arr[i].iconwin,fse_arr[i].width,fse_arr[i].height);
-      //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[FILLPEN]);
-
-
-//     if (strcmp(fse_arr[i].type,"directory")==0)
-//     {
-//       XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[FILLPEN]);
-//       XSetBackground(dpy,gc,dri.dri_Pens[FILLPEN]);
-//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-//       XDrawImageString(dpy, fse_arr[i].iconwin, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-//     }
-//     else if (strcmp(fse_arr[i].type,"file")==0)
-//     {
-//       XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[SHADOWPEN]);
-//       XSetBackground(dpy,gc,dri.dri_Pens[SHADOWPEN]);
-//       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
-//       XDrawImageString(dpy, fse_arr[i].iconwin, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-//     }
 
       XMoveWindow(dpy,fse_arr[i].iconwin,fse_arr[i].x,fse_arr[i].y);
       XClearWindow(dpy, fse_arr[i].iconwin);
       incrementY++;
     }
   }
-  XFlush(dpy);
+  //XFlush(dpy);
 }
 
 void list_entries_icons()
 {
   viewmode="icons";
- // printf("VIEWMODE now=%s\n",get_viewmode());
-  //build_icons();
-  
-  
-  /*
-  int newline_x = 0;
-  int newline_y = 0;
-  for (int i=0;i<entries_count;i++)
-  {
-    //printf("values of iconwin=%lu\n",fse_arr[i].iconwin);
-    if(fse_arr[i].iconwin != 0)
-    {
-      if (newline_y ==0)
-      {
-        fse_arr[i].x = 10;
-        fse_arr[i].y = 10;
-      }
-      else 
-      {
-      fse_arr[i].y = fse_arr[i-1].y + fse_arr[i-1].height + 30;
-      }
-    }
-    */
-  
-  
-  
-  
+
   int newline_x = 0;
   int newline_y = 0;
 
@@ -338,7 +295,7 @@ void list_entries_icons()
       fse_arr[i].pmA = fse_arr[i].pm1;
       XSetWindowBackgroundPixmap(dpy, fse_arr[i].iconwin, fse_arr[i].pmA);
       XClearWindow(dpy, fse_arr[i].iconwin);
-      XFlush(dpy);
+      //XFlush(dpy);
     }
   }
 }
