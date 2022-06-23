@@ -602,7 +602,7 @@ void spawn_new_wb(const char *cmd, char *title)
 
 void deselectAll()  // clicked on the window. abort, clear all icon selection
 {
-  printf("run deselectAll\n");
+  printf("run deselectAll, current view mode is: %s\n",get_viewmode());
   icon_temp.pmA = icon_temp.pm1;
   icon_temp.selected=False;
   icon_temp.dragging=False;
@@ -621,6 +621,18 @@ void deselectAll()  // clicked on the window. abort, clear all icon selection
         XFlush(dpy);
       }
     }
+  }
+  if(strcmp(get_viewmode(),"icons")==0)
+  {
+    printf("deselect all, refresh all (icon view)\n");
+    //reset_view();
+    list_entries_icons();
+  }
+  else if (strcmp(get_viewmode(),"list")==0)
+  {
+    printf("deselect all, refresh all (list view)\n");
+    //reset_view();
+    list_entries();
   }
 }
 
