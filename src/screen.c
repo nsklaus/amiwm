@@ -11,12 +11,12 @@
 
 extern Display *dpy;
 extern Cursor wm_curs;
-#ifdef USE_FONTSETS
+//#ifdef USE_FONTSETS
 extern XFontSet labelfontset;
 extern int labelfont_ascent;
-#else
-extern XFontStruct *labelfont;
-#endif
+// #else
+// extern XFontStruct *labelfont;
+// #endif
 extern char *progname;
 extern XContext screen_context, client_context, vroot_context;
 
@@ -230,7 +230,7 @@ Scrn *openscreen(char *deftitle, Window root)
 
   gcv.background = s->dri.dri_Pens[BACKGROUNDPEN];
 
-#ifdef USE_FONTSETS
+//#ifdef USE_FONTSETS
   s->gc = XCreateGC(dpy, s->back, GCBackground, &gcv);
 
   if(!labelfontset) {
@@ -260,23 +260,23 @@ Scrn *openscreen(char *deftitle, Window root)
   gcv.foreground = s->dri.dri_Pens[TEXTPEN];
 
   s->icongc = XCreateGC(dpy, s->back, GCForeground|GCBackground, &gcv);
-#else  
-  gcv.font = s->dri.dri_Font->fid;
-
-  s->gc = XCreateGC(dpy, s->back, GCBackground|GCFont, &gcv);
-  
-  if(!labelfont)
-    if(!(labelfont = XLoadQueryFont(dpy, label_font_name))) {
-      fprintf(stderr, "%s: cannot open font %s\n", progname, label_font_name);
-      labelfont = s->dri.dri_Font;
-    }
-
-  s->lh = labelfont->ascent+labelfont->descent;
-  gcv.font = labelfont->fid;
-  gcv.foreground = s->dri.dri_Pens[TEXTPEN];
-
-  s->icongc = XCreateGC(dpy, s->back, GCForeground|GCBackground|GCFont, &gcv);
-#endif
+// #else  
+//   gcv.font = s->dri.dri_Font->fid;
+// 
+//   s->gc = XCreateGC(dpy, s->back, GCBackground|GCFont, &gcv);
+//   
+//   if(!labelfont)
+//     if(!(labelfont = XLoadQueryFont(dpy, label_font_name))) {
+//       fprintf(stderr, "%s: cannot open font %s\n", progname, label_font_name);
+//       labelfont = s->dri.dri_Font;
+//     }
+// 
+//   s->lh = labelfont->ascent+labelfont->descent;
+//   gcv.font = labelfont->fid;
+//   gcv.foreground = s->dri.dri_Pens[TEXTPEN];
+// 
+//   s->icongc = XCreateGC(dpy, s->back, GCForeground|GCBackground|GCFont, &gcv);
+// #endif
 
   gcv.function = GXinvert;
   gcv.subwindow_mode = IncludeInferiors;

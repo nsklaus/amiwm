@@ -1059,17 +1059,7 @@ int main(int argc, char *argv[])
                    &size_hints, NULL, NULL);
 
   char homedir[50];
-  snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
-
-  // add final slash,  getenv("HOME") provides
-  int pos = strlen(homedir);
-  char *newbuff = malloc(pos);
-
-  memcpy(newbuff,homedir,pos);  // sample: "/home/klaus/Downloads"
-  newbuff[pos] = '/';
-  newbuff[pos+1] = '\0';
-  strcpy(homedir,newbuff);
-  free(newbuff);
+  snprintf(homedir, sizeof(homedir) , "%s/", getenv("HOME"));
 
   XClassHint *myhint = XAllocClassHint();
   myhint->res_class="reqasl";

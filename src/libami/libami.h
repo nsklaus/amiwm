@@ -178,8 +178,8 @@ struct gadget_button
   int butw;
   Display *dpy;
   struct DrawInfo *dri;
-  Window w;
   GC gc;
+  Window w;
   char *label;
   int depressed;
 };  typedef struct gadget_button gadget_button;
@@ -405,9 +405,15 @@ extern char *get_current_icondir(void);
 extern int md_set_appwindow(Window);
 
 /* gadget_button.c */
-gadget_button *button_create(Display *dpy, struct DrawInfo *dri, GC gc, Window mainwin, int x, int y);
+gadget_button *create_button(Display *dpy, struct DrawInfo *dri, GC gc, Window mainwin, int x, int y);
 void button_set_text(gadget_button *b, const char *label);
 void button_refresh(gadget_button *b);
 void button_toggle(gadget_button *b);
 void button_set_depressed(gadget_button *b, int depressed);
+
+/* gadget_inputfild.c */
+int create_inputfield(Window mainwin, int x, int y, int width, int height);
+void strkey(XKeyEvent *e);
+void refresh_str();
+
 #endif

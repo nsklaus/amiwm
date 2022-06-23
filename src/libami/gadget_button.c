@@ -23,7 +23,7 @@
 #define BUT_VSPACE 2
 #define BUT_HSPACE 8
 
-gadget_button *button_create(Display *dpy, struct DrawInfo *dri, GC gc, Window mainwin, int x, int y)
+gadget_button *create_button(Display *dpy, struct DrawInfo *dri, GC gc, Window mainwin, int x, int y)
 {
   gadget_button *b;
   

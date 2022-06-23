@@ -10,33 +10,23 @@ struct DrawInfo
     CARD16        dri_NumPens;    /* guaranteed to be >= 9                */
     unsigned long *dri_Pens;      /* pointer to pen array                 */
  
-
-    XFontSet     dri_FontSet;    /* screen default font          */
-
-    CARD16       dri_Depth;      /* (initial) depth of screen bitmap     */
+    XFontSet     dri_FontSet;     /* screen default font                  */
+    CARD16       dri_Depth;       /* (initial) depth of screen bitmap     */
  
-    struct {      /* from DisplayInfo database for initial display mode */
+    struct {      /* from DisplayInfo database for initial display mode   */
         CARD16   X;
         CARD16   Y;
-    }           dri_Resolution;
+    } dri_Resolution;
  
-    BITS32      dri_Flags;              /* defined below                */
-/* New for V39: dri_CheckMark, dri_AmigaKey. */
-    Pixmap      dri_CheckMark; /* pointer to scaled checkmark image
-                                         * Will be NULL if DRI_VERSION < 2
-                                         */
-    Pixmap      dri_AmigaKey;  /* pointer to scaled Amiga-key image
-                                         * Will be NULL if DRI_VERSION < 2
-                                         */
+    BITS32      dri_Flags;        /* defined below                        */ 
+    Pixmap      dri_CheckMark;    /* pointer to scaled checkmark image    */
+    Pixmap      dri_AmigaKey;     /* pointer to scaled Amiga-key image    */
     CARD32      dri_Ascent;
     CARD32      dri_Descent;
     CARD32      dri_MaxBoundsWidth;
-#ifdef USE_FONTSETS
     Atom        dri_FontSetAtom;
-    CARD32      dri_Reserved;        /* avoid recompilation ;^)      */
-#else
-    CARD32      dri_Reserved[2];        /* avoid recompilation ;^)      */
-#endif
+    CARD32      dri_Reserved;  /* avoid recompilation ;^)           */
+
 }; typedef struct DrawInfo DrawInfo;
 
 #define DETAILPEN        (0x0000)     /* compatible Intuition rendering pens */
@@ -48,11 +38,10 @@ struct DrawInfo
 #define FILLTEXTPEN      (0x0006)     /* text over FILLPEN                   */
 #define BACKGROUNDPEN    (0x0007)     /* always color 0                      */
 #define HIGHLIGHTTEXTPEN (0x0008)     /* special color text, on background   */
-/* New for V39, only present if DRI_VERSION >= 2: */
+
 #define BARDETAILPEN     (0x0009)     /* text/detail in screen-bar/menus */
 #define BARBLOCKPEN      (0x000A)     /* screen-bar/menus fill */
-#define BARTRIMPEN       (0x000B)     /* trim under screen-bar */
- 
+#define BARTRIMPEN       (0x000B)     /* trim under screen-bar */ 
 #define NUMDRIPENS       (0x000C)
 
 #define DRAWINFO_H

@@ -35,11 +35,14 @@ char *viewmode="icons";
 struct DrawInfo dri;
 Pixmap pm1, pm2;
 
+enum fs_type {fst_none=0, fst_directory, fst_file};
+
 typedef struct
 {
   char *name;
   char *path;
-  char *type;   // file or dir
+  //char *type;   // file or dir
+  enum fs_type fstype; 
   char *tiedWith;
   Window iconwin,label;
   Pixmap pm1;   // unselected icon
@@ -84,33 +87,9 @@ void event_loop();
 // not used yet
 void clean_reset()
 {
-  for (int i=0;i<entries_count;i++)
-  {
-    fse_arr[i].name = None;
-    fse_arr[i].path = None;
-    fse_arr[i].type = None;
-    fse_arr[i].tiedWith = None;
-    fse_arr[i].iconwin = None;
-    fse_arr[i].label = None;
-    fse_arr[i].pm1 = None;
-    fse_arr[i].pm2 = None;
-    fse_arr[i].pm3 = None;
-    fse_arr[i].pm4 = None;
-    fse_arr[i].pmA = None;
-    fse_arr[i].p_width = None;
-    fse_arr[i].p_height = None;
-    fse_arr[i].t_width = None;
-    fse_arr[i].t_height = None;
-    fse_arr[i].x = None;
-    fse_arr[i].y = None;
-    fse_arr[i].width = None;
-    fse_arr[i].height = None;
-    fse_arr[i].Icon = None;
-    fse_arr[i].associated = None;
-    fse_arr[i].selected = None;
-    fse_arr[i].dragging = None;
-    
-  }
+  size_t total_size_of_array_of_structs = sizeof(fse_arr[0])*entries_count;
+  memset(fse_arr, 0, total_size_of_array_of_structs);
+
   XDestroySubwindows(dpy,mainwin); 
   XClearWindow(dpy,mainwin);
   
@@ -123,6 +102,22 @@ void clean_reset()
   alloc_ecount = 20;
   fse_arr = calloc(alloc_ecount, sizeof(fs_entity)); 
 }
+
+int reorderqsort(const void *arg1, const void *arg2)
+{
+  // reorder array alphabetically and put directories first
+  const fs_entity *entity1 = arg1; const fs_entity *entity2 = arg2;
+  //if(strcmp(entity1->type,entity2->type)==0)
+  if (entity1->fstype == entity2->fstype)   
+    return strcmp(entity1->name, entity2->name );
+  
+  //if(strcmp(entity1->type,"directory")==0)
+  if (entity1->fstype == fst_directory)
+    return -1;
+  else // if(strcmp(entity2->type,"directory")==0)
+    return 1;
+}
+
 
 void read_entries(char *path) {
   // differentiate between files and directories,
@@ -168,12 +163,14 @@ void read_entries(char *path) {
         fse_arr[entries_count].name =  malloc(length);
         strcpy(fse_arr[entries_count].name, dp->d_name);
         int pathsize = strlen(path) + strlen(fse_arr[entries_count].name) +2;
+        
         char *tempo = malloc(pathsize);
         strcpy(tempo,path);
         strcat(tempo,fse_arr[entries_count].name);
         strcat(tempo,"/");
         fse_arr[entries_count].path = tempo;
-        fse_arr[entries_count].type = "directory";
+        //fse_arr[entries_count].type = "directory";
+        fse_arr[entries_count].fstype = fst_directory;
         entries_count++;
         file_count++;
       }
@@ -204,7 +201,8 @@ void read_entries(char *path) {
         char *tempo2 = malloc(pathsize2);
         strcpy(tempo2,path);
         fse_arr[entries_count].path = tempo2;
-        fse_arr[entries_count].type = "file";
+        //fse_arr[entries_count].type = "file";
+        fse_arr[entries_count].fstype = fst_file;
         
         entries_count++;
         file_count++;
@@ -213,6 +211,7 @@ void read_entries(char *path) {
   }
   closedir(dirp);
   printf("file_count=%d\n",file_count);
+  qsort(fse_arr, entries_count, sizeof(fs_entity), reorderqsort);
 }
 
 char * get_viewmode()
@@ -239,16 +238,20 @@ void list_entries()
   viewmode="list";
   printf("VIEWMODE now =%s\n",get_viewmode());
 
+  int incrementY =0;
   for (int i=0;i<entries_count;i++)
   {
-    fse_arr[i].width  = fse_arr[i].t_width;
-    fse_arr[i].height = fse_arr[i].t_height;
-    fse_arr[i].x = 10;
-    fse_arr[i].y = 10 + i*16;
-    fse_arr[i].pmA = fse_arr[i].pm3;
-    XSetWindowBackgroundPixmap(dpy, fse_arr[i].iconwin, fse_arr[i].pm3);
-    XResizeWindow(dpy,fse_arr[i].iconwin,fse_arr[i].width,fse_arr[i].height);
-    //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[FILLPEN]);
+    if(fse_arr[i].iconwin != 0)
+    {
+      
+      fse_arr[i].width  = fse_arr[i].t_width;
+      fse_arr[i].height = fse_arr[i].t_height;
+      fse_arr[i].x = 10;
+      fse_arr[i].y = incrementY*16;
+      fse_arr[i].pmA = fse_arr[i].pm3;
+      XSetWindowBackgroundPixmap(dpy, fse_arr[i].iconwin, fse_arr[i].pm3);
+      XResizeWindow(dpy,fse_arr[i].iconwin,fse_arr[i].width,fse_arr[i].height);
+      //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[FILLPEN]);
 
 
 //     if (strcmp(fse_arr[i].type,"directory")==0)
@@ -266,8 +269,10 @@ void list_entries()
 //       XDrawImageString(dpy, fse_arr[i].iconwin, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
 //     }
 
-    XMoveWindow(dpy,fse_arr[i].iconwin,fse_arr[i].x,fse_arr[i].y);
-    XClearWindow(dpy, fse_arr[i].iconwin);
+      XMoveWindow(dpy,fse_arr[i].iconwin,fse_arr[i].x,fse_arr[i].y);
+      XClearWindow(dpy, fse_arr[i].iconwin);
+      incrementY++;
+    }
   }
   XFlush(dpy);
 }
@@ -405,7 +410,8 @@ void make_icon( char *icondir, char *icon, int i)
   XFillRectangle(dpy,fse_arr[i].pm4, gc, 0,0,fse_arr[i].t_width, fse_arr[i].t_height);
   //XCopyArea(dpy, pm1, fse_arr[i].pm4, gc, -9, 0, fse_arr[i].t_width, fse_arr[i].t_height, 0, 0);
   
-  if (strcmp(fse_arr[i].type,"directory")==0)
+  //if (strcmp(fse_arr[i].type,"directory")==0)
+  if (fse_arr[i].fstype == fst_directory) 
   {
     //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[FILLPEN]);
     XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
@@ -418,7 +424,8 @@ void make_icon( char *icondir, char *icon, int i)
     XDrawImageString(dpy, fse_arr[i].pm4, gc, 5, 12,fse_arr[i].name, strlen(fse_arr[i].name));
     
   }
-  else if (strcmp(fse_arr[i].type,"file")==0)
+  //else if (strcmp(fse_arr[i].type,"file")==0)
+  else if (fse_arr[i].fstype == fst_file)
   {
     //XSetWindowBackground(dpy, fse_arr[i].iconwin, dri.dri_Pens[SHADOWPEN]);
     XSetBackground(dpy,gc,dri.dri_Pens[BACKGROUNDPEN]);
@@ -518,7 +525,8 @@ void build_icons()
         // find corresponding icon with name/tiedWith match
         if (fse_arr[j].Icon && strcmp(fse_arr[i].name,fse_arr[j].tiedWith)==0 )
         {
-          if (strcmp(fse_arr[i].type,"file")==0)
+          //if (strcmp(fse_arr[i].type,"file")==0)
+          if (fse_arr[i].fstype == fst_file)
           {
             char *temp = alloca(strlen(fse_arr[i].path));
             strcpy(temp,fse_arr[i].path);
@@ -531,7 +539,8 @@ void build_icons()
             
           }
           // case entity is a directory
-          else if (strcmp(fse_arr[i].type,"directory")==0)
+          //else if (strcmp(fse_arr[i].type,"directory")==0)
+          else if ( fse_arr[i].fstype == fst_directory )
           {
             // strip last part of path
             char *temp = alloca(strlen(fse_arr[i].path));
@@ -557,8 +566,10 @@ void build_icons()
     if (fse_arr[i].associated == False && fse_arr[i].Icon == False)
     {
       icondir="/usr/local/lib/amiwm/icons";
-      if(strcmp(fse_arr[i].type, "directory") == 0) { icon="def_drawer.info"; }
-      else if(strcmp(fse_arr[i].type, "file") == 0) { icon="def_tool.info"; }
+//       if(strcmp(fse_arr[i].type, "directory") == 0) { icon="def_drawer.info"; }
+//       else if(strcmp(fse_arr[i].type, "file") == 0) { icon="def_tool.info"; }
+      if( fse_arr[i].fstype == fst_directory ) { icon="def_drawer.info"; }
+      else if( fse_arr[i].fstype == fst_file ) { icon="def_tool.info"; }
       printf("case 3: icondir=%s icon=%s\n",icondir,icon);
       make_icon(icondir, icon, i); 
     }
@@ -566,7 +577,7 @@ void build_icons()
     // icon file, and has no file associated: show icon
     if (fse_arr[i].associated == False && fse_arr[i].Icon == True)
     {
-      if (strcmp(fse_arr[i].type,"file")==0)
+      if ( fse_arr[i].fstype == fst_file )
       {
         char *temp = alloca(strlen(fse_arr[i].path));
         strcpy(temp,fse_arr[i].path);
@@ -653,25 +664,14 @@ int main(int argc, char *argv[])
   }
 
   // find user's home
-  char homedir[50];
-  snprintf(homedir, sizeof(homedir) , "%s", getenv("HOME"));
-  // add final slash,  getenv("HOME") provides
-  int pos = strlen(homedir);
-
-  char *newbuff = alloca(pos);
-
-  memcpy(newbuff,homedir,pos);  // sample: "/home/klaus/Downloads"
-  newbuff[pos] = '/';
-  newbuff[pos+1] = '\0';
-  strcpy(homedir,newbuff); 
-
-  printf("cleaned homedir path =%s\n",homedir);
+  char homedir[50];  // reserve memory for user name/ homedir name (less than 50 chars)
+  snprintf(homedir, sizeof(homedir) , "%s/", getenv("HOME")); // get homedir value
 
   // set default window title
-  if(argc<3) {  argv[2]= "home"; }
+  if(argc<3) {  argv[2]= "home"; } // set window title from 3rd arg. if there's none set default one.
 
   // open default directory
-  if(argv[1]==NULL) { argv[1]= homedir; }
+  if(argv[1]==NULL) { argv[1]= homedir; } // if no path arg given, set a default one
 
   root = RootWindow(dpy, DefaultScreen(dpy));
 
@@ -765,7 +765,7 @@ void event_loop()
                   {
                     printf("* double click! *\n");
                     fse_arr[i].pmA = fse_arr[i].pm2;
-                    if (strcmp(fse_arr[i].type,"file")==0)
+                    if ( fse_arr[i].fstype == fst_file )
                     {
                       const char *cmd = "mimeopen";
                       const char *path = fse_arr[i].path;
@@ -775,7 +775,7 @@ void event_loop()
                       printf("line=%s \n", line);
                       system(line);
                     }
-                    else if (strcmp(fse_arr[i].type,"directory")==0)
+                    else if ( fse_arr[i].fstype == fst_directory )
                     {
                       spawn_new_wb(fse_arr[i].path,fse_arr[i].name );
                     }
@@ -872,21 +872,21 @@ void event_loop()
           break;
 
         case KeyPress:
-          printf("keypress event=%d\n",event.type);
-          list_entries_icons();
+          printf("keypressz event=%d\n",event.type);
+//          list_entries_icons();
           
-//           if(strcmp(get_viewmode(),"icons")==0)
-//           {
-//             printf("toggling to list\n");
-//             reset_view();
-//             list_entries();
-//           }
-//           else if (strcmp(get_viewmode(),"list")==0)
-//           {
-//             printf("toggling to icons\n");
-//             reset_view();
-//             list_entries_icons();
-//           }
+          if(strcmp(get_viewmode(),"icons")==0)
+          {
+            printf("toggling to list\n");
+            //reset_view();
+            list_entries();
+          }
+          else if (strcmp(get_viewmode(),"list")==0)
+          {
+            printf("toggling to icons\n");
+            //reset_view();
+            list_entries_icons();
+          }
           break;
         case DestroyNotify:
           if(event.xdestroywindow.window==mainwin)
