@@ -443,8 +443,13 @@ void build_entries()
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
       // test transparency
-      //XSetForeground(dpy, gc,  0x10101010);
+      // XSetForeground(dpy, gc,  0x10101010);
       XDrawImageString(dpy, fse_arr[i].pm1, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      //truncate long string according to available with
+      while ( XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name)) > right_column_x -16)
+      {
+        fse_arr[i].name[strlen(fse_arr[i].name) -1] = 0;
+      } 
       XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
@@ -460,7 +465,7 @@ void build_entries()
       printf("(D) name=%s length=%d rightcol=%d\n",fse_arr[i].name,my_offset,win_width-75 );
       XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
     }
-    //else if (strcmp(fse_arr[i].type,"file")==0)
+
     else if (fse_arr[i].fstype == fst_file)  
     {
       // ===============
@@ -470,7 +475,12 @@ void build_entries()
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
       XDrawImageString(dpy, fse_arr[i].pm1, gc, win_width-65, 12, "---", strlen("---"));
+      while ( XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name)) > right_column_x -16)
+      {
+        fse_arr[i].name[strlen(fse_arr[i].name) -1] = 0;
+      }
       XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
+      //XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
       // ==============
@@ -480,29 +490,23 @@ void build_entries()
       XFillRectangle(dpy, fse_arr[i].pm2, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
       XDrawImageString(dpy, fse_arr[i].pm2, gc, win_width-65, 12, "---", strlen("---"));
-      
-      int my_offset = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
-      printf("(F) name=%s length=%d rightcol=%d\n",fse_arr[i].name,my_offset,right_column_x );
-      if(my_offset>right_column_x) 
-      {
-        int mylenc = strlen(fse_arr[i].name);
-        char mydest[mylenc];
-        strncpy(mydest, fse_arr[i].name, mylenc-34 );
-        mydest[mylenc-34] =0;
-        int mylenp = XmbTextEscapement(dri.dri_FontSet, mydest, strlen(mydest));
-        printf("mylenC = %d, mylenP=%d, string = %s\n",mylenc, mylenp, mydest);
-        XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, mydest, strlen(mydest));
+      XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
 
-        //char mydest[mylen];
-        
-//         strncpy(mydest, fse_arr[i].name, mylen );
-//         mydest[mylen] = '\0';
-//         printf("mylen = %d, string = %s\n",mylen, mydest);
-      }
-      else 
-      {
-        XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
-      }
+//       old "truncate" code
+//       int my_length_pixel = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));      
+//       if ( my_length_pixel > right_column_x ) 
+//       {
+//         char *mydest=strdup(fse_arr[i].name); 
+//         while ( XmbTextEscapement(dri.dri_FontSet, mydest, strlen(mydest)) > right_column_x -10)
+//         {
+//           mydest[strlen(mydest) -1] = 0;
+//         }
+//         XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, mydest, strlen(mydest));
+//       }
+//       else 
+//       {
+//         XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
+//       }
     }
     XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
     fse_arr[i].pmA = fse_arr[i].pm1; // set active pixmap
