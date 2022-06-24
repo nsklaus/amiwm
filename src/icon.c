@@ -74,11 +74,13 @@ void redrawicon(Icon *i, Window w)
   {
     GC gc = XCreateGC(dpy, i->labelwin,  0x80000000, NULL);
     
-//     XmbDrawImageString(dpy, w, labelfontset, scr->icongc, 0, labelfont_ascent,
-//                        i->label, strlen(i->label));
+    // set icon label string to be white, 
     XSetForeground(dpy, gc, 0xFFFFFF);
-    //XSetBackground(dpy, gc, 0XAAAAAA);
+    
+    // set icon label background color to be black 
+    XSetBackground(dpy, gc, 0x000000);
     //XSetBackground(dpy, gc, scr->dri.dri_Pens[BACKGROUNDPEN]);
+    
     XmbDrawImageString(dpy, w, labelfontset, gc, 0, labelfont_ascent,
                        i->label, strlen(i->label));
 

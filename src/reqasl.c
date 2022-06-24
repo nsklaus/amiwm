@@ -20,6 +20,9 @@
 #define MAX_CMD_CHARS 256
 #define VISIBLE_CMD_CHARS 35
 
+int dblClickTime=400;
+Time last_icon_click=0, last_double=0;
+
 static const char ok_txt[]="Ok", vol_txt[]="Volumes", par_txt[]="Parent", cancel_txt[]="Cancel";
 static const char drawer_txt[]="Drawer";
 static const char file_txt[]="File";
@@ -410,29 +413,32 @@ void list_entries()
 
 void build_entries()
 {
+  // =============================
+  // display files and directories    
+  // ============================= 
+  
   XSetWindowAttributes xswa;
+  int right_column_x = win_width-75;
   for (int i=0;i<entries_count;i++)
   { 
-    //int width = XmbTextEscapement(dri.dri_FontSet, entries[i].name, strlen(entries[i].name));
     fse_arr[i].width  = list_width;
-    fse_arr[i].height = 15;
-
-//     fse_arr[i].win=XCreateSimpleWindow(dpy, List, fse_arr[i].x, fse_arr[i].y, 
-//                                        fse_arr[i].width, fse_arr[i].height, 0,
-//                                        dri.dri_Pens[SHADOWPEN],
-//                                        dri.dri_Pens[BACKGROUNDPEN]);
-    
-    fse_arr[i].win = XCreateWindow( dpy,List, fse_arr[i].x, fse_arr[i].y, fse_arr[i].width, fse_arr[i].height, 0, 24, InputOutput, CopyFromParent, CWBackPixel, &xswa);
+    fse_arr[i].height = 15;    
+    fse_arr[i].win = XCreateWindow( dpy,List, fse_arr[i].x, 
+                                    fse_arr[i].y, fse_arr[i].width, 
+                                    fse_arr[i].height, 0, 24, 
+                                    InputOutput, CopyFromParent, CWBackPixel, &xswa);
 
     fse_arr[i].pm1 = XCreatePixmap(dpy, fse_arr[i].win, fse_arr[i].width, fse_arr[i].height, 24);
     fse_arr[i].pm2 = XCreatePixmap(dpy, fse_arr[i].win, fse_arr[i].width, fse_arr[i].height, 24);
 
     XSetForeground(dpy, gc, 0xaaaaaa);
     XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
-
-    //if (strcmp(fse_arr[i].type,"directory")==0)
+   
     if (fse_arr[i].fstype == fst_directory)
     {
+      // ==============
+      // dir unselected
+      // ==============
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
@@ -442,15 +448,24 @@ void build_entries()
       XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
+      // ==============
+      // dir selected
+      // ==============
       XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
       XFillRectangle(dpy, fse_arr[i].pm2, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[SHINEPEN]);
       XDrawImageString(dpy, fse_arr[i].pm2, gc, win_width-75, 12, "Drawer", strlen("Drawer"));
+      
+      int my_offset = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
+      printf("(D) name=%s length=%d rightcol=%d\n",fse_arr[i].name,my_offset,win_width-75 );
       XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
     }
     //else if (strcmp(fse_arr[i].type,"file")==0)
     else if (fse_arr[i].fstype == fst_file)  
     {
+      // ===============
+      // file unselected
+      // ===============
       XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
       XFillRectangle(dpy, fse_arr[i].pm1, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
@@ -458,11 +473,36 @@ void build_entries()
       XDrawImageString(dpy, fse_arr[i].pm1, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
       XSetForeground(dpy, gc, dri.dri_Pens[FILLPEN]);
 
+      // ==============
+      // file selected
+      // ==============
       XSetBackground(dpy, gc, dri.dri_Pens[FILLPEN]);
       XFillRectangle(dpy, fse_arr[i].pm2, gc, 0, 0, fse_arr[i].width, fse_arr[i].height);
       XSetForeground(dpy, gc, dri.dri_Pens[TEXTPEN]);
       XDrawImageString(dpy, fse_arr[i].pm2, gc, win_width-65, 12, "---", strlen("---"));
-      XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
+      
+      int my_offset = XmbTextEscapement(dri.dri_FontSet, fse_arr[i].name, strlen(fse_arr[i].name));
+      printf("(F) name=%s length=%d rightcol=%d\n",fse_arr[i].name,my_offset,right_column_x );
+      if(my_offset>right_column_x) 
+      {
+        int mylenc = strlen(fse_arr[i].name);
+        char mydest[mylenc];
+        strncpy(mydest, fse_arr[i].name, mylenc-34 );
+        mydest[mylenc-34] =0;
+        int mylenp = XmbTextEscapement(dri.dri_FontSet, mydest, strlen(mydest));
+        printf("mylenC = %d, mylenP=%d, string = %s\n",mylenc, mylenp, mydest);
+        XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, mydest, strlen(mydest));
+
+        //char mydest[mylen];
+        
+//         strncpy(mydest, fse_arr[i].name, mylen );
+//         mydest[mylen] = '\0';
+//         printf("mylen = %d, string = %s\n",mylen, mydest);
+      }
+      else 
+      {
+        XDrawImageString(dpy, fse_arr[i].pm2, gc, 5, 12, fse_arr[i].name, strlen(fse_arr[i].name));
+      }
     }
     XSetBackground(dpy, gc, dri.dri_Pens[BACKGROUNDPEN]);
     fse_arr[i].pmA = fse_arr[i].pm1; // set active pixmap
@@ -836,12 +876,15 @@ static void abortchoice()
 
 void got_file(char *path, char *name)
 {
+  // ==========
+  // open file
+  // ==========
   const char *cmd = "mimeopen";
   //const char *path = fse_arr[i].path;
   //const char *exec = fse_arr[i].name;
   strcat(path,"/");
   char *line=alloca(strlen(cmd) + strlen(path) + strlen(name) +2);
-  sprintf(line, "%s %s%s &", cmd, path, name);
+  sprintf(line, "%s \"%s%s\" &", cmd, path, name);
   system(line);
 }
 
@@ -1244,32 +1287,49 @@ int main(int argc, char *argv[])
           }
         }
 
+        
+        // ==========================
+        // handle clicks on entries
+        // ==========================
         for(int i=0; i<entries_count;i++)
         {
           if(event.xbutton.window == fse_arr[i].win && event.xbutton.button==Button1)
           {
-            printf("selected: path=%s file=%s\n",fse_arr[i].path, fse_arr[i].name);
-            if (fse_arr[i].pmA == fse_arr[i].pm1) 
-            { 
-              fse_arr[i].pmA = fse_arr[i].pm2; 
-            }
-            else if (fse_arr[i].pmA == fse_arr[i].pm2) 
-            { 
-              fse_arr[i].pmA = fse_arr[i].pm1; 
-            }
-            
-            XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
-            XClearWindow(dpy,fse_arr[i].win);
-            
-            //if(strcmp(fse_arr[i].type,"directory")==0)
-            if (fse_arr[i].fstype == fst_directory)
+            if ((event.xbutton.time - last_icon_click) < dblClickTime) //double click
             {
-              got_path(fse_arr[i].path);
+              // =============
+              // double click
+              // =============
+              printf("* double click! *\n");
+              //if(strcmp(fse_arr[i].type,"directory")==0)
+              if (fse_arr[i].fstype == fst_directory)
+              {
+                got_path(fse_arr[i].path);
+              }
+              //else if(strcmp(fse_arr[i].type,"file")==0)
+              else if (fse_arr[i].fstype == fst_file)  
+              {
+                got_file(fse_arr[i].path,fse_arr[i].name);
+              }
             }
-            //else if(strcmp(fse_arr[i].type,"file")==0)
-            else if (fse_arr[i].fstype == fst_file)  
+            else 
             {
-              got_file(fse_arr[i].path,fse_arr[i].name);
+              // =============
+              // simple click
+              // =============
+              last_icon_click=event.xbutton.time;
+              printf("* simple click *\n");
+              printf("selected: path=%s file=%s\n",fse_arr[i].path, fse_arr[i].name);
+              if (fse_arr[i].pmA == fse_arr[i].pm1) 
+              { 
+                fse_arr[i].pmA = fse_arr[i].pm2; 
+              }
+              else if (fse_arr[i].pmA == fse_arr[i].pm2) 
+              { 
+                fse_arr[i].pmA = fse_arr[i].pm1; 
+              }
+              XSetWindowBackgroundPixmap(dpy, fse_arr[i].win, fse_arr[i].pmA);
+              XClearWindow(dpy,fse_arr[i].win);
             }
           }
         }
